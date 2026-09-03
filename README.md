@@ -4,7 +4,7 @@ NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke an
 
 ## Current status
 
-Phase 2 foundation is in progress. The current skeleton includes:
+Phase 3A adds the first secure installation flow. The current project includes:
 
 - PSR-4 autoloading;
 - environment-based configuration;
@@ -17,8 +17,14 @@ Phase 2 foundation is in progress. The current skeleton includes:
 - Twig rendering with automatic HTML escaping;
 - Apache front-controller rules;
 - PHPUnit unit tests.
+- server requirement checks;
+- a CSRF-protected web installer;
+- automatic database creation when the database account permits it;
+- core identity and settings migrations;
+- initial roles and first Super Administrator creation;
+- atomic `.env` generation and an installation lock.
 
-Authentication, the installer, modules, themes, blocks and content are intentionally not implemented yet.
+Login, public registration, password recovery, authorization policies, modules, themes, blocks and content are intentionally not implemented yet.
 
 ## Requirements
 
@@ -31,12 +37,25 @@ Authentication, the installer, modules, themes, blocks and content are intention
 
 ```bash
 composer install
-cp .env.example .env
 composer test
 composer serve
 ```
 
-Open `http://127.0.0.1:8080`.
+Open `http://127.0.0.1:8080`. When NovaNuke has not been configured, it redirects to `/install`.
+
+Do not copy `.env.example` to `.env` before testing the web installer. The installer generates `.env` from the validated form.
+
+### Laragon defaults
+
+Common Laragon database values are:
+
+- host: `127.0.0.1`;
+- port: `3306`;
+- username: `root`;
+- password: empty;
+- database: `novanuke`.
+
+The database account must be allowed to create a database. Alternatively, create the database manually first.
 
 Do not expose the project root to the web. The document root must be the `public/` directory.
 
@@ -48,7 +67,11 @@ Do not expose the project root to the web. The document root must be the `public
 - Secrets belong in `.env`, which is excluded from Git.
 - The public entry point is isolated in `public/`.
 
-CSRF, authentication, authorization, session hardening and rate limiting arrive in Phase 3.
+The installer uses CSRF protection, HTTP-only session cookies, strict session mode, server-side validation, prepared statements and `password_hash()`.
+
+After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
+
+Authentication, authorization and rate limiting continue in the next Phase 3 delivery.
 
 ## Tests
 

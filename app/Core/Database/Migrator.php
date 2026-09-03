@@ -6,7 +6,6 @@ namespace NovaNuke\Core\Database;
 
 use PDO;
 use RuntimeException;
-use Throwable;
 
 final class Migrator
 {
@@ -49,23 +48,14 @@ final class Migrator
                 throw new RuntimeException("Migration must implement Migration: {$file}");
             }
 
-            $this->database->beginTransaction();
-
-            try {
-                $migration->up($this->database);
-                $statement = $this->database->prepare(
-                    'INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)'
-                );
-                $statement->execute(['migration' => $name, 'batch' => $batch]);
-                $this->database->commit();
-                $completed[] = $name;
-            } catch (Throwable $error) {
-                if ($this->database->inTransaction()) {
-                    $this->database->rollBack();
-                }
-
-                throw $error;
-            }
+            // MySQL implicitly commits many DDL statements. A migration is marked
+            // complete only after its schema operations finish successfully.
+            $migration->up($this->database);
+            $statement = $this->database->prepare(
+                'INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)'
+            );
+            $statement->execute(['migration' => $name, 'batch' => $batch]);
+            $completed[] = $name;
         }
 
         return $completed;

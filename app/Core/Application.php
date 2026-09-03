@@ -11,6 +11,8 @@ use NovaNuke\Core\Database\ConnectionFactory;
 use NovaNuke\Core\Http\ErrorHandler;
 use NovaNuke\Core\Http\Kernel;
 use NovaNuke\Core\Http\Routing\Router;
+use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
 use PDO;
 
@@ -32,6 +34,20 @@ final class Application
         $container->instance(self::class, $app = new self($rootPath, $container));
         $container->instance(ConfigRepository::class, $config);
         $container->instance(Router::class, new Router());
+        $container->bind(SessionManager::class, static function () use ($config): SessionManager {
+            $session = new SessionManager(
+                (string) $config->get('session.name', 'novanuke_session'),
+                (bool) $config->get('session.secure', false),
+                (string) $config->get('session.same_site', 'Lax'),
+                (int) $config->get('session.lifetime', 7200),
+            );
+            $session->start();
+
+            return $session;
+        });
+        $container->bind(CsrfTokenManager::class, static fn (Container $c) => new CsrfTokenManager(
+            $c->get(SessionManager::class),
+        ));
         $container->bind(PDO::class, static fn () => (new ConnectionFactory($config))->create());
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
@@ -67,6 +83,13 @@ final class Application
     {
         $router = $this->container->get(Router::class);
         $container = $this->container;
+        $installed = is_file($this->rootPath . '/storage/installed.lock');
+
+        if (! $installed) {
+            require $this->rootPath . '/routes/installer.php';
+            return;
+        }
+
         require $this->rootPath . '/routes/web.php';
     }
 }

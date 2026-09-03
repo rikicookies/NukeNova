@@ -63,6 +63,12 @@ final class Request
         return $this->request[$key] ?? $this->query[$key] ?? $default;
     }
 
+    /** @return array<string, mixed> */
+    public function allInput(): array
+    {
+        return array_replace($this->query, $this->request);
+    }
+
     public function attribute(string $key, mixed $default = null): mixed
     {
         return $this->attributes[$key] ?? $default;

@@ -28,6 +28,15 @@ final class Response
         );
     }
 
+    public static function redirect(string $location, int $status = 302): self
+    {
+        if (! str_starts_with($location, '/')) {
+            throw new \InvalidArgumentException('Redirects must use a local absolute path.');
+        }
+
+        return new self('', $status, ['Location' => $location]);
+    }
+
     public function status(): int
     {
         return $this->status;

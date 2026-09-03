@@ -1,0 +1,13 @@
+{% extends "installer/base.twig" %}
+
+{% block title %}NovaNuke installed{% endblock %}
+
+{% block content %}
+<section class="complete-card">
+    <div class="success-icon">✓</div>
+    <p class="eyebrow">Installation complete</p>
+    <h1>{{ site_name }} is ready.</h1>
+    <p>{{ migrations_count }} database migrations were executed. The installer is now locked and cannot run again without manually removing the lock file.</p>
+    <a class="install-button link-button" href="/">Open the site</a>
+</section>
+{% endblock %}

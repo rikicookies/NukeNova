@@ -1,0 +1,71 @@
+{% extends "installer/base.twig" %}
+
+{% block title %}Install NovaNuke{% endblock %}
+
+{% block content %}
+<section class="intro">
+    <p class="eyebrow">Initial setup</p>
+    <h1>Build your NovaNuke site.</h1>
+    <p>The installer will check the server, create the database tables and securely create the first Super Administrator.</p>
+</section>
+
+{% if errors %}
+<div class="alert alert-error" role="alert">
+    <strong>The installation needs attention.</strong>
+    <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
+<section class="panel">
+    <div class="panel-heading">
+        <div><span class="step">01</span><h2>Server requirements</h2></div>
+        <span class="status {{ requirements_passed ? 'pass' : 'fail' }}">{{ requirements_passed ? 'Ready' : 'Action required' }}</span>
+    </div>
+    <div class="checks">
+        {% for check in checks %}
+            <div class="check {{ check.passed ? 'pass' : 'fail' }}">
+                <span aria-hidden="true">{{ check.passed ? '✓' : '×' }}</span>
+                <div><strong>{{ check.name }}</strong><small>{{ check.detail }}</small></div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<form method="post" action="/install" novalidate>
+    <input type="hidden" name="_token" value="{{ csrf_token }}">
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">02</span><h2>Site</h2></div></div>
+        <div class="form-grid">
+            <label class="wide">Site name<input name="site_name" value="{{ old.site_name }}" required maxlength="100"></label>
+            <label class="wide">Site URL<input type="url" name="site_url" value="{{ old.site_url }}" required></label>
+            <label>Language<select name="locale"><option value="en" {% if old.locale == 'en' %}selected{% endif %}>English</option><option value="es" {% if old.locale == 'es' %}selected{% endif %}>Español</option></select></label>
+            <label>Timezone<select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}" {% if old.timezone == timezone %}selected{% endif %}>{{ timezone }}</option>{% endfor %}</select></label>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">03</span><h2>Database</h2></div></div>
+        <p class="hint">Laragon normally uses root with an empty password. NovaNuke will create the database if your account permits it.</p>
+        <div class="form-grid">
+            <label>Host<input name="database_host" value="{{ old.database_host }}" required></label>
+            <label>Port<input type="number" name="database_port" value="{{ old.database_port }}" min="1" max="65535" required></label>
+            <label class="wide">Database name<input name="database_name" value="{{ old.database_name }}" pattern="[A-Za-z0-9_]+" required></label>
+            <label>Username<input name="database_username" value="{{ old.database_username }}" required></label>
+            <label>Password<input type="password" name="database_password" autocomplete="new-password"></label>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-heading"><div><span class="step">04</span><h2>Super Administrator</h2></div></div>
+        <div class="form-grid">
+            <label>Username<input name="admin_username" value="{{ old.admin_username }}" minlength="3" maxlength="32" required autocomplete="username"></label>
+            <label>Email<input type="email" name="admin_email" value="{{ old.admin_email }}" required autocomplete="email"></label>
+            <label>Password<input type="password" name="admin_password" minlength="12" required autocomplete="new-password"></label>
+            <label>Confirm password<input type="password" name="admin_password_confirmation" minlength="12" required autocomplete="new-password"></label>
+        </div>
+    </section>
+
+    <button class="install-button" type="submit" {% if not requirements_passed %}disabled{% endif %}>Install NovaNuke</button>
+</form>
+{% endblock %}
