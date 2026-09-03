@@ -81,4 +81,16 @@ final class Request
 
         return $clone;
     }
+
+    public function ip(): string
+    {
+        $ip = (string) ($this->server['REMOTE_ADDR'] ?? '0.0.0.0');
+
+        return filter_var($ip, FILTER_VALIDATE_IP) ? $ip : '0.0.0.0';
+    }
+
+    public function userAgent(): string
+    {
+        return mb_substr((string) ($this->server['HTTP_USER_AGENT'] ?? ''), 0, 500);
+    }
 }

@@ -1,0 +1,25 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use NovaNuke\Core\Database\Migrator;
+$application = require dirname(__DIR__) . '/bootstrap/app.php';
+$command = $argv[1] ?? 'help';
+
+if ($command === 'migrate') {
+    $completed = (new Migrator($application->container()->get(\PDO::class)))
+        ->run(NOVANUKE_ROOT . '/database/migrations');
+
+    if ($completed === []) {
+        fwrite(STDOUT, "No pending migrations.\n");
+        exit(0);
+    }
+
+    foreach ($completed as $migration) {
+        fwrite(STDOUT, "Migrated: {$migration}\n");
+    }
+    exit(0);
+}
+
+fwrite(STDOUT, "NovaNuke CLI\n\nAvailable commands:\n  migrate  Run pending database migrations\n");

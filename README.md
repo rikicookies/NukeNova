@@ -73,6 +73,18 @@ After installation, `storage/installed.lock` prevents installer routes from load
 
 Authentication, authorization and rate limiting continue in the next Phase 3 delivery.
 
+## Updating an installed development copy
+
+After replacing project files, keep the existing `.env` and `storage/installed.lock`, then run:
+
+```bash
+composer install
+composer migrate
+composer test
+```
+
+Phase 3B provides `/login`, POST-only `/logout`, a protected `/admin` dashboard, session regeneration, suspended-account enforcement, login history and basic login throttling.
+
 ## Tests
 
 Run:

@@ -65,4 +65,17 @@ final class SessionManager
     {
         unset($_SESSION[$key]);
     }
+
+    public function regenerate(): void
+    {
+        session_regenerate_id(true);
+        $_SESSION['_started_at'] = time();
+    }
+
+    public function invalidate(): void
+    {
+        $_SESSION = [];
+        session_regenerate_id(true);
+        $_SESSION['_started_at'] = time();
+    }
 }

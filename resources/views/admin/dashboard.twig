@@ -1,0 +1,15 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Dashboard — NovaNuke{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">Admin dashboard</p>
+    <h1>Hello, {{ user.username }}.</h1>
+    <p>Your authenticated NovaNuke administration session is active.</p>
+    <div class="dashboard-grid">
+        <article><strong>Core</strong><span>Running</span></article>
+        <article><strong>Account</strong><span>Super Administrator</span></article>
+        <article><strong>Next</strong><span>Permissions and recovery</span></article>
+    </div>
+    <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+</section>
+{% endblock %}

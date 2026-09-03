@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace NovaNuke\Core;
 
+use NovaNuke\Auth\AuthManager;
+use NovaNuke\Auth\LoginThrottle;
 use NovaNuke\Core\Config\ConfigLoader;
 use NovaNuke\Core\Config\ConfigRepository;
 use NovaNuke\Core\Container\Container;
@@ -49,6 +51,13 @@ final class Application
             $c->get(SessionManager::class),
         ));
         $container->bind(PDO::class, static fn () => (new ConnectionFactory($config))->create());
+        $container->bind(AuthManager::class, static fn (Container $c) => new AuthManager(
+            $c->get(PDO::class),
+            $c->get(SessionManager::class),
+        ));
+        $container->bind(LoginThrottle::class, static fn (Container $c) => new LoginThrottle(
+            $c->get(SessionManager::class),
+        ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
             $rootPath . '/storage/cache/twig',
@@ -91,5 +100,7 @@ final class Application
         }
 
         require $this->rootPath . '/routes/web.php';
+        require $this->rootPath . '/routes/auth.php';
+        require $this->rootPath . '/routes/admin.php';
     }
 }
