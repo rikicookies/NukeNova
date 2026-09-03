@@ -1,0 +1,32 @@
+:root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: #080b12;
+    color: #e8edf7;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; min-height: 100vh; }
+
+.site-header {
+    border-bottom: 1px solid #222a3a;
+    padding: 1rem clamp(1rem, 5vw, 5rem);
+}
+
+.brand { color: #8be9fd; font-weight: 800; text-decoration: none; }
+
+.page-shell { display: grid; min-height: 75vh; place-items: center; padding: 2rem; }
+
+.welcome-card {
+    max-width: 720px;
+    padding: clamp(2rem, 6vw, 5rem);
+    border: 1px solid #2a3448;
+    border-radius: 1.25rem;
+    background: linear-gradient(145deg, #111827, #0b1020);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 35%);
+}
+
+.welcome-card h1 { margin: .3rem 0 1rem; font-size: clamp(2rem, 6vw, 4rem); line-height: 1; }
+.welcome-card p { color: #aeb9cc; line-height: 1.7; }
+.eyebrow { color: #8be9fd !important; font-size: .8rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
