@@ -8,6 +8,7 @@ use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\View\ViewRenderer;
 use RuntimeException;
+use NovaNuke\Core\I18n\Translator;
 
 final class ThemeManager
 {
@@ -18,6 +19,7 @@ final class ThemeManager
         private readonly SettingsRepository $settings,
         private readonly ViewRenderer $views,
         private readonly EventDispatcher $events,
+        private readonly Translator $translator,
         private readonly string $cmsVersion,
     ) {
     }
@@ -147,6 +149,7 @@ final class ThemeManager
             return;
         }
 
+        $this->translator->addNamespace('theme', $manifest->path . '/language');
         $this->views->prependPath($manifest->path);
         if (is_dir($manifest->path . '/templates')) {
             $this->views->prependPath($manifest->path . '/templates');

@@ -1,4 +1,5 @@
 /.env
+/.env.testing
 /vendor/
 /.phpunit.cache/
 /storage/cache/*
@@ -15,3 +16,6 @@
 !/storage/private/backups/
 /storage/private/backups/*
 !/storage/private/backups/.gitkeep
+!/storage/private/avatars/
+/storage/private/avatars/*
+!/storage/private/avatars/.gitkeep

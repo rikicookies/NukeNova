@@ -12,6 +12,7 @@
         "ext-pdo": "*",
         "ext-pdo_mysql": "*",
         "php": "^8.3",
+        "league/commonmark": "^2.6",
         "phpmailer/phpmailer": "^6.10",
         "twig/twig": "^3.10",
         "vlucas/phpdotenv": "^5.6"
@@ -35,7 +36,14 @@
     },
     "scripts": {
         "migrate": "php bin/cms migrate",
-        "test": "phpunit",
+        "release-check": "php bin/cms release:check",
+        "test": "phpunit --testsuite Unit",
+        "test:unit": "phpunit --testsuite Unit",
+        "test:integration": "@php tests/run-integration.php",
+        "test:all": [
+            "@test:unit",
+            "@test:integration"
+        ],
         "serve": "php -S 127.0.0.1:8080 -t public"
     },
     "config": {

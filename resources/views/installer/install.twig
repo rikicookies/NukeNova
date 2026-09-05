@@ -39,7 +39,7 @@
         <div class="form-grid">
             <label class="wide">Site name<input name="site_name" value="{{ old.site_name }}" required maxlength="100"></label>
             <label class="wide">Site URL<input type="url" name="site_url" value="{{ old.site_url }}" required></label>
-            <label>Language<select name="locale"><option value="en" {% if old.locale == 'en' %}selected{% endif %}>English</option><option value="es" {% if old.locale == 'es' %}selected{% endif %}>Español</option></select></label>
+            <label>Language<select name="locale">{% for code, label in cms_locales %}<option value="{{ code }}" {% if old.locale == code %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
             <label>Timezone<select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}" {% if old.timezone == timezone %}selected{% endif %}>{{ timezone }}</option>{% endfor %}</select></label>
         </div>
     </section>

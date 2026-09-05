@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en" style="--classic-accent: {{ theme.settings.accent_color }}">
+<html lang="{{ cms_locale|default('en') }}" style="--classic-accent: {{ theme.settings.accent_color }}">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
-    <link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="{{ theme.asset_base }}/css/classic.css">{% if news_rss_url|default(null) %}<link rel="alternate" type="application/rss+xml" title="{{ cms_name|default('NovaNuke') }} News" href="{{ news_rss_url }}">{% endif %}{% block meta %}{% endblock %}
+    <link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="{{ theme.asset_base }}/css/classic.css">{% if news_rss_url|default(null) %}<link rel="alternate" type="application/rss+xml" title="{{ cms_name|default('NovaNuke') }} News" href="{{ news_rss_url }}">{% endif %}{% block meta %}{% if cms_description|default('') %}<meta name="description" content="{{ cms_description }}">{% endif %}{% endblock %}
 </head>
 <body class="classic-theme">
     {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
+use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Security\SessionManager;
 use PDO;
 
@@ -15,6 +16,7 @@ final class AuthManager
     public function __construct(
         private readonly PDO $database,
         private readonly SessionManager $session,
+        private readonly EventDispatcher $events,
     ) {
     }
 
@@ -46,6 +48,7 @@ final class AuthManager
         $this->session->put(self::USER_KEY, (int) $user['id']);
         $this->session->put(self::VERSION_KEY, (int) $user['auth_version']);
         $this->recordLogin((int) $user['id'], $ip, $userAgent);
+        $this->dispatchSafely('user.logged_in', new UserLoggedIn((int) $user['id']));
         unset($user['password_hash']);
 
         return $user;
@@ -109,6 +112,15 @@ final class AuthManager
                 $this->database->rollBack();
             }
             throw $error;
+        }
+    }
+
+    private function dispatchSafely(string $name, object $event): void
+    {
+        try {
+            $this->events->dispatch($name, $event);
+        } catch (\Throwable $error) {
+            error_log("A {$name} listener failed: " . $error->getMessage());
         }
     }
 }

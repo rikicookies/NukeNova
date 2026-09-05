@@ -8,7 +8,8 @@ use PDO;use RuntimeException;
 
 final class WebLinkRepository
 {
-    public function __construct(private readonly PDO $database){}
+    private readonly int $perPage;
+    public function __construct(private readonly PDO $database,int $perPage=10){$this->perPage=max(5,min(100,$perPage));}
     public function categories():array{return$this->database->query('SELECT * FROM web_link_categories ORDER BY name')->fetchAll();}
     public function adminLinks():array{return$this->database->query("SELECT l.id,l.title,l.slug,l.status,l.is_featured,l.visit_count,l.updated_at,c.name AS category_name,COALESCE(u.username,'Administrator') AS submitter FROM web_links l LEFT JOIN web_link_categories c ON c.id=l.category_id LEFT JOIN users u ON u.id=l.submitted_by WHERE l.deleted_at IS NULL ORDER BY FIELD(l.status,'pending','published','rejected'),l.updated_at DESC")->fetchAll();}
     public function find(int $id):?array{$s=$this->database->prepare('SELECT * FROM web_links WHERE id=:id AND deleted_at IS NULL');$s->execute(compact('id'));$row=$s->fetch();return is_array($row)?$row:null;}
@@ -16,7 +17,7 @@ final class WebLinkRepository
     public function catalog(int $page,?string $category,string $search,string $order):array
     {
         $where="l.status='published' AND l.deleted_at IS NULL";$params=[];if($category!==null){$where.=' AND c.slug=:category';$params['category']=$category;}if($search!==''){$where.=" AND (l.title LIKE :title ESCAPE '=' OR l.description LIKE :description ESCAPE '=')";$term='%'.strtr($search,['='=>'==','%'=>'=%','_'=>'=_']).'%';$params+=['title'=>$term,'description'=>$term];}
-        $count=$this->database->prepare("SELECT COUNT(*) FROM web_links l LEFT JOIN web_link_categories c ON c.id=l.category_id WHERE {$where}");$count->execute($params);$total=(int)$count->fetchColumn();$per=12;$pages=max(1,(int)ceil($total/$per));$page=min(max(1,$page),$pages);$orders=['new'=>'l.is_featured DESC,l.created_at DESC,l.id DESC','popular'=>'l.is_featured DESC,l.visit_count DESC,l.id DESC','title'=>'l.is_featured DESC,l.title,l.id'];
+        $count=$this->database->prepare("SELECT COUNT(*) FROM web_links l LEFT JOIN web_link_categories c ON c.id=l.category_id WHERE {$where}");$count->execute($params);$total=(int)$count->fetchColumn();$per=$this->perPage;$pages=max(1,(int)ceil($total/$per));$page=min(max(1,$page),$pages);$orders=['new'=>'l.is_featured DESC,l.created_at DESC,l.id DESC','popular'=>'l.is_featured DESC,l.visit_count DESC,l.id DESC','title'=>'l.is_featured DESC,l.title,l.id'];
         $s=$this->database->prepare("SELECT l.id,l.title,l.slug,l.description,l.image_path,l.is_featured,l.visit_count,l.created_at,c.name AS category_name,c.slug AS category_slug FROM web_links l LEFT JOIN web_link_categories c ON c.id=l.category_id WHERE {$where} ORDER BY ".($orders[$order]??$orders['new']).' LIMIT :limit OFFSET :offset');foreach($params as $k=>$v)$s->bindValue(':'.$k,$v);$s->bindValue(':limit',$per,PDO::PARAM_INT);$s->bindValue(':offset',($page-1)*$per,PDO::PARAM_INT);$s->execute();return['items'=>$s->fetchAll(),'page'=>$page,'pages'=>$pages,'total'=>$total];
     }
     public function save(?int $id,array $data,?int $submitter):int

@@ -39,7 +39,11 @@ final class PublicSearchController
         if ($term !== '') {
             try {
                 $user = $this->auth->user();
-                $result = (new SearchService($registry, new SafeHighlighter()))->search($term, $type, (int) $page, $user ? (int) $user['id'] : null);
+                $result = (new SearchService(
+                    $registry,
+                    new SafeHighlighter(),
+                    $this->settings->integer('site.per_page', 10, 5, 100),
+                ))->search($term, $type, (int) $page, $user ? (int) $user['id'] : null);
                 if ((int) $page === 1 && $this->settings->boolean('search.log_terms', false)) {
                     $this->repository->record(mb_strtolower($term, 'UTF-8'));
                 }

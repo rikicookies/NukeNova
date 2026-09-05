@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace NovaNuke\Installer;
 
+use NovaNuke\Core\I18n\LocaleRegistry;
+
 final class InstallationValidator
 {
+    public function __construct(private readonly ?LocaleRegistry $locales = null) {}
+    /** @return array<string,string> */ public function availableLocales():array{return$this->locales?->all()??['en'=>'English','es'=>'Español'];}
     /** @param array<string, mixed> $input
      *  @return array<string, string>
      */
@@ -22,8 +26,8 @@ final class InstallationValidator
             $errors['site_url'] = 'Enter a valid site URL including http:// or https://.';
         }
 
-        if (! in_array($input['locale'] ?? null, ['en', 'es'], true)) {
-            $errors['locale'] = 'Select English or Spanish.';
+        if (! ($this->locales?->supports((string)($input['locale']??'')) ?? in_array($input['locale'] ?? null, ['en', 'es'], true))) {
+            $errors['locale'] = 'Select an available language.';
         }
 
         if (! in_array($input['timezone'] ?? null, timezone_identifiers_list(), true)) {

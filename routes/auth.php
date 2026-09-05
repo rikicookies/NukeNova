@@ -23,7 +23,7 @@ $authController = static fn (Container $container): AuthController => new AuthCo
 );
 
 $router->get('/login', static fn (Request $request, Container $container): Response =>
-    $authController($container)->showLogin()
+    $authController($container)->showLogin($request)
 );
 $router->post('/login', static fn (Request $request, Container $container): Response =>
     $authController($container)->login($request)

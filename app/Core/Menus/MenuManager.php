@@ -95,8 +95,8 @@ final class MenuManager
         }
         $viewerRoles = $this->viewerRoles();
         $menus = [];
-        foreach ($this->repository->enabled() as $menu) {
-            $available = $this->repository->items((int) $menu['id']);
+        foreach ($this->repository->enabledWithItems() as $menu) {
+            $available = $menu['items'];
             foreach ($available as &$item) {
                 $itemPath = (string) parse_url((string) $item['url'], PHP_URL_PATH);
                 $item['active'] = $item['link_type'] !== 'external' && $itemPath !== '' && $itemPath === $path;

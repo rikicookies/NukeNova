@@ -11,7 +11,7 @@
     {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
     {% if result %}
         <p>{{ result.total }} result{{ result.total == 1 ? '' : 's' }}.</p>
-        <div class="search-results">{% for item in result.items %}<article class="search-result"><small>{{ item.type|title }} · {{ item.published_at }}</small><h2><a href="{{ item.url }}">{{ item.title_html }}</a></h2><p>{{ item.excerpt_html }}</p></article>{% else %}<p>No content matched your search.</p>{% endfor %}</div>
+        <div class="search-results">{% for item in result.items %}<article class="search-result"><small>{{ item.type|title }} · {{ item.published_at|date(cms_date_format, cms_timezone) }}</small><h2><a href="{{ item.url }}">{{ item.title_html }}</a></h2><p>{{ item.excerpt_html }}</p></article>{% else %}<p>No content matched your search.</p>{% endfor %}</div>
         {% if result.pages > 1 %}<nav class="pagination" aria-label="Search result pages">{% for page in 1..result.pages %}<a class="{{ page == result.page ? 'current' : '' }}" href="/search?q={{ term|url_encode }}&type={{ selected_type|url_encode }}&page={{ page }}">{{ page }}</a>{% endfor %}</nav>{% endif %}
     {% elseif not error %}<p>Enter at least two characters to search the content provided by active modules.</p>{% endif %}
 </section>

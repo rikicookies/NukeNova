@@ -20,6 +20,7 @@ final class BlockManager
         private readonly PDO $database,
         private readonly BlockRepository $repository,
         private readonly HtmlSanitizer $sanitizer,
+        private readonly MarkdownRenderer $markdown,
         private readonly BlockVisibility $visibility,
         private readonly AuthManager $auth,
         private readonly ViewRenderer $views,
@@ -80,15 +81,24 @@ final class BlockManager
 
         $existing = $id === null ? null : $this->repository->find((int) $id);
         if ($id !== null && $existing === null) throw new RuntimeException('Block not found.');
-        $type = (string) ($existing['type'] ?? 'html');
+        $existingType = (string) ($existing['type'] ?? 'html');
+        $editable = in_array($existingType, ['html', 'markdown'], true);
+        $type = $editable ? (string) ($input['content_format'] ?? $existingType) : $existingType;
+        if ($editable && ! in_array($type, ['html', 'markdown'], true)) {
+            throw new RuntimeException('Invalid block content format.');
+        }
+        $content = (string) ($input['content'] ?? '');
+        if ($editable && mb_strlen($content) > 100000) {
+            throw new RuntimeException('Block content must not exceed 100,000 characters.');
+        }
 
         return $this->repository->save($id, [
             'title' => $title,
             'slug' => $slug,
             'type' => $type,
             'position' => $position,
-            'content' => $type === 'html' ? $this->sanitizer->sanitize((string) ($input['content'] ?? '')) : ($existing['content'] ?? null),
-            'configuration' => json_encode($type === 'html' ? [] : ($existing['configuration'] ?? []), JSON_THROW_ON_ERROR),
+            'content' => $type === 'html' ? $this->sanitizer->sanitize($content) : ($type === 'markdown' ? $content : ($existing['content'] ?? null)),
+            'configuration' => json_encode($editable ? [] : ($existing['configuration'] ?? []), JSON_THROW_ON_ERROR),
             'visibility_mode' => $mode,
             'page_patterns' => json_encode($patterns, JSON_THROW_ON_ERROR),
             'module_slugs' => json_encode($modules, JSON_THROW_ON_ERROR),
@@ -136,7 +146,9 @@ final class BlockManager
                 continue;
             }
             $html = (string) $block['content'];
-            if ($block['type'] !== 'html') {
+            if ($block['type'] === 'markdown') {
+                $html = $this->markdown->render($html);
+            } elseif ($block['type'] !== 'html') {
                 $rendering = new BlockRendering($block);
                 $this->events->dispatch('block.rendering', $rendering);
                 if ($rendering->html === null) continue;

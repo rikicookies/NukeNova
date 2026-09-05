@@ -29,6 +29,15 @@ final class MenuRepository
         return $this->database->query('SELECT * FROM menus WHERE enabled=1 ORDER BY id')->fetchAll();
     }
 
+    /** @return list<array<string,mixed>> */
+    public function enabledWithItems():array
+    {
+        $menus=$this->enabled();if($menus===[])return[];
+        $items=$this->database->query('SELECT i.* FROM menu_items i INNER JOIN menus m ON m.id=i.menu_id WHERE m.enabled=1 ORDER BY i.menu_id,i.sort_order,i.id')->fetchAll();
+        $roles=$this->database->query('SELECT mir.menu_item_id,r.slug FROM menu_item_roles mir INNER JOIN roles r ON r.id=mir.role_id INNER JOIN menu_items i ON i.id=mir.menu_item_id INNER JOIN menus m ON m.id=i.menu_id WHERE m.enabled=1 ORDER BY mir.menu_item_id,r.slug')->fetchAll();
+        $roleMap=[];foreach($roles as$row)$roleMap[(int)$row['menu_item_id']][]=(string)$row['slug'];$itemMap=[];foreach($items as$item){$item['role_slugs']=$roleMap[(int)$item['id']]??[];$itemMap[(int)$item['menu_id']][]=$item;}foreach($menus as&$menu)$menu['items']=$itemMap[(int)$menu['id']]??[];return$menus;
+    }
+
     /** @return list<array<string, mixed>> */
     public function items(int $menuId, bool $withRoleIds = false): array
     {

@@ -17,6 +17,8 @@ final class ModuleManifestTest extends TestCase
         self::assertSame('example', $manifest->slug);
         self::assertSame('1.2.3', $manifest->version);
         self::assertSame(['welcome' => '1.0.0'], $manifest->dependencies);
+        self::assertSame(['example.created'], $manifest->events);
+        self::assertSame('1.0', $manifest->apiVersion);
     }
 
     public function testItRejectsUnsafeSlugs(): void
@@ -37,6 +39,22 @@ final class ModuleManifestTest extends TestCase
         ModuleManifest::fromArray($data, '/modules/Example');
     }
 
+    public function testItRejectsUnsafeEventNames(): void
+    {
+        $data = $this->valid();
+        $data['events'] = ['../unsafe'];
+        $this->expectException(InvalidArgumentException::class);
+
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
+    public function testItRejectsInvalidApiVersions(): void
+    {
+        $data = $this->valid(); $data['api_version'] = '../1.0';
+        $this->expectException(InvalidArgumentException::class);
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
     /** @return array<string, mixed> */
     private function valid(): array
     {
@@ -49,6 +67,8 @@ final class ModuleManifestTest extends TestCase
             'php_min_version' => '8.3.0',
             'dependencies' => ['welcome' => '1.0.0'],
             'permissions' => ['example.view'],
+            'events' => ['example.created'],
+            'api_version' => '1.0',
         ];
     }
 }

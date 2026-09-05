@@ -10,7 +10,7 @@ final class AuthorizationAudit
 {
     private const CORE_PERMISSIONS = [
         'admin.access', 'users.view', 'users.manage', 'users.assign_roles', 'roles.view', 'roles.manage',
-        'settings.manage', 'logs.view', 'modules.manage', 'themes.manage', 'blocks.manage',
+        'settings.manage', 'logs.view', 'modules.manage', 'themes.manage', 'blocks.manage', 'menus.manage',
     ];
 
     public function __construct(private readonly PDO $database)
@@ -41,6 +41,17 @@ final class AuthorizationAudit
             . "OR p.slug LIKE 'logs.%' OR p.slug LIKE 'modules.%' OR p.slug LIKE 'themes.%' OR p.slug LIKE 'blocks.%')"
         )->fetchColumn();
 
+        $rolesMissingAdminAccess = (int) $this->database->query(
+            "SELECT COUNT(DISTINCT r.id) FROM roles r INNER JOIN role_permissions rp ON rp.role_id = r.id "
+            . "INNER JOIN permissions p ON p.id = rp.permission_id "
+            . "WHERE (p.slug LIKE '%.manage' OR p.slug LIKE '%.moderate' OR p.slug LIKE '%.publish' "
+            . "OR p.slug LIKE '%.edit' OR p.slug LIKE 'users.%' OR p.slug LIKE 'roles.%' "
+            . "OR p.slug LIKE 'settings.%' OR p.slug LIKE 'logs.%' OR p.slug LIKE 'modules.%' "
+            . "OR p.slug LIKE 'themes.%' OR p.slug LIKE 'blocks.%') "
+            . "AND NOT EXISTS (SELECT 1 FROM role_permissions arp INNER JOIN permissions ap ON ap.id = arp.permission_id "
+            . "WHERE arp.role_id = r.id AND ap.slug = 'admin.access')"
+        )->fetchColumn();
+
         return [
             [
                 'label' => 'Active Super Administrator',
@@ -58,6 +69,13 @@ final class AuthorizationAudit
                 'detail' => $publicAdminPermissions === 0
                     ? 'Guest and Member have no administrative permissions.'
                     : "{$publicAdminPermissions} dangerous assignment(s) found on Guest or Member.",
+            ],
+            [
+                'label' => 'Administrative role access',
+                'passed' => $rolesMissingAdminAccess === 0,
+                'detail' => $rolesMissingAdminAccess === 0
+                    ? 'Every role with administrative permissions can enter the administration panel.'
+                    : "{$rolesMissingAdminAccess} role(s) need the admin.access permission.",
             ],
         ];
     }

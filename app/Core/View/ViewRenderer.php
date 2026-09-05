@@ -6,13 +6,15 @@ namespace NovaNuke\Core\View;
 
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Twig\TwigFunction;
+use NovaNuke\Core\I18n\Translator;
 
 final class ViewRenderer
 {
     private readonly Environment $twig;
     private readonly FilesystemLoader $loader;
 
-    public function __construct(string $viewPath, string $cachePath, bool $debug)
+    public function __construct(string $viewPath, string $cachePath, bool $debug, ?Translator $translator = null)
     {
         $this->loader = new FilesystemLoader($viewPath);
         $this->twig = new Environment($this->loader, [
@@ -21,6 +23,12 @@ final class ViewRenderer
             'strict_variables' => $debug,
             'autoescape' => 'html',
         ]);
+        if ($translator !== null) {
+            $this->twig->addFunction(new TwigFunction(
+                'trans',
+                static fn (string $key, array $parameters = []): string => $translator->translate($key, $parameters),
+            ));
+        }
     }
 
     public function addNamespace(string $namespace, string $path): void

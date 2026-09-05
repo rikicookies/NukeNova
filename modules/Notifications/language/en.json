@@ -1,0 +1,10 @@
+{
+    "title": "Notifications",
+    "account": "Account",
+    "mark_all": "Mark all as read",
+    "mark_read": "Mark as read",
+    "open": "Open",
+    "empty": "You have no notifications.",
+    "nav": "Notifications",
+    "marked": "Marked {count} notification(s) as read."
+}

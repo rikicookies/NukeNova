@@ -5,15 +5,7 @@
     <p class="eyebrow">Production readiness</p>
     <h1>System information</h1>
     <p>This page deliberately omits credentials, tokens, paths and detailed server errors.</p>
-    {% if saved %}<div class="alert alert-success">System settings saved.</div>{% endif %}
-
-    <form method="post" action="/admin/system" class="settings-form">
-        <input type="hidden" name="_token" value="{{ csrf_token }}">
-        <input type="hidden" name="maintenance" value="0">
-        <label><input type="checkbox" name="maintenance" value="1"{% if maintenance %} checked{% endif %}> Maintenance mode</label>
-        <p>Visitors receive a temporary 503 page. Administrative routes and signed-in Super Administrators remain available.</p>
-        <button type="submit">Save system settings</button>
-    </form>
+    <p>Maintenance mode and public site preferences are managed under <a href="/admin/settings">General settings</a>.</p>
 
     {% if system.warnings %}
         <div class="alert alert-error"><strong>Review before production:</strong><ul>{% for warning in system.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>
@@ -33,6 +25,9 @@
         <article><strong>Mail transport</strong><span>{{ system.mail_transport }}</span></article>
         <article><strong>SMTP configuration</strong><span>{{ system.smtp_configured ? 'Valid' : 'Not active' }}</span></article>
         <article><strong>Modules</strong><span>{{ system.modules_enabled }} enabled / {{ system.modules_total }} detected</span></article>
+        <article><strong>Pending migrations</strong><span>{{ system.migrations.pending_total }}</span></article>
+        <article><strong>Missing migration files</strong><span>{{ system.migrations.missing_total }}</span></article>
+        <article><strong>Module updates</strong><span>{{ system.migrations.module_updates_total }}</span></article>
     </div>
 
     <h2>Required PHP extensions</h2>
@@ -41,6 +36,17 @@
     <ul>{% for name, available in system.writable %}<li>{{ name }}: {{ available ? 'writable' : 'not writable' }}</li>{% endfor %}</ul>
     <h2>Authorization audit</h2>
     <ul>{% for check in system.authorization_audit %}<li><strong>{{ check.passed ? 'PASS' : 'FAIL' }} — {{ check.label }}</strong>: {{ check.detail }}</li>{% endfor %}</ul>
+    <h2>Database migrations</h2>
+    <p>Core: {{ system.migrations.core.executed }} / {{ system.migrations.core.total }} executed.</p>
+    {% if system.migrations.core.pending %}<p><strong>Pending core:</strong> {{ system.migrations.core.pending|join(', ') }}</p>{% endif %}
+    {% if system.migrations.core.missing_files %}<p><strong>Missing core files:</strong> {{ system.migrations.core.missing_files|join(', ') }}</p>{% endif %}
+    <ul>
+        {% for slug, module in system.migrations.modules %}
+            <li><strong>{{ module.name }}</strong>: {{ module.executed }} / {{ module.total }} executed{% if module.update_available %}; update {{ module.installed_version }} → {{ module.available_version }} available{% endif %}{% if module.pending %}; pending: {{ module.pending|join(', ') }}{% endif %}{% if module.missing_files %}; missing: {{ module.missing_files|join(', ') }}{% endif %}</li>
+        {% else %}
+            <li>No installed modules.</li>
+        {% endfor %}
+    </ul>
     <p><a href="/admin">Back to dashboard</a></p>
 </section>
 {% endblock %}

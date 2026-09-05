@@ -28,4 +28,12 @@ final class SearchRepository
         $statement->execute();
         return $statement->fetchAll();
     }
+
+    public function prune(bool $dryRun): int
+    {
+        $where = 'last_searched_at<DATE_SUB(UTC_TIMESTAMP(),INTERVAL 365 DAY)';
+        return $dryRun
+            ? (int) $this->database->query("SELECT COUNT(*) FROM search_queries WHERE {$where}")->fetchColumn()
+            : (int) $this->database->exec("DELETE FROM search_queries WHERE {$where}");
+    }
 }

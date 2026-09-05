@@ -38,6 +38,18 @@ final class SmtpMailer implements Mailer
         );
     }
 
+    public function sendEmailChangeVerification(string $recipient, string $verificationUrl, int $expiresInMinutes): void
+    {
+        $this->send(
+            $recipient,
+            'Confirm your new NovaNuke email',
+            'Confirm email change',
+            "Open the link below within {$expiresInMinutes} minutes to make this your account email address.",
+            $verificationUrl,
+            'If you did not request this change, ignore this message and your current address will remain active.',
+        );
+    }
+
     private function send(string $recipient, string $subject, string $heading, string $intro, string $url, string $footer): void
     {
         if (! filter_var($recipient, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('The recipient email address is invalid.');

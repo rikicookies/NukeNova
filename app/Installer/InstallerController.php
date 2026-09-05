@@ -9,6 +9,7 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
 use Throwable;
+use NovaNuke\Core\Logging\SensitiveDataRedactor;
 
 final class InstallerController
 {
@@ -88,7 +89,7 @@ final class InstallerController
                 gmdate('c'),
                 $reference,
                 $error::class,
-                str_replace(["\r", "\n"], ' ', $error->getMessage()),
+                (new SensitiveDataRedactor())->redact($error->getMessage()),
                 PHP_EOL,
             ), 3, $this->rootPath . '/storage/logs/novanuke.log');
 

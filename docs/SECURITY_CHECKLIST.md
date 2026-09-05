@@ -7,6 +7,7 @@
 - [ ] `SESSION_SECURE=true`; session cookies remain HTTP-only and SameSite.
 - [ ] Security headers are enabled; HSTS is enabled only after HTTPS validation.
 - [ ] `.env`, backups, private downloads and logs cannot be requested over HTTP.
+- [ ] Avatar uploads reject invalid MIME, dimensions, size and generated-name traversal attempts.
 - [ ] Database credentials use the minimum privileges required by NovaNuke.
 - [ ] The first administrator uses a unique password and unused accounts are suspended.
 - [ ] Administrative permissions are reviewed role by role.
@@ -15,6 +16,9 @@
 - [ ] Database and file backups are encrypted, off-server and restore-tested.
 - [ ] Detailed PHP errors are disabled at the server level as well as in NovaNuke.
 - [ ] `/admin/system` contains no unresolved production warnings.
-- [ ] The authorization audit reports an active Super Administrator, complete core permissions and no administrative grants on Guest or Member.
+- [ ] `php bin/cms security:audit` reports an active Super Administrator, a complete core catalogue, no administrative grants on Guest or Member and no administrative role missing `admin.access`.
 - [ ] Maintenance mode was tested without losing login, recovery or administrative access.
 - [ ] Generated caches were cleared after deployment.
+- [ ] `php bin/cms migrate:status` reports zero pending migrations, zero missing files and zero module updates.
+- [ ] `composer test` and `php bin/cms release:check` both pass on the target PHP version.
+- [ ] Production and debug logs redact credential/token patterns.

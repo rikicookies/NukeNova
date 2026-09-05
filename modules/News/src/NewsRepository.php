@@ -9,8 +9,11 @@ use RuntimeException;
 
 final class NewsRepository
 {
-    public function __construct(private readonly PDO $database)
+    private readonly int $perPage;
+
+    public function __construct(private readonly PDO $database, int $perPage = 10)
     {
+        $this->perPage = max(5, min(100, $perPage));
     }
 
     public function categories(): array { return $this->database->query('SELECT * FROM news_categories ORDER BY name')->fetchAll(); }
@@ -75,6 +78,13 @@ final class NewsRepository
         if ($statement->rowCount() !== 1) throw new RuntimeException('News article not found.');
     }
 
+    public function mediaUsage(string $publicPath): int
+    {
+        $statement = $this->database->prepare('SELECT COUNT(*) FROM news_articles WHERE featured_image=:path');
+        $statement->execute(['path' => $publicPath]);
+        return (int) $statement->fetchColumn();
+    }
+
     public function saveTaxonomy(string $type, array $data): int
     {
         $table = $type === 'category' ? 'news_categories' : ($type === 'topic' ? 'news_topics' : null);
@@ -100,7 +110,7 @@ final class NewsRepository
         $count = $this->database->prepare("SELECT COUNT(*) FROM news_articles a LEFT JOIN news_categories c ON c.id=a.category_id WHERE {$where}");
         $count->execute($parameters);
         $total = (int) $count->fetchColumn();
-        $perPage = 10;
+        $perPage = $this->perPage;
         $pages = max(1, (int) ceil($total / $perPage));
         $page = min(max(1, $page), $pages);
         $sql = "SELECT a.id,a.title,a.slug,a.summary,a.featured_image,a.is_featured,a.published_at,a.view_count,u.username,c.name AS category_name,c.slug AS category_slug,t.name AS topic_name "
@@ -135,6 +145,15 @@ final class NewsRepository
             . "FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id "
             . "WHERE a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') "
             . 'ORDER BY a.published_at DESC,a.id DESC LIMIT 20'
+        )->fetchAll();
+    }
+
+    /** @return array<int,array{slug:string,updated_at:string}> */
+    public function sitemapEntries(): array
+    {
+        return $this->database->query(
+            "SELECT slug,updated_at FROM news_articles WHERE deleted_at IS NULL AND published_at<=UTC_TIMESTAMP() "
+            . "AND status IN ('published','scheduled') ORDER BY id"
         )->fetchAll();
     }
 

@@ -38,6 +38,17 @@ final class LogMailer implements Mailer
         );
     }
 
+    public function sendEmailChangeVerification(string $recipient, string $verificationUrl, int $expiresInMinutes): void
+    {
+        $this->write(
+            $recipient,
+            'Confirm your new NovaNuke email',
+            $verificationUrl,
+            $expiresInMinutes,
+            'If you did not request this email change, ignore this message and your current address will remain active.',
+        );
+    }
+
     private function singleLine(string $value): string
     {
         return str_replace(["\r", "\n"], '', $value);

@@ -10,6 +10,7 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
+use NovaNuke\Core\Maintenance\MaintenancePruning;
 use NovaNuke\Core\View\ViewRenderer;
 
 final class SearchModule implements ModuleInterface
@@ -24,6 +25,11 @@ final class SearchModule implements ModuleInterface
     {
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Search', '/admin/search', 'search.manage');
+        });
+        $context->events->listen('maintenance.pruning', static function (object $event) use ($context): void {
+            if ($event instanceof MaintenancePruning) {
+                $event->add('search.queries', $context->container->get(SearchRepository::class)->prune($event->dryRun));
+            }
         });
         $public = static fn (Container $c) => new PublicSearchController(
             $c->get(\NovaNuke\Core\Events\EventDispatcher::class), $c->get(SearchRepository::class),

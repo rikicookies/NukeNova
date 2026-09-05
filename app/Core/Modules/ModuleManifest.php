@@ -10,6 +10,7 @@ final readonly class ModuleManifest
 {
     /** @param array<string, string> $dependencies
      *  @param list<string> $permissions
+     *  @param list<string> $events
      */
     public function __construct(
         public string $name,
@@ -22,6 +23,8 @@ final readonly class ModuleManifest
         public string $phpMinVersion,
         public array $dependencies,
         public array $permissions,
+        public array $events,
+        public string $apiVersion,
         public string $path,
     ) {
     }
@@ -42,8 +45,9 @@ final readonly class ModuleManifest
         }
         $dependencies = $data['dependencies'] ?? [];
         $permissions = $data['permissions'] ?? [];
-        if (! is_array($dependencies) || ! is_array($permissions)) {
-            throw new InvalidArgumentException('Module dependencies and permissions must be arrays.');
+        $events = $data['events'] ?? [];
+        if (! is_array($dependencies) || ! is_array($permissions) || ! is_array($events)) {
+            throw new InvalidArgumentException('Module dependencies, permissions and events must be arrays.');
         }
         if (! preg_match('/^Modules\\\\[A-Za-z][A-Za-z0-9_\\\\]+$/', $data['provider'])) {
             throw new InvalidArgumentException('Module provider must use the Modules namespace.');
@@ -64,6 +68,13 @@ final readonly class ModuleManifest
                 throw new InvalidArgumentException('Module permissions must be strings.');
             }
         }
+        foreach ($events as $event) {
+            if (! is_string($event) || ! preg_match('/^[a-z][a-z0-9.-]{1,119}$/', $event)) {
+                throw new InvalidArgumentException('Invalid module event name.');
+            }
+        }
+        $apiVersion=(string)($data['api_version']??'1.0');
+        if(!preg_match('/^\d+\.\d+$/',$apiVersion))throw new InvalidArgumentException('Module API version must use major.minor format.');
 
         return new self(
             trim($data['name']),
@@ -76,6 +87,8 @@ final readonly class ModuleManifest
             $data['php_min_version'],
             array_map('strval', $dependencies),
             array_values(array_map('strval', $permissions)),
+            array_values(array_unique(array_map('strval', $events))),
+            $apiVersion,
             $path,
         );
     }
@@ -94,6 +107,8 @@ final readonly class ModuleManifest
             'php_min_version' => $this->phpMinVersion,
             'dependencies' => $this->dependencies,
             'permissions' => $this->permissions,
+            'events' => $this->events,
+            'api_version' => $this->apiVersion,
         ];
     }
 }

@@ -10,6 +10,7 @@ use NovaNuke\Core\Http\Routing\Router;
 use PDO;
 use RuntimeException;
 use Throwable;
+use NovaNuke\Core\I18n\Translator;
 
 final class ModuleManager
 {
@@ -22,6 +23,7 @@ final class ModuleManager
         private readonly Container $container,
         private readonly Router $router,
         private readonly EventDispatcher $events,
+        private readonly Translator $translator,
     ) {
     }
 
@@ -161,23 +163,26 @@ final class ModuleManager
             return;
         }
         $detected = $this->detector->detect();
-        $enabled = $this->repository->enabled();
+        $installed = $this->repository->all();
+        $enabled = array_filter($installed, static fn (array $module): bool => $module['enabled']);
         $pending = $enabled;
-        $booted = [];
+        $registered = [];
+        $lifecycles = [];
 
         while ($pending !== []) {
             $progress = false;
             foreach ($pending as $slug => $record) {
                 $manifest = $detected[$slug] ?? null;
                 if ($manifest !== null) {
-                    $unresolved = array_diff(array_keys($manifest->dependencies), array_keys($booted));
+                    $compatibility=$this->compatibility->check($manifest,$installed);
+                    if(!$compatibility->compatible){$this->repository->setError($slug,(string)$compatibility->reason);unset($pending[$slug]);$progress=true;continue;}
+                    $unresolved = array_diff(array_keys($manifest->dependencies), array_keys($registered));
                     if ($unresolved !== []) {
                         continue;
                     }
                 }
-                if ($this->bootOne($slug, $manifest)) {
-                    $booted[$slug] = true;
-                }
+                $lifecycle=$this->registerOne($slug,$manifest);
+                if($lifecycle!==null){$registered[$slug]=true;$lifecycles[$slug]=$lifecycle;}
                 unset($pending[$slug]);
                 $progress = true;
             }
@@ -188,15 +193,18 @@ final class ModuleManager
                 break;
             }
         }
+        foreach($lifecycles as$slug=>$lifecycle){try{$lifecycle['provider']->boot($lifecycle['context']);}catch(Throwable$error){$this->repository->setError($slug,$error->getMessage());error_log("Module {$slug} failed to boot: {$error->getMessage()}");}}
     }
 
-    private function bootOne(string $slug, ?ModuleManifest $manifest): bool
+    /** @return array{provider:ModuleInterface,context:ModuleContext}|null */
+    private function registerOne(string $slug, ?ModuleManifest $manifest): ?array
     {
         if ($manifest === null) {
             $this->repository->setError($slug, 'Module files are missing from disk.');
-            return false;
+            return null;
         }
         try {
+            $this->translator->addNamespace($slug, $manifest->path . '/language');
             $provider = $this->provider($manifest);
             $context = new ModuleContext(
                 $manifest,
@@ -206,12 +214,11 @@ final class ModuleManager
                 $manifest->path,
             );
             $provider->register($context);
-            $provider->boot($context);
-            return true;
+            return ['provider'=>$provider,'context'=>$context];
         } catch (Throwable $error) {
             $this->repository->setError($slug, $error->getMessage());
-            error_log("Module {$slug} failed to boot: {$error->getMessage()}");
-            return false;
+            error_log("Module {$slug} failed to register: {$error->getMessage()}");
+            return null;
         }
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
+use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Settings\SettingsRepository;
 use PDO;
@@ -19,6 +20,7 @@ final class RegistrationService
         private readonly PDO $database,
         private readonly SettingsRepository $settings,
         private readonly Mailer $mailer,
+        private readonly EventDispatcher $events,
         private readonly string $applicationUrl,
     ) {
     }
@@ -99,6 +101,7 @@ final class RegistrationService
             throw $error;
         }
 
+        $this->dispatchSafely('user.registered', new UserRegistered($userId, $verificationRequired));
         return $verificationRequired;
     }
 
@@ -132,12 +135,52 @@ final class RegistrationService
             $used->execute(['id' => $record['id']]);
             $this->database->commit();
 
-            return $user->rowCount() === 1;
+            $verified = $user->rowCount() === 1;
+            if ($verified) $this->dispatchSafely('user.email_verified', new UserEmailVerified((int) $record['user_id']));
+            return $verified;
         } catch (Throwable $error) {
             if ($this->database->inTransaction()) {
                 $this->database->rollBack();
             }
             throw $error;
+        }
+    }
+
+    public function resendVerification(string $email): void
+    {
+        $normalized = strtolower(trim($email));
+        $statement = $this->database->prepare(
+            "SELECT id FROM users WHERE email=:email AND status='pending_verification' AND deleted_at IS NULL LIMIT 1"
+        );
+        $statement->execute(['email' => $normalized]);
+        $userId = $statement->fetchColumn();
+        if ($userId === false) return;
+
+        $token = ResetToken::generate();
+        $this->database->beginTransaction();
+        try {
+            $this->database->prepare('DELETE FROM email_verification_tokens WHERE user_id=:id')->execute(['id' => $userId]);
+            $insert = $this->database->prepare(
+                'INSERT INTO email_verification_tokens (user_id,token_hash,expires_at,created_at) '
+                . 'VALUES (:id,:hash,DATE_ADD(UTC_TIMESTAMP(),INTERVAL 1440 MINUTE),UTC_TIMESTAMP())'
+            );
+            $insert->execute(['id' => $userId, 'hash' => ResetToken::hash($token)]);
+            $this->database->commit();
+        } catch (Throwable $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            throw $error;
+        }
+
+        $url = rtrim($this->applicationUrl, '/') . '/verify-email/' . rawurlencode($token);
+        $this->mailer->sendEmailVerification($normalized, $url, self::VERIFICATION_MINUTES);
+    }
+
+    private function dispatchSafely(string $name, object $event): void
+    {
+        try {
+            $this->events->dispatch($name, $event);
+        } catch (Throwable $error) {
+            error_log("A {$name} listener failed: " . $error->getMessage());
         }
     }
 }

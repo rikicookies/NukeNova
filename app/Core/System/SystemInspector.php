@@ -6,9 +6,11 @@ namespace NovaNuke\Core\System;
 
 use NovaNuke\Core\Application;
 use NovaNuke\Core\Config\ConfigRepository;
+use NovaNuke\Core\Database\MigrationStatus;
 use NovaNuke\Core\Modules\ModuleManager;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Mail\SmtpConfiguration;
+use NovaNuke\Core\Settings\SettingsRepository;
 
 final class SystemInspector
 {
@@ -17,6 +19,8 @@ final class SystemInspector
         private readonly ModuleManager $modules,
         private readonly string $rootPath,
         private readonly AuthorizationAudit $authorizationAudit,
+        private readonly SettingsRepository $settings,
+        private readonly MigrationStatus $migrations,
     ) {
     }
 
@@ -43,6 +47,8 @@ final class SystemInspector
         if ($environment !== 'production') $warnings[] = 'APP_ENV is not production.';
         if ($debug) $warnings[] = 'APP_DEBUG must be disabled in production.';
         if (strtolower((string) parse_url($url, PHP_URL_SCHEME)) !== 'https') $warnings[] = 'APP_URL does not use HTTPS.';
+        $publicUrl = $this->settings->string('site.url', $url);
+        if (rtrim($publicUrl, '/') !== rtrim($url, '/')) $warnings[] = 'The public site URL differs from APP_URL; update the deployment environment when the site address changes.';
         if (! (bool) $this->config->get('session.secure', false)) $warnings[] = 'SESSION_SECURE is disabled.';
         $appKey = (string) $this->config->get('app.key', '');
         if (! str_starts_with($appKey, 'base64:') || strlen($appKey) < 50) $warnings[] = 'APP_KEY is missing or does not have the expected generated format.';
@@ -67,6 +73,10 @@ final class SystemInspector
         }
         if (in_array(false, $extensions, true)) $warnings[] = 'One or more required PHP extensions are missing.';
         if (in_array(false, $writable, true)) $warnings[] = 'One or more storage directories are not writable.';
+        $migrationStatus = $this->migrations->inspect();
+        if ($migrationStatus['pending_total'] > 0) $warnings[] = 'Database migrations are pending.';
+        if ($migrationStatus['missing_total'] > 0) $warnings[] = 'Executed migration files are missing from this release.';
+        if ($migrationStatus['module_updates_total'] > 0) $warnings[] = 'Installed module updates are available.';
 
         return [
             'cms_version' => Application::VERSION,
@@ -85,6 +95,7 @@ final class SystemInspector
             'modules_enabled' => count(array_filter($inventory, static fn (array $module): bool => $module['enabled'])),
             'warnings' => $warnings,
             'authorization_audit' => $this->authorizationAudit->run(),
+            'migrations' => $migrationStatus,
         ];
     }
 }

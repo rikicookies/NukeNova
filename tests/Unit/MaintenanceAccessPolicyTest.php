@@ -20,7 +20,7 @@ final class MaintenanceAccessPolicyTest extends TestCase
     public function testItPreservesRecoveryAdministrationAndHealthRoutes(): void
     {
         $policy = new MaintenanceAccessPolicy();
-        foreach (['/login', '/logout', '/forgot-password', '/reset-password/token', '/admin', '/admin/system', '/health'] as $path) {
+        foreach (['/login', '/logout', '/forgot-password', '/reset-password/token', '/verify-email/token', '/resend-verification', '/admin', '/admin/settings', '/admin/system', '/health'] as $path) {
             self::assertFalse($policy->blocks($path, true, true, false), $path);
         }
     }

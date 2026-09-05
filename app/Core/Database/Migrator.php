@@ -61,12 +61,29 @@ final class Migrator
         return $completed;
     }
 
+    /** @return array{total:int,executed:int,pending:list<string>,missing_files:list<string>} */
+    public function status(string $directory): array
+    {
+        $executed = $this->repositoryAvailable()
+            ? $this->database->query('SELECT migration FROM migrations ORDER BY migration')->fetchAll(PDO::FETCH_COLUMN)
+            : [];
+
+        return (new MigrationFileSet())->compare($directory, array_map('strval', $executed));
+    }
+
     /** @return array<string, true> */
     private function executed(): array
     {
         $names = $this->database->query('SELECT migration FROM migrations')->fetchAll(PDO::FETCH_COLUMN);
 
         return array_fill_keys($names, true);
+    }
+
+    private function repositoryAvailable(): bool
+    {
+        return (int) $this->database->query(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'migrations'"
+        )->fetchColumn() === 1;
     }
 
     private function nextBatch(): int

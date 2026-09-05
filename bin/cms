@@ -4,10 +4,87 @@
 declare(strict_types=1);
 
 use NovaNuke\Core\Database\Migrator;
+use NovaNuke\Core\Database\MigrationStatus;
 use NovaNuke\Core\Backup\DatabaseBackup;
+use NovaNuke\Core\Backup\FileBackup;
+use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
-$application = require dirname(__DIR__) . '/bootstrap/app.php';
+use NovaNuke\Core\System\ReleaseChecklist;
+use NovaNuke\Core\System\ProductionReadiness;
+use NovaNuke\Core\Maintenance\DataPruner;
+use NovaNuke\Core\Security\AuthorizationAudit;
+use NovaNuke\Core\Version;
+use NovaNuke\Core\I18n\CatalogueAuditor;
 $command = $argv[1] ?? 'help';
+$rootPath = dirname(__DIR__);
+require_once $rootPath . '/vendor/autoload.php';
+
+if ($command === 'release:check') {
+    $checklist = new ReleaseChecklist($rootPath);
+    $checks = $checklist->run();
+    $passed = true;
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " release check\n\n");
+    foreach ($checks as $check) {
+        $passed = $passed && $check['passed'];
+        fwrite(STDOUT, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['name'] . ': ' . $check['detail'] . "\n");
+    }
+    exit($passed ? 0 : 1);
+}
+
+if ($command === 'i18n:check') {
+    $checks = (new CatalogueAuditor($rootPath))->run(); $passed = true;
+    foreach ($checks as $check) { $passed = $passed && $check['passed']; fwrite(STDOUT, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['label'] . ': ' . $check['detail'] . "\n"); }
+    exit($passed ? 0 : 1);
+}
+
+if ($command === 'cache:clear') {
+    try {
+        $removed = (new CacheManager($rootPath . '/storage/cache'))->clear();
+        fwrite(STDOUT, "Cache cleared: {$removed} item(s) removed.\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Cache clear failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'cache:status') {
+    $status = (new CacheManager($rootPath . '/storage/cache'))->status();
+    fwrite(STDOUT, 'Cache path: ' . ($status['path_exists'] ? 'available' : 'missing') . "\n");
+    fwrite(STDOUT, 'Writable: ' . ($status['writable'] ? 'yes' : 'no') . "\n");
+    fwrite(STDOUT, "Cached files: {$status['files']}\n");
+    exit($status['path_exists'] && $status['writable'] ? 0 : 1);
+}
+
+if ($command === 'backup:files') {
+    if (count($argv) !== 2) {
+        fwrite(STDERR, "Usage: php bin/cms backup:files\n");
+        exit(2);
+    }
+    try {
+        $result = (new FileBackup($rootPath, $rootPath . '/storage/private/backups'))->create();
+        fwrite(STDOUT, "File backup created: {$result['path']}\n");
+        fwrite(STDOUT, "Files: {$result['files']}; source bytes: {$result['bytes']}\n");
+        fwrite(STDOUT, "SHA-256: {$result['sha256']}\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "File backup failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'help') {
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n");
+    exit(0);
+}
+
+$application = require $rootPath . '/bootstrap/app.php';
+
+if ($command === 'production:check') {
+    $checks=$application->container()->get(ProductionReadiness::class)->run();$passed=true;
+    foreach($checks as$check){if($check['required'])$passed=$passed&&$check['passed'];$status=$check['passed']?'PASS':($check['required']?'FAIL':'WARN');fwrite($check['required']&&!$check['passed']?STDERR:STDOUT,"[{$status}] {$check['name']}: {$check['detail']}\n");}
+    exit($passed?0:1);
+}
 
 if ($command === 'migrate') {
     $completed = (new Migrator($application->container()->get(\PDO::class)))
@@ -24,6 +101,27 @@ if ($command === 'migrate') {
     exit(0);
 }
 
+if ($command === 'migrate:status') {
+    try {
+        $status = $application->container()->get(MigrationStatus::class)->inspect();
+        fwrite(STDOUT, 'Core: ' . $status['core']['executed'] . '/' . $status['core']['total'] . " migration(s) executed.\n");
+        foreach ($status['core']['pending'] as $name) fwrite(STDOUT, "  [PENDING] core.{$name}\n");
+        foreach ($status['core']['missing_files'] as $name) fwrite(STDOUT, "  [MISSING] core.{$name}\n");
+        foreach ($status['modules'] as $slug => $module) {
+            fwrite(STDOUT, "Module {$slug}: {$module['executed']}/{$module['total']} migration(s) executed");
+            if ($module['update_available']) fwrite(STDOUT, "; update {$module['installed_version']} -> {$module['available_version']} available");
+            fwrite(STDOUT, ".\n");
+            foreach ($module['pending'] as $name) fwrite(STDOUT, "  [PENDING] {$slug}.{$name}\n");
+            foreach ($module['missing_files'] as $name) fwrite(STDOUT, "  [MISSING] {$slug}.{$name}\n");
+        }
+        fwrite(STDOUT, "Pending: {$status['pending_total']}; missing files: {$status['missing_total']}; module updates: {$status['module_updates_total']}.\n");
+        exit($status['pending_total'] === 0 && $status['missing_total'] === 0 && $status['module_updates_total'] === 0 ? 0 : 1);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Migration status failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
 if ($command === 'backup:database') {
     try {
         $path = $application->container()->get(DatabaseBackup::class)->create();
@@ -36,23 +134,60 @@ if ($command === 'backup:database') {
     }
 }
 
-if ($command === 'cache:clear') {
+if ($command === 'downloads:orphans') {
+    $arguments = array_slice($argv, 2);
+    if (array_diff($arguments, ['--delete']) !== [] || count($arguments) !== count(array_unique($arguments))) {
+        fwrite(STDERR, "Usage: php bin/cms downloads:orphans [--delete]\n");
+        exit(2);
+    }
+    $delete = in_array('--delete', $arguments, true);
     try {
-        $removed = $application->container()->get(CacheManager::class)->clear();
-        fwrite(STDOUT, "Cache cleared: {$removed} item(s) removed.\n");
+        $result = $application->container()->get(DownloadOrphanCleaner::class)->run($delete);
+        fwrite(STDOUT, $delete ? "Download orphan cleanup completed:\n" : "Download orphan dry run:\n");
+        fwrite(STDOUT, "  Eligible: {$result['eligible']} file(s), {$result['bytes']} byte(s)\n");
+        fwrite(STDOUT, "  Recent and protected: {$result['recent']} file(s)\n");
+        if ($delete) fwrite(STDOUT, "  Removed: {$result['removed']} file(s)\n");
+        else fwrite(STDOUT, "Run with --delete to remove eligible files.\n");
         exit(0);
     } catch (Throwable $error) {
-        fwrite(STDERR, "Cache clear failed: {$error->getMessage()}\n");
+        fwrite(STDERR, "Download orphan check failed: {$error->getMessage()}\n");
         exit(1);
     }
 }
 
-if ($command === 'cache:status') {
-    $status = $application->container()->get(CacheManager::class)->status();
-    fwrite(STDOUT, 'Cache path: ' . ($status['path_exists'] ? 'available' : 'missing') . "\n");
-    fwrite(STDOUT, 'Writable: ' . ($status['writable'] ? 'yes' : 'no') . "\n");
-    fwrite(STDOUT, "Cached files: {$status['files']}\n");
-    exit($status['path_exists'] && $status['writable'] ? 0 : 1);
+if ($command === 'maintenance:prune') {
+    $arguments = array_slice($argv, 2);
+    if (array_diff($arguments, ['--dry-run']) !== [] || count($arguments) !== count(array_unique($arguments))) {
+        fwrite(STDERR, "Usage: php bin/cms maintenance:prune [--dry-run]\n");
+        exit(2);
+    }
+    $dryRun = in_array('--dry-run', $arguments, true);
+    try {
+        $results = $application->container()->get(DataPruner::class)->run($dryRun);
+        fwrite(STDOUT, $dryRun ? "Maintenance dry run:\n" : "Maintenance completed:\n");
+        foreach ($results as $name => $records) fwrite(STDOUT, "  {$name}: {$records}\n");
+        fwrite(STDOUT, 'Total: ' . array_sum($results) . ($dryRun ? " eligible record(s)\n" : " record(s) removed\n"));
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Maintenance failed: {$error->getMessage()}\n");
+        exit(1);
+    }
 }
 
-fwrite(STDOUT, "NovaNuke CLI\n\nAvailable commands:\n  migrate          Run pending database migrations\n  backup:database  Create a private SQL database backup\n  cache:clear      Remove generated cache files safely\n  cache:status     Inspect cache availability\n");
+if ($command === 'security:audit') {
+    try {
+        $checks = $application->container()->get(AuthorizationAudit::class)->run();
+        $passed = true;
+        foreach ($checks as $check) {
+            $passed = $passed && $check['passed'];
+            fwrite(STDOUT, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['label'] . ': ' . $check['detail'] . "\n");
+        }
+        exit($passed ? 0 : 1);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Security audit failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+fwrite(STDERR, "Unknown command: {$command}\nRun php bin/cms help for available commands.\n");
+exit(1);

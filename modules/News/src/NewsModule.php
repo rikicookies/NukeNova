@@ -16,13 +16,19 @@ use NovaNuke\Core\View\ViewRenderer;
 use Modules\Comments\src\CommentService;
 use Modules\Comments\src\CommentTargetChecking;
 use Modules\Search\src\SearchProvidersRegistering;
+use Modules\Seo\src\SitemapCollecting;
+use Modules\Media\src\MediaRepository;
+use Modules\Media\src\MediaUsageChecking;
 
 final class NewsModule implements ModuleInterface
 {
     public function register(ModuleContext $context): void
     {
         $context->container->get(ViewRenderer::class)->addNamespace('news', $context->basePath . '/views');
-        $context->container->bind(NewsRepository::class, static fn (Container $container) => new NewsRepository($container->get(\PDO::class)));
+        $context->container->bind(NewsRepository::class, static fn (Container $container) => new NewsRepository(
+            $container->get(\PDO::class),
+            $container->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
+        ));
         $context->container->bind(NewsInput::class, static fn () => new NewsInput(new HtmlSanitizer()));
         $context->container->get(ViewRenderer::class)->addGlobal('news_rss_url', '/news/rss.xml');
     }
@@ -32,8 +38,18 @@ final class NewsModule implements ModuleInterface
         $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
             if ($event instanceof SearchProvidersRegistering) $event->registry->add(new NewsSearchProvider($context->container->get(\PDO::class)));
         });
+        $context->events->listen('sitemap.collecting', static function (object $event) use ($context): void {
+            if (! $event instanceof SitemapCollecting) return;
+            $event->add('/news', null, 'daily', 0.9);
+            foreach ($context->container->get(NewsRepository::class)->sitemapEntries() as $article) {
+                $event->add('/news/' . $article['slug'], $article['updated_at'], 'weekly', 0.8);
+            }
+        });
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('News', '/admin/news', 'news.edit');
+        });
+        $context->events->listen('media.usage.checking', static function (object $event) use ($context): void {
+            if ($event instanceof MediaUsageChecking) $event->add('news.featured-image', $context->container->get(NewsRepository::class)->mediaUsage($event->publicPath));
         });
         $context->events->listen('comments.content.checking', static function (object $event) use ($context): void {
             if ($event instanceof CommentTargetChecking && $event->type === 'news'
@@ -53,6 +69,7 @@ final class NewsModule implements ModuleInterface
             $container->get(\NovaNuke\Core\Logging\ActivityLogger::class), $container->get(\NovaNuke\Core\Events\EventDispatcher::class),
             $container->get(\NovaNuke\Core\Security\CsrfTokenManager::class), $container->get(SessionManager::class),
             $container->get(ViewRenderer::class),
+            $container->has(MediaRepository::class) ? $container->get(MediaRepository::class) : null,
         );
         $rss = static fn (Container $container): RssController => new RssController(
             $container->get(NewsRepository::class), new RssFeedBuilder(),

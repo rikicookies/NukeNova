@@ -1,0 +1,14 @@
+{
+  "title": "Biblioteca multimedia",
+  "eyebrow": "Recursos de contenido",
+  "description": "Sube imágenes JPEG, PNG o WebP reutilizables. Tamaño máximo: 10 MB.",
+  "image": "Imagen",
+  "metadata_title": "Título",
+  "alt_text": "Texto alternativo",
+  "upload": "Subir imagen",
+  "public_path": "Ruta pública",
+  "save": "Guardar metadatos",
+  "confirm_delete": "Confirmar eliminación",
+  "delete": "Eliminar",
+  "empty": "Todavía no se han subido imágenes."
+}

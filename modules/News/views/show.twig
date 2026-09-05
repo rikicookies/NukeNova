@@ -1,13 +1,13 @@
 {% extends "layouts/default.twig" %}
-{% block title %}{{ article.seo_title|default(article.title, true) }} — NovaNuke{% endblock %}
-{% block meta %}{% if article.seo_description %}<meta name="description" content="{{ article.seo_description }}">{% endif %}{% endblock %}
+{% block title %}{{ article.seo_title|default(article.title, true) }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}{% set seo_title = article.seo_title|default(article.title, true) %}{% set seo_description = article.seo_description|default(article.summary, true) %}{% set canonical = cms_url ~ '/news/' ~ article.slug %}{% if seo_description %}<meta name="description" content="{{ seo_description }}">{% endif %}<link rel="canonical" href="{{ canonical }}"><meta property="og:type" content="article"><meta property="og:title" content="{{ seo_title }}"><meta property="og:url" content="{{ canonical }}">{% if seo_description %}<meta property="og:description" content="{{ seo_description }}">{% endif %}{% if article.featured_image %}<meta property="og:image" content="{{ cms_url ~ article.featured_image }}">{% endif %}<meta name="twitter:card" content="{{ article.featured_image ? 'summary_large_image' : 'summary' }}"><meta property="article:published_time" content="{{ article.published_at|date('c', 'UTC') }}"><meta property="article:modified_time" content="{{ article.updated_at|date('c', 'UTC') }}">{% endblock %}
 {% block content %}
 <article class="news-article">
     <header>
         {% if article.is_featured %}<span class="badge badge-active">Featured</span>{% endif %}
         <h1>{{ article.title }}</h1>
         <p>{{ article.summary|default('', true) }}</p>
-        <small>By {{ article.username }} · {{ article.published_at }} · {{ article.view_count }} views</small>
+        <small>By {{ article.username }} · {{ article.published_at|date(cms_date_format, cms_timezone) }} · {{ article.view_count }} views</small>
     </header>
     {% if article.featured_image %}<img src="{{ article.featured_image }}" alt="">{% endif %}
     <div class="article-content">{{ article.content_html }}</div>

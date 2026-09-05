@@ -7,6 +7,8 @@ NovaNuke supports two transports:
 
 PHPMailer is used as the small, dedicated SMTP implementation. NovaNuke keeps message creation and the `Mailer` contract in the core, so authentication services do not depend directly on PHPMailer.
 
+The mail contract covers password recovery, initial address verification and confirmation of account email changes. Development can exercise all three flows through `storage/logs/mail.log`.
+
 ## Install the dependency
 
 Phase 7C changes `composer.json`. After copying the new files while preserving your existing `.env` and `composer.lock`, run this once:

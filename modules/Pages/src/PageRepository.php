@@ -74,6 +74,13 @@ final class PageRepository
         if ($statement->rowCount() !== 1) throw new RuntimeException('Page not found.');
     }
 
+    public function mediaUsage(string $publicPath): int
+    {
+        $statement = $this->database->prepare('SELECT COUNT(*) FROM pages WHERE image_path=:path');
+        $statement->execute(['path' => $publicPath]);
+        return (int) $statement->fetchColumn();
+    }
+
     public function publicPage(string $slug): ?array
     {
         $statement = $this->database->prepare("SELECT p.*,u.username,parent.title AS parent_title,parent.slug AS parent_slug,parent.access_type AS parent_access_type FROM pages p INNER JOIN users u ON u.id=p.author_id LEFT JOIN pages parent ON parent.id=p.parent_id AND parent.deleted_at IS NULL AND parent.published_at<=UTC_TIMESTAMP() AND parent.status IN ('published','scheduled') WHERE p.slug=:slug AND p.deleted_at IS NULL AND p.published_at<=UTC_TIMESTAMP() AND p.status IN ('published','scheduled') LIMIT 1");
@@ -86,6 +93,15 @@ final class PageRepository
     {
         $pages = $this->database->query("SELECT id,parent_id,title,slug,menu_title,access_type FROM pages WHERE deleted_at IS NULL AND show_in_directory=1 AND published_at<=UTC_TIMESTAMP() AND status IN ('published','scheduled') ORDER BY title")->fetchAll();
         return array_values(array_filter($pages, fn (array $page): bool => $this->canView($page, $userId)));
+    }
+
+    /** @return array<int,array{slug:string,updated_at:string}> */
+    public function sitemapEntries(): array
+    {
+        return $this->database->query(
+            "SELECT slug,updated_at FROM pages WHERE access_type='public' AND deleted_at IS NULL "
+            . "AND published_at<=UTC_TIMESTAMP() AND status IN ('published','scheduled') ORDER BY id"
+        )->fetchAll();
     }
 
     public function canView(array $page, ?int $userId): bool

@@ -12,6 +12,8 @@ use NovaNuke\Admin\ThemesController;
 use NovaNuke\Admin\BlocksController;
 use NovaNuke\Admin\MenusController;
 use NovaNuke\Admin\SystemInfoController;
+use NovaNuke\Admin\AdminDashboardController;
+use NovaNuke\Admin\GeneralSettingsController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -25,35 +27,42 @@ use NovaNuke\Core\Modules\ModuleManager;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Menus\MenuManager;
-use NovaNuke\Core\Admin\AdminMenuBuilding;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\System\SystemInspector;
+use NovaNuke\Core\Admin\AdminDashboardService;
+use NovaNuke\Core\Settings\GeneralSettingsInput;
+use NovaNuke\Core\I18n\LocaleRegistry;
 
-$router->get('/admin', static function (Request $request, Container $container): Response {
-    $auth = $container->get(AuthManager::class);
-    $user = $auth->user();
+$dashboardController = static fn (Container $container): AdminDashboardController => new AdminDashboardController(
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(AdminDashboardService::class),
+    $container->get(SystemInspector::class),
+    $container->get(EventDispatcher::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin', static fn (Request $request, Container $container): Response =>
+    $dashboardController($container)->index()
+);
 
-    if ($user === null) {
-        return Response::redirect('/login');
-    }
-    if (! $container->get(AuthorizationService::class)->allows((int) $user['id'], 'admin.access')) {
-        return Response::html('Forbidden', 403);
-    }
-
-    $menu = new AdminMenuBuilding();
-    $container->get(EventDispatcher::class)->dispatch('admin.menu.building', $menu);
-    $moduleLinks = array_values(array_filter(
-        $menu->items(),
-        static fn (array $item): bool => $container->get(AuthorizationService::class)
-            ->allows((int) $user['id'], $item['permission']),
-    ));
-
-    return Response::html($container->get(ViewRenderer::class)->render('admin/dashboard.twig', [
-        'user' => $user,
-        'csrf_token' => $container->get(CsrfTokenManager::class)->token(),
-        'module_admin_links' => $moduleLinks,
-    ]));
-});
+$generalSettingsController = static fn (Container $container): GeneralSettingsController => new GeneralSettingsController(
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(SettingsRepository::class),
+    new GeneralSettingsInput($container->get(LocaleRegistry::class)),
+    $container->get(ModuleManager::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(SessionManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/settings', static fn (Request $request, Container $container): Response =>
+    $generalSettingsController($container)->show()
+);
+$router->post('/admin/settings', static fn (Request $request, Container $container): Response =>
+    $generalSettingsController($container)->update($request)
+);
 
 $userSettingsController = static fn (Container $container): UserSettingsController => new UserSettingsController(
     $container->get(AuthManager::class),
@@ -121,15 +130,9 @@ $systemController = static fn (Container $container): SystemInfoController => ne
     $container->get(AuthorizationService::class),
     $container->get(SystemInspector::class),
     $container->get(ViewRenderer::class),
-    $container->get(SettingsRepository::class),
-    $container->get(ActivityLogger::class),
-    $container->get(CsrfTokenManager::class),
 );
 $router->get('/admin/system', static fn (Request $request, Container $container): Response =>
-    $systemController($container)->index($request)
-);
-$router->post('/admin/system', static fn (Request $request, Container $container): Response =>
-    $systemController($container)->update($request)
+    $systemController($container)->index()
 );
 
 $modulesController = static fn (Container $container): ModulesController => new ModulesController(

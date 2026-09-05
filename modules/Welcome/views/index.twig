@@ -1,10 +1,10 @@
 {% extends "layouts/default.twig" %}
-{% block title %}Welcome module — NovaNuke{% endblock %}
+{% block title %}{{ trans('welcome::title') }} — NovaNuke{% endblock %}
 {% block content %}
 <section class="welcome-card">
-    <p class="eyebrow">Module route</p>
-    <h1>Welcome module</h1>
+    <p class="eyebrow">{{ trans('welcome::eyebrow') }}</p>
+    <h1>{{ trans('welcome::title') }}</h1>
     <p>{{ message }}</p>
-    <p><a class="auth-link" href="/">Return home</a></p>
+    <p><a class="auth-link" href="/">{{ trans('welcome::return_home') }}</a></p>
 </section>
 {% endblock %}

@@ -8,18 +8,22 @@ use PDO;
 
 final class ThemeRepository
 {
+    private ?bool $availableCache=null;
+    /** @var array<string,array<string,mixed>>|null */ private ?array $allCache=null;
     public function __construct(private readonly PDO $database)
     {
     }
 
     public function available(): bool
     {
-        return $this->database->query("SHOW TABLES LIKE 'themes'")->fetchColumn() !== false;
+        if($this->availableCache!==null)return$this->availableCache;
+        return$this->availableCache=$this->database->query("SHOW TABLES LIKE 'themes'")->fetchColumn() !== false;
     }
 
     /** @return array<string, array<string, mixed>> */
     public function all(): array
     {
+        if($this->allCache!==null)return$this->allCache;
         if (! $this->available()) {
             return [];
         }
@@ -34,7 +38,7 @@ final class ThemeRepository
             $themes[(string) $row['slug']] = $row;
         }
 
-        return $themes;
+        return $this->allCache=$themes;
     }
 
     public function install(ThemeManifest $manifest, array $settings): void
@@ -52,6 +56,7 @@ final class ThemeRepository
             'manifest' => json_encode($manifest->toArray(), JSON_THROW_ON_ERROR),
             'settings' => json_encode($settings, JSON_THROW_ON_ERROR),
         ]);
+        $this->allCache=null;
     }
 
     public function saveSettings(string $slug, array $settings): void
@@ -60,11 +65,13 @@ final class ThemeRepository
             'UPDATE themes SET settings = :settings, updated_at = UTC_TIMESTAMP() WHERE slug = :slug'
         );
         $statement->execute(['settings' => json_encode($settings, JSON_THROW_ON_ERROR), 'slug' => $slug]);
+        $this->allCache=null;
     }
 
     public function remove(string $slug): void
     {
         $statement = $this->database->prepare('DELETE FROM themes WHERE slug = :slug');
         $statement->execute(['slug' => $slug]);
+        $this->allCache=null;
     }
 }

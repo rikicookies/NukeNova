@@ -9,12 +9,22 @@ use RuntimeException;
 
 final class DownloadRepository
 {
-    public function __construct(private readonly PDO $database)
+    private readonly int $perPage;
+
+    public function __construct(private readonly PDO $database, int $perPage = 10)
     {
+        $this->perPage = max(5, min(100, $perPage));
     }
 
     public function categories(): array { return $this->database->query('SELECT c.*,p.name AS parent_name FROM download_categories c LEFT JOIN download_categories p ON p.id=c.parent_id ORDER BY COALESCE(p.name,c.name),c.parent_id,c.name')->fetchAll(); }
     public function roles(): array { return $this->database->query("SELECT id,name,slug FROM roles WHERE slug<>'guest' ORDER BY name")->fetchAll(); }
+
+    /** @return array<int,string> */
+    public function storedNames(): array
+    {
+        $names = $this->database->query("SELECT stored_name FROM downloads WHERE source_type='local' AND stored_name IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN);
+        return array_values(array_filter(array_map('strval', $names)));
+    }
 
     public function adminDownloads(): array
     {
@@ -90,7 +100,7 @@ final class DownloadRepository
         if ($category !== null) { $where .= ' AND c.slug=:category'; $parameters['category'] = $category; }
         if ($search !== '') { $where .= ' AND (d.name LIKE :search OR d.description LIKE :search_description OR d.author_name LIKE :search_author)'; $term = '%' . $search . '%'; $parameters += ['search' => $term, 'search_description' => $term, 'search_author' => $term]; }
         $count = $this->database->prepare("SELECT COUNT(*) FROM downloads d LEFT JOIN download_categories c ON c.id=d.category_id WHERE {$where}"); $count->execute($parameters);
-        $total = (int) $count->fetchColumn(); $perPage = 12; $pages = max(1, (int) ceil($total / $perPage)); $page = min(max(1, $page), $pages);
+        $total = (int) $count->fetchColumn(); $perPage = $this->perPage; $pages = max(1, (int) ceil($total / $perPage)); $page = min(max(1, $page), $pages);
         $orders = ['new' => 'd.published_at DESC,d.id DESC', 'popular' => 'd.download_count DESC,d.published_at DESC', 'name' => 'd.name,d.id'];
         $sql = "SELECT d.id,d.name,d.slug,d.description,d.version,d.author_name,d.image_path,d.is_featured,d.download_count,d.published_at,d.access_type,c.name AS category_name,c.slug AS category_slug FROM downloads d LEFT JOIN download_categories c ON c.id=d.category_id WHERE {$where} ORDER BY " . ($orders[$order] ?? $orders['new']) . ' LIMIT :limit OFFSET :offset';
         $statement = $this->database->prepare($sql);

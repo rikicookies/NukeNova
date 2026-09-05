@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Pages\src;
 
+use Modules\Media\src\MediaRepository;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
@@ -23,6 +24,7 @@ final class AdminPagesController
         private readonly ActivityLogger $activity, private readonly EventDispatcher $events,
         private readonly CsrfTokenManager $csrf, private readonly SessionManager $session,
         private readonly ViewRenderer $views,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -89,6 +91,7 @@ final class AdminPagesController
             'page' => $page ?? [], 'parents' => $this->pages->parentOptions(isset($page['id']) ? (int) $page['id'] : null),
             'roles' => $this->pages->roles(), 'can_publish' => $this->authorization->allows((int) $this->auth->user()['id'], 'pages.publish'),
             'csrf_token' => $this->csrf->token(), 'error' => $error,
+            'media_available' => $this->media !== null, 'media_images' => $this->media?->all() ?? [],
         ]), $status);
     }
 

@@ -48,4 +48,18 @@ final class LogMailerTest extends TestCase
             }
         }
     }
+
+    public function testItWritesEmailChangeVerificationMail(): void
+    {
+        $path = sys_get_temp_dir() . '/novanuke-email-change-' . bin2hex(random_bytes(5));
+        try {
+            (new LogMailer($path, 'development', 'from@example.test', 'NovaNuke'))
+                ->sendEmailChangeVerification('new@example.test', 'http://localhost/account/email/verify/token', 60);
+            $content = file_get_contents($path);
+            self::assertStringContainsString('Confirm your new NovaNuke email', $content);
+            self::assertStringContainsString('/account/email/verify/token', $content);
+        } finally {
+            if (is_file($path)) unlink($path);
+        }
+    }
 }

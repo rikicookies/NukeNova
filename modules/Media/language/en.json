@@ -1,0 +1,14 @@
+{
+  "title": "Media library",
+  "eyebrow": "Content assets",
+  "description": "Upload reusable JPEG, PNG or WebP images. Maximum size: 10 MB.",
+  "image": "Image",
+  "metadata_title": "Title",
+  "alt_text": "Alternative text",
+  "upload": "Upload image",
+  "public_path": "Public path",
+  "save": "Save metadata",
+  "confirm_delete": "Confirm deletion",
+  "delete": "Delete",
+  "empty": "No images have been uploaded."
+}

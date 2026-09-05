@@ -10,6 +10,7 @@
     {% else %}
         <h1>This link is no longer valid.</h1>
         <p>The verification link is invalid, expired or has already been used.</p>
+        <a class="auth-link" href="/resend-verification">{{ trans('auth.verification.resend_link') }}</a>
     {% endif %}
 </section>
 {% endblock %}

@@ -1,10 +1,10 @@
 {
     "name": "Classic Portal",
     "slug": "classic",
-    "version": "1.4.0",
+    "version": "1.7.0",
     "description": "A three-column portal theme inspired by classic community sites.",
     "author": "NovaNuke Project",
-    "cms_min_version": "0.1.0",
+    "cms_min_version": "0.1.0-alpha.15",
     "screenshot": "screenshot.svg",
     "layouts": ["default", "full-width", "two-sidebars"],
     "positions": ["header", "left-sidebar", "right-sidebar", "before-content", "after-content", "footer"],

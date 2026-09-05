@@ -23,7 +23,7 @@ final class AuthController
     ) {
     }
 
-    public function showLogin(): Response
+    public function showLogin(Request $request): Response
     {
         $currentUser = $this->auth->user();
         if ($currentUser !== null) {
@@ -36,6 +36,7 @@ final class AuthController
             'csrf_token' => $this->csrf->token(),
             'errors' => [],
             'old_login' => '',
+            'password_changed' => $request->query('password_changed') === '1',
         ]));
     }
 
@@ -72,6 +73,7 @@ final class AuthController
             'csrf_token' => $this->csrf->token(),
             'errors' => $errors,
             'old_login' => $login,
+            'password_changed' => false,
         ]), 422);
     }
 

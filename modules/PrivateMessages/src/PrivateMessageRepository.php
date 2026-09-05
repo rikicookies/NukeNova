@@ -25,6 +25,12 @@ final class PrivateMessageRepository
 
     public function create(int $sender, int $recipient, string $subject, string $body): int
     {
+        return $this->createWithMessage($sender, $recipient, $subject, $body)['conversation_id'];
+    }
+
+    /** @return array{conversation_id:int,message_id:int} */
+    public function createWithMessage(int $sender, int $recipient, string $subject, string $body): array
+    {
         $this->database->beginTransaction();
         try {
             $this->database->prepare('INSERT INTO private_conversations (subject,created_by,last_message_at,created_at) VALUES (:subject,:sender,UTC_TIMESTAMP(),UTC_TIMESTAMP())')->execute(compact('subject','sender'));
@@ -33,7 +39,7 @@ final class PrivateMessageRepository
             $participant->execute(['conversation'=>$id,'user'=>$sender]); $participant->execute(['conversation'=>$id,'user'=>$recipient]);
             $message=$this->insertMessage($id,$sender,$body);
             $this->database->prepare('UPDATE private_conversation_participants SET last_read_message_id=:message WHERE conversation_id=:conversation AND user_id=:user')->execute(['message'=>$message,'conversation'=>$id,'user'=>$sender]);
-            $this->database->commit(); return $id;
+            $this->database->commit(); return ['conversation_id'=>$id,'message_id'=>$message];
         } catch (\Throwable $e) { if($this->database->inTransaction())$this->database->rollBack(); throw $e; }
     }
 

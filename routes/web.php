@@ -8,11 +8,22 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Version;
+use NovaNuke\Core\Modules\ModuleManager;
+use NovaNuke\Core\Settings\SettingsRepository;
 
 $router->get('/', static function (Request $request, Container $container): Response {
+    $homepage = $container->get(SettingsRepository::class)->string('site.homepage', 'home');
+    $targets = ['news' => '/news', 'pages' => '/pages', 'downloads' => '/downloads'];
+    if (isset($targets[$homepage])) {
+        $module = $container->get(ModuleManager::class)->inventory()[$homepage] ?? null;
+        if (($module['enabled'] ?? false) === true) {
+            return Response::redirect($targets[$homepage]);
+        }
+    }
+
     $html = $container->get(ViewRenderer::class)->render('home.twig', [
-        'cms_name' => 'NovaNuke',
-        'version' => '0.1.0-dev',
+        'version' => Version::CURRENT,
         'user' => $container->get(AuthManager::class)->user(),
         'csrf_token' => $container->get(CsrfTokenManager::class)->token(),
     ]);

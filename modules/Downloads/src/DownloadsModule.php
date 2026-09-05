@@ -21,10 +21,18 @@ final class DownloadsModule implements ModuleInterface
     public function register(ModuleContext $context): void
     {
         $context->container->get(ViewRenderer::class)->addNamespace('downloads', $context->basePath . '/views');
-        $context->container->bind(DownloadRepository::class, static fn (Container $c) => new DownloadRepository($c->get(\PDO::class)));
+        $context->container->bind(DownloadRepository::class, static fn (Container $c) => new DownloadRepository(
+            $c->get(\PDO::class),
+            $c->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
+        ));
         $context->container->bind(DownloadInput::class, static fn () => new DownloadInput(new HtmlSanitizer()));
+        $context->container->bind(DownloadStorage::class, static fn () => new DownloadStorage(NOVANUKE_ROOT . '/storage/private/downloads'));
+        $context->container->bind(DownloadOrphanCleaner::class, static fn (Container $c) => new DownloadOrphanCleaner(
+            NOVANUKE_ROOT . '/storage/private/downloads',
+            static fn (): array => $c->get(DownloadRepository::class)->storedNames(),
+        ));
         $context->container->bind(DownloadManager::class, static fn (Container $c) => new DownloadManager(
-            $c->get(DownloadRepository::class), new DownloadUploadValidator(), new DownloadStorage(NOVANUKE_ROOT . '/storage/private/downloads'),
+            $c->get(DownloadRepository::class), new DownloadUploadValidator(), $c->get(DownloadStorage::class),
             $c->get(\NovaNuke\Auth\AuthManager::class), $c->get(\NovaNuke\Core\Events\EventDispatcher::class),
             new DatabaseRateLimiter($c->get(\PDO::class), 5, 600, 'download-reports'), (string) $c->get(ConfigRepository::class)->get('app.key', ''),
         ));

@@ -10,11 +10,10 @@ final class MaintenanceAccessPolicy
     {
         if (! $installed || ! $enabled || $isSuperAdministrator) return false;
 
-        foreach (['/login', '/logout', '/forgot-password', '/reset-password', '/admin', '/health'] as $allowed) {
-            if ($path === $allowed || (in_array($allowed, ['/reset-password', '/admin'], true)
-                && str_starts_with($path, $allowed . '/'))) {
-                return false;
-            }
+        $exact = ['/login', '/logout', '/forgot-password', '/reset-password', '/resend-verification', '/admin', '/health'];
+        if (in_array($path, $exact, true)) return false;
+        foreach (['/reset-password/', '/verify-email/', '/admin/'] as $prefix) {
+            if (str_starts_with($path, $prefix)) return false;
         }
         return true;
     }

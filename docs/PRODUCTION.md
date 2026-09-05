@@ -1,6 +1,6 @@
 # Production deployment
 
-NovaNuke 0.1 remains a development release. Test a complete backup and restore before every deployment or update.
+NovaNuke 0.1.0 is the first stable release. Test a complete backup and restore before every deployment or update.
 
 ## Required production environment
 
@@ -50,6 +50,10 @@ server {
         fastcgi_pass unix:/run/php/php8.3-fpm.sock;
     }
 
+    location ~* ^/uploads/.*\.(php[0-9]?|phtml|phar|cgi|pl|py|sh)$ {
+        deny all;
+    }
+
     location ~ /\. { deny all; }
 }
 ```
@@ -64,17 +68,21 @@ If the hosting plan cannot point a domain at `public/`, ask the host to change t
 
 ## Release procedure
 
-1. Put the site in maintenance mode when that facility is available in a later production phase.
-2. Create and download an encrypted/off-server database backup.
-3. Preserve `.env`, `storage/installed.lock` and `storage/private/downloads/`.
+1. Put the site in maintenance mode from `/admin/settings`.
+2. Create database and file backups with `backup:database` and `backup:files`, then move encrypted copies off-server.
+3. Preserve `.env`, `composer.lock`, `storage/installed.lock` and all of `storage/private/`.
 4. Replace application files and run `composer install --no-dev --optimize-autoloader`.
-5. Run `php bin/cms migrate`.
-6. Clear generated caches if instructed by the release notes.
-7. Visit `/admin/system`, resolve warnings and smoke-test authentication, permissions, uploads and module routes.
+5. Run `php bin/cms migrate:status`, then `php bin/cms migrate`.
+6. Apply module updates from `/admin/modules` and run `php bin/cms migrate:status` again.
+7. Clear generated caches if instructed by the release notes.
+8. Run `php bin/cms release:check`.
+9. Run `php bin/cms security:audit` and correct every failed authorization check.
+10. Run `php bin/cms production:check` and correct every required failure.
+11. Visit `/admin/system`, resolve warnings and smoke-test authentication, permissions, uploads and module routes.
 
 ## Maintenance and cache
 
-Maintenance mode is controlled from `/admin/system`. Public requests receive HTTP 503 with `Retry-After` and `no-store`; login, password recovery, health checks and administrative routes remain reachable. A signed-in Super Administrator can preview public pages while maintenance is active.
+Maintenance mode is controlled from `/admin/settings`. Public requests receive HTTP 503 with `Retry-After` and `no-store`; login, password recovery, health checks and administrative routes remain reachable. A signed-in Super Administrator can preview public pages while maintenance is active.
 
 After deploying changed PHP or Twig files, clear generated caches:
 
@@ -84,3 +92,7 @@ php bin/cms cache:clear
 ```
 
 The clear command is restricted to `storage/cache`, preserves the cache root and resets OPcache when PHP permits it.
+
+Run the data-retention command regularly after first checking its dry-run output. See `docs/MAINTENANCE.md` for Laragon, cron and shared-hosting examples.
+
+For local download storage, run `php bin/cms downloads:orphans` after backups. Use `--delete` only after reviewing the eligible count; new files receive a 24-hour grace period.

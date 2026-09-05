@@ -7,6 +7,9 @@ namespace Modules\Pages\src;
 use Modules\Comments\src\CommentService;
 use Modules\Comments\src\CommentTargetChecking;
 use Modules\Search\src\SearchProvidersRegistering;
+use Modules\Seo\src\SitemapCollecting;
+use Modules\Media\src\MediaRepository;
+use Modules\Media\src\MediaUsageChecking;
 use NovaNuke\Core\Admin\AdminMenuBuilding;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
@@ -30,8 +33,18 @@ final class PagesModule implements ModuleInterface
         $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
             if ($event instanceof SearchProvidersRegistering) $event->registry->add(new PagesSearchProvider($context->container->get(\PDO::class)));
         });
+        $context->events->listen('sitemap.collecting', static function (object $event) use ($context): void {
+            if (! $event instanceof SitemapCollecting) return;
+            $event->add('/pages', null, 'weekly', 0.6);
+            foreach ($context->container->get(PageRepository::class)->sitemapEntries() as $page) {
+                $event->add('/pages/' . $page['slug'], $page['updated_at'], 'monthly', 0.7);
+            }
+        });
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Pages', '/admin/pages', 'pages.edit');
+        });
+        $context->events->listen('media.usage.checking', static function (object $event) use ($context): void {
+            if ($event instanceof MediaUsageChecking) $event->add('pages.image', $context->container->get(PageRepository::class)->mediaUsage($event->publicPath));
         });
         $context->events->listen('comments.content.checking', static function (object $event) use ($context): void {
             if (! ($event instanceof CommentTargetChecking) || $event->type !== 'pages') return;
@@ -50,6 +63,7 @@ final class PagesModule implements ModuleInterface
             $c->get(\NovaNuke\Core\Security\AuthorizationService::class), $c->get(\NovaNuke\Core\Logging\ActivityLogger::class),
             $c->get(\NovaNuke\Core\Events\EventDispatcher::class), $c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),
             $c->get(\NovaNuke\Core\Security\SessionManager::class), $c->get(ViewRenderer::class),
+            $c->has(MediaRepository::class) ? $c->get(MediaRepository::class) : null,
         );
         $context->router->get('/pages', static fn (Request $r, Container $c): Response => $public($c)->index(), 'pages.index');
         $context->router->get('/pages/{slug}', static fn (Request $r, Container $c): Response => $public($c)->show($r), 'pages.show');

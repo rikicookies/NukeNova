@@ -8,18 +8,23 @@ use ErrorException;
 use NovaNuke\Core\Http\Routing\MethodNotAllowed;
 use NovaNuke\Core\Http\Routing\RouteNotFound;
 use Throwable;
+use NovaNuke\Core\Logging\SensitiveDataRedactor;
 
 final class ErrorHandler
 {
     public function __construct(
         private readonly bool $debug,
         private readonly string $logPath,
+        private readonly SensitiveDataRedactor $redactor = new SensitiveDataRedactor(),
     ) {
     }
 
     public function register(): void
     {
-        set_error_handler(static function (int $severity, string $message, string $file, int $line): never {
+        set_error_handler(static function (int $severity, string $message, string $file, int $line) {
+            if ((error_reporting() & $severity) === 0) {
+                return false;
+            }
             throw new ErrorException($message, 0, $severity, $file, $line);
         });
     }
@@ -36,7 +41,7 @@ final class ErrorHandler
         $this->writeLog($id, $error);
 
         $message = $this->debug
-            ? $error::class . ': ' . $error->getMessage()
+            ? $error::class . ': ' . $this->redactor->redact($error->getMessage())
             : ($status === 500 ? "An unexpected error occurred. Reference: {$id}" : $error->getMessage());
 
         return Response::html(
@@ -59,7 +64,7 @@ final class ErrorHandler
             gmdate('c'),
             $id,
             $error::class,
-            str_replace(["\r", "\n"], ' ', $error->getMessage()),
+            $this->redactor->redact($error->getMessage()),
             $error->getFile(),
             $error->getLine(),
             PHP_EOL,

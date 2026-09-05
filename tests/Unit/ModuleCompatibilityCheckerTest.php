@@ -29,6 +29,13 @@ final class ModuleCompatibilityCheckerTest extends TestCase
         self::assertStringContainsString('Missing dependency', (string) $result->reason);
     }
 
+    public function testItRejectsAnUnsupportedModuleApi(): void
+    {
+        $data=['name'=>'Future','slug'=>'future','version'=>'1.0.0','provider'=>'Modules\\Future\\src\\FutureModule','cms_min_version'=>'0.1.0','php_min_version'=>'8.3.0','api_version'=>'2.0'];
+        $result=(new ModuleCompatibilityChecker('1.0.0','8.3.0','1.0'))->check(ModuleManifest::fromArray($data,'/modules/Future'),[]);
+        self::assertFalse($result->compatible);self::assertStringContainsString('API 2.0',(string)$result->reason);
+    }
+
     private function manifest(): ModuleManifest
     {
         return ModuleManifest::fromArray([

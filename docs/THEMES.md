@@ -25,6 +25,9 @@ themes/example/
     css/
     js/
     images/
+  language/
+    en.json
+    es.json
 ```
 
 ## Manifest
@@ -36,7 +39,7 @@ themes/example/
   "version": "1.0.0",
   "description": "Example theme.",
   "author": "Designer",
-  "cms_min_version": "0.1.0",
+  "cms_min_version": "0.1.0-alpha.1",
   "screenshot": "screenshot.svg",
   "layouts": ["default", "full-width", "two-sidebars"],
   "positions": [
@@ -67,6 +70,10 @@ For a module template such as `@welcome/index.twig`, NovaNuke searches:
 2. module's registered Twig namespace path.
 
 This lets a theme change a module's presentation without modifying the module. The module remains responsible for data, validation and authorization.
+
+## Theme translations
+
+The active theme automatically exposes its JSON catalogues through the stable `theme` namespace. Use `{{ trans('theme::home.heading') }}` for theme-owned labels and the unprefixed core keys for shared actions. See `docs/INTERNATIONALIZATION.md`.
 
 ## Twig safety
 

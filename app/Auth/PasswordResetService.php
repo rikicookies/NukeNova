@@ -105,6 +105,8 @@ final class PasswordResetService
                 'DELETE FROM password_reset_tokens WHERE user_id = :user_id AND id <> :id'
             );
             $delete->execute(['user_id' => $record['user_id'], 'id' => $record['token_id']]);
+            $pendingEmail = $this->database->prepare('DELETE FROM email_change_tokens WHERE user_id = :user_id');
+            $pendingEmail->execute(['user_id' => $record['user_id']]);
             $this->database->commit();
         } catch (Throwable $error) {
             if ($this->database->inTransaction()) {

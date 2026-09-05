@@ -18,8 +18,8 @@ modules/Example/
   views/
   assets/
   language/
-    en/
-    es/
+    en.json
+    es.json
   tests/
 ```
 
@@ -32,10 +32,11 @@ Composer maps `Modules\` to `modules/`. A provider stored at `modules/Example/sr
   "name": "Example",
   "slug": "example",
   "version": "1.0.0",
+  "api_version": "1.0",
   "description": "Example module.",
   "author": "Developer",
   "provider": "Modules\\Example\\src\\ExampleModule",
-  "cms_min_version": "0.1.0",
+  "cms_min_version": "0.1.0-alpha.1",
   "php_min_version": "8.3.0",
   "dependencies": {
     "another-module": "1.2.0"
@@ -49,8 +50,10 @@ Composer maps `Modules\` to `modules/`. A provider stored at `modules/Example/sr
 
 - Slugs use lowercase letters, numbers and hyphens.
 - Versions use semantic versioning.
+- `api_version` selects the stable NovaNuke module contract; Beta 1 supports API 1.0.
 - Dependencies map module slugs to minimum installed versions.
 - Permission slugs must start with the module slug followed by a dot.
+- Event names use lowercase letters, numbers, dots and hyphens. Declare emitted and consumed events in the optional `events` array.
 - The provider must use the `Modules` PHP namespace and implement `ModuleInterface`.
 
 ## Provider lifecycle
@@ -70,7 +73,7 @@ final class ExampleModule implements ModuleInterface
 }
 ```
 
-`register()` runs before `boot()` for that module. Do not execute schema changes in either method; use migrations. Do not modify core files.
+NovaNuke completes `register()` for every dependency-safe module before beginning the `boot()` pass. Do not execute schema changes in either method; use migrations. Do not modify core files. The frozen compatibility surface is listed in `docs/API_STABILITY.md`.
 
 The context exposes the manifest, service container, router, event dispatcher and absolute module base path.
 
@@ -85,6 +88,10 @@ $context->container
 ```
 
 Render it as `@example/page.twig`. Twig escapes HTML output by default.
+
+## Module translations
+
+Enabled modules automatically receive the manifest slug as a translation namespace. Put flat JSON catalogues in `language/en.json` and `language/es.json`, then use `{{ trans('example::page.title') }}` in Twig. See `docs/INTERNATIONALIZATION.md` for fallback and placeholder rules.
 
 ## Routes
 
@@ -114,6 +121,16 @@ $context->events->dispatch('example.created', new ExampleCreated($id));
 
 Do not put passwords, tokens, PDO connections or complete requests into event payloads.
 
+The manifest preserves an optional event declaration:
+
+```json
+"events": ["example.created", "user.registered"]
+```
+
+This list documents the module contract for diagnostics; listeners and dispatches are still registered explicitly by the provider.
+
+Core authentication notifications include `user.registered`, `user.email_verified`, `user.logged_in`, `user.email_changed` and `user.anonymized`. They carry only the documented numeric identity and minimal state. See `docs/AUTH_EVENTS.md`.
+
 Searchable content modules can listen to `search.providers.registering` and add a provider implementing `SearchProviderInterface`. The provider is responsible for publication and viewer-access checks. See `docs/SEARCH.md` for the complete contract.
 
 ## Migrations
@@ -126,6 +143,8 @@ Disabling a module never removes data. Uninstalling offers two explicit choices:
 - call every module migration's `down()` method in reverse order and delete data.
 
 An update runs only pending migrations and updates the installed semantic version. Back up the database before updating production modules.
+
+`php bin/cms migrate:status` lists pending and missing migration files for every installed module. It also reports when the copied manifest version is newer than the installed database record. Status inspection never executes migrations or changes module state.
 
 ## Lifecycle states
 

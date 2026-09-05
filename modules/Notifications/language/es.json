@@ -1,0 +1,10 @@
+{
+    "title": "Notificaciones",
+    "account": "Cuenta",
+    "mark_all": "Marcar todas como leídas",
+    "mark_read": "Marcar como leída",
+    "open": "Abrir",
+    "empty": "No tienes notificaciones.",
+    "nav": "Notificaciones",
+    "marked": "Se marcaron {count} notificación(es) como leídas."
+}

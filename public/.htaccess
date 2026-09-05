@@ -1,6 +1,10 @@
 Options -Indexes -MultiViews
 DirectoryIndex index.php
 
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteCond %{REQUEST_FILENAME} !-f

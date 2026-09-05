@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Modules;
 
 use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\MigrationFileSet;
 use PDO;
 use RuntimeException;
 
@@ -68,6 +69,21 @@ final class ModuleMigrator
         }
     }
 
+    /** @return array{total:int,executed:int,pending:list<string>,missing_files:list<string>} */
+    public function status(ModuleManifest $manifest): array
+    {
+        $executed = [];
+        if ($this->repositoryAvailable()) {
+            $statement = $this->database->prepare(
+                'SELECT migration FROM module_migrations WHERE module_slug = :slug ORDER BY migration'
+            );
+            $statement->execute(['slug' => $manifest->slug]);
+            $executed = array_map('strval', $statement->fetchAll(PDO::FETCH_COLUMN));
+        }
+
+        return (new MigrationFileSet())->compare($manifest->path . '/database/migrations', $executed);
+    }
+
     /** @return array<string, true> */
     private function executed(string $slug): array
     {
@@ -85,5 +101,12 @@ final class ModuleMigrator
         $statement->execute(['slug' => $slug]);
 
         return ((int) $statement->fetchColumn()) + 1;
+    }
+
+    private function repositoryAvailable(): bool
+    {
+        return (int) $this->database->query(
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'module_migrations'"
+        )->fetchColumn() === 1;
     }
 }

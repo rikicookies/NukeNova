@@ -1,12 +1,14 @@
 {
     "name": "Pages",
     "slug": "pages",
-    "version": "1.1.0",
+    "version": "1.3.0",
+    "api_version": "1.0",
     "description": "Static and informational pages with publication, hierarchy and access control.",
     "author": "NovaNuke Project",
     "provider": "Modules\\Pages\\src\\PagesModule",
-    "cms_min_version": "0.1.0",
+    "cms_min_version": "0.1.0-alpha.17",
     "php_min_version": "8.3.0",
     "dependencies": {},
-    "permissions": ["pages.edit", "pages.publish"]
+    "permissions": ["pages.edit", "pages.publish"],
+    "events": ["sitemap.collecting", "media.usage.checking"]
 }

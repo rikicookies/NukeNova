@@ -1,0 +1,36 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('notifications::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="notifications-page">
+    <div class="notifications-heading">
+        <div><p class="eyebrow">{{ trans('notifications::account') }}</p><h1>{{ trans('notifications::title') }}</h1></div>
+        {% if notification_unread_count > 0 %}
+        <form method="post" action="/notifications/read-all">
+            <input type="hidden" name="_token" value="{{ csrf_token }}">
+            <button type="submit">{{ trans('notifications::mark_all') }}</button>
+        </form>
+        {% endif %}
+    </div>
+    {% if marked_count is not null %}<p class="alert alert-success">{{ trans('notifications::marked', {count: marked_count}) }}</p>{% endif %}
+    <div class="notification-list">
+        {% for item in notifications %}
+        <article class="notification-item {{ item.read_at ? '' : 'is-unread' }}">
+            <div>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.message }}</p>
+                <small>{{ item.created_at }}</small>
+            </div>
+            <div class="notification-actions">
+                {% if item.url %}<a href="{{ item.url }}">{{ trans('notifications::open') }}</a>{% endif %}
+                {% if not item.read_at %}
+                <form method="post" action="/notifications/{{ item.id }}/read">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}">
+                    <button type="submit">{{ trans('notifications::mark_read') }}</button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% else %}<p>{{ trans('notifications::empty') }}</p>{% endfor %}
+    </div>
+</section>
+{% endblock %}

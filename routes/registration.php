@@ -20,6 +20,7 @@ $registrationController = static function (Container $container): RegistrationCo
         $container->get(RegistrationService::class),
         new RegistrationValidator(new PasswordPolicy()),
         new DatabaseRateLimiter($container->get(\PDO::class), 3, 900, 'registration'),
+        new DatabaseRateLimiter($container->get(\PDO::class), 3, 3600, 'verification-resend'),
         $container->get(CsrfTokenManager::class),
         $container->get(ViewRenderer::class),
         (string) $config->get('app.locale', 'en'),
@@ -35,4 +36,10 @@ $router->post('/register', static fn (Request $request, Container $container): R
 );
 $router->get('/verify-email/{token}', static fn (Request $request, Container $container): Response =>
     $registrationController($container)->verify($request)
+);
+$router->get('/resend-verification', static fn (Request $request, Container $container): Response =>
+    $registrationController($container)->resendForm()
+);
+$router->post('/resend-verification', static fn (Request $request, Container $container): Response =>
+    $registrationController($container)->resend($request)
 );

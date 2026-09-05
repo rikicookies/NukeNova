@@ -1,4 +1,8 @@
 <header class="theme-header">
     <a class="theme-brand" href="/">{{ cms_name|default('NovaNuke') }}</a>
-    {% import "menus/navigation.twig" as navigation %}<nav aria-label="Primary navigation">{{ navigation.render(menus.primary|default([])) }}</nav>
+    {% import "menus/navigation.twig" as navigation %}<nav aria-label="{{ trans('common.primary_navigation') }}">{{ navigation.render(menus.primary|default([])) }}</nav>
+    {% if current_user %}
+        {% if notification_unread_count is defined %}<a href="/notifications">{{ trans('notifications::nav') }}{% if notification_unread_count > 0 %} ({{ notification_unread_count }}){% endif %}</a>{% endif %}
+        <a href="/account/profile">{{ trans('account.settings') }}</a>
+    {% endif %}
 </header>

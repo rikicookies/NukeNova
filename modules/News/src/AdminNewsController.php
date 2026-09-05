@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\News\src;
 
+use Modules\Media\src\MediaRepository;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
@@ -27,6 +28,7 @@ final class AdminNewsController
         private readonly CsrfTokenManager $csrf,
         private readonly SessionManager $session,
         private readonly ViewRenderer $views,
+        private readonly ?MediaRepository $media = null,
     ) {
     }
 
@@ -117,6 +119,7 @@ final class AdminNewsController
             'article' => $article ?? [], 'categories' => $this->news->categories(), 'topics' => $this->news->topics(),
             'can_publish' => $this->authorization->allows((int) $this->auth->user()['id'], 'news.publish'),
             'csrf_token' => $this->csrf->token(), 'error' => $error,
+            'media_available' => $this->media !== null, 'media_images' => $this->media?->all() ?? [],
         ]), $status);
     }
 

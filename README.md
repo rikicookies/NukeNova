@@ -1,183 +1,127 @@
 # NovaNuke
 
-NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke and built from scratch for modern PHP.
+NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-## Current status
+Current development release: **0.2.0-alpha.1**. It begins the next feature cycle with selectable sanitized HTML or Markdown block content. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
-Phase 7C adds authenticated encrypted SMTP delivery for production while retaining log delivery for Laragon. The current project includes:
+## Included in 0.1.0
 
-- PSR-4 autoloading;
-- environment-based configuration;
-- a small service container;
-- HTTP request and response objects;
-- a router with friendly parameterized URLs;
-- centralized error handling and logs;
-- PDO connection factory;
-- a minimal migration runner;
-- Twig rendering with automatic HTML escaping;
-- Apache front-controller rules;
-- PHPUnit unit tests.
-- server requirement checks;
-- a CSRF-protected web installer;
-- automatic database creation when the database account permits it;
-- core identity and settings migrations;
-- initial roles and first Super Administrator creation;
-- atomic `.env` generation and an installation lock.
+- secure web installer and Super Administrator creation;
+- registration, authentication, recovery, email verification, profiles, roles and permissions;
+- central administration, activity logs and system diagnostics;
+- manually installed modules with manifests, migrations, dependencies and hooks;
+- Twig themes, overrides, positions, sanitized blocks and hierarchical menus;
+- News, Comments, Pages, Media, Downloads, Search, Private Messages, Notifications, Polls, Web Links, Statistics and SEO;
+- friendly URLs, PDO prepared statements, CSRF, rate limits and output escaping;
+- encrypted SMTP or development mail logging;
+- maintenance mode, private database/file backups and safe cache commands.
+- permission-aware administrative dashboard with recent users, content, moderation, activity and module health.
+- protected general settings for identity, locale, dates, pagination, homepage and maintenance mode.
+- namespaced JSON translations with English, Spanish and module/theme language packs.
+- public member profiles, per-user locale/timezone, private avatar storage and authenticated password changes.
+- recent sign-in history and password-confirmed, rate-limited account anonymization.
+- verified email changes that preserve the current address until confirmation and invalidate existing sessions.
+- privacy-preserving recovery for expired registration-verification links.
+- typed, privacy-minimal authentication hooks for modules.
+- isolated MySQL/MariaDB integration tests for authentication, recovery and module lifecycle.
 
-Authentication, authorization, modules, themes, blocks, menus, News, Comments, Pages, Downloads, Search, Private Messages, Polls, Web Links and Statistics are operational.
+NovaNuke does not include a forum and never accepts executable PHP through the administration panel.
 
 ## Requirements
 
 - PHP 8.3 or newer;
 - Composer 2;
-- MySQL 8+ or a compatible MariaDB release;
-- PHP extensions: PDO, PDO MySQL, JSON, Mbstring, OpenSSL, Fileinfo and DOM.
+- MySQL 8+ or a compatible MariaDB version;
+- PDO, PDO MySQL, JSON, Mbstring, OpenSSL, Fileinfo and DOM extensions;
+- Apache with `mod_rewrite`, or an equivalent Nginx configuration.
 
-## Local setup
+The server document root must point to `public/`.
+
+## Laragon quick start
 
 ```bash
 composer install
 composer test
-composer serve
+php bin/cms release:check
+composer test:integration
 ```
 
-Open `http://127.0.0.1:8080`. When NovaNuke has not been configured, it redirects to `/install`.
+Create a Laragon site whose document root is `C:\\dev\\www\\novanuke\\public`, then open its URL. An unconfigured copy redirects to `/install`.
 
-Do not copy `.env.example` to `.env` before testing the web installer. The installer generates `.env` from the validated form.
+Common local database values are host `127.0.0.1`, port `3306`, username `root`, empty password and database `novanuke`.
 
-### Laragon defaults
+Do not create `.env` manually before testing the installer. The installer writes it atomically and creates `storage/installed.lock` when installation finishes.
 
-Common Laragon database values are:
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for complete instructions.
 
-- host: `127.0.0.1`;
-- port: `3306`;
-- username: `root`;
-- password: empty;
-- database: `novanuke`.
+## Updating an existing copy
 
-The database account must be allowed to create a database. Alternatively, create the database manually first.
-
-Do not expose the project root to the web. The document root must be the `public/` directory.
-
-## Security baseline
-
-- Debug output is disabled by default in production.
-- Twig escapes HTML output automatically.
-- PDO emulated prepared statements are disabled.
-- Secrets belong in `.env`, which is excluded from Git.
-- The public entry point is isolated in `public/`.
-
-The installer uses CSRF protection, HTTP-only session cookies, strict session mode, server-side validation, prepared statements and `password_hash()`.
-
-Phase 4C-A adds scheduled, role-aware and page-aware blocks with sanitized enriched HTML and six theme positions.
-
-Phase 4C-B adds multiple hierarchical menus with validated internal, module and external links plus per-item role visibility.
-
-Phase 5A adds the installable News editorial module with drafts, scheduled publication, categories, topics and tags.
-
-Phase 5B adds the optional Comments module with nested replies, moderation, reports, guest policy, edit windows and persistent submission limits. Install and enable Comments from `/admin/modules`, update News to 1.1.0, then manage the feature at `/admin/comments`. See `docs/COMMENTS.md` for the reusable content-provider contract.
-
-Phase 5C adds the Pages module with drafts and scheduling, parent/child relationships, sanitized enriched content, SEO metadata, theme-overridable templates, directory visibility, role-aware access and optional Comments integration. See `docs/PAGES.md`.
-
-Phase 5D updates News to 1.2.0 with RSS 2.0 at `/news/rss.xml`, absolute canonical URLs, safe XML generation and theme autodiscovery. Bundled themes update to 1.4.0.
-
-Phase 6A adds Downloads 1.0.0 with private local storage, validated uploads, external sources, hierarchical categories, publication and role access, catalog search/ordering, protected counters and broken-link reports. See `docs/DOWNLOADS.md`.
-
-Phase 6B adds Search 1.0.0 with providers for News 1.3.0, Pages 1.1.0 and Downloads 1.1.0. Unified results support type filters, safe highlighting and permission-aware discovery. Privacy-preserving popular-term logging is optional and disabled by default. See `docs/SEARCH.md`.
-
-Phase 6C adds Private Messages 1.0.0 with inbox and sent views, replies, participant-specific deletion, blocking, abuse reports and persistent rate limits. See `docs/PRIVATE_MESSAGES.md`.
-
-Phase 6D adds Polls 1.0.0 with scheduling, single or multiple selection, results, reasonable duplicate-vote controls and a dynamic active-poll block. See `docs/POLLS.md`.
-
-Phase 6E adds Web Links 1.0.0 with moderated submissions, categories, featured links, protected visit counters, safe external redirects and broken-link reports. See `docs/WEB_LINKS.md`.
-
-Phase 6F adds Statistics 1.0.0 with aggregate daily traffic, content totals, broad referrer/device/browser summaries, an optional public page and a dynamic summary block. See `docs/STATISTICS.md`.
-
-Phase 7A adds configurable CSP and HTTP security headers, `/admin/system`, `php bin/cms backup:database`, and production guidance for Laragon, Apache, Nginx and traditional shared hosting. See `docs/PRODUCTION.md`, `docs/BACKUPS.md` and `docs/SECURITY_CHECKLIST.md`.
-
-Phase 7B adds CSRF-protected maintenance mode, a permission audit on `/admin/system`, and `cache:status` / `cache:clear` CLI commands for generated caches.
-
-Phase 7C adds PHPMailer-backed SMTP over SSL/TLS or STARTTLS, strict mail configuration validation, safe HTML/text recovery messages and mail readiness diagnostics. See `docs/MAIL.md`.
-
-After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
-
-Authentication, authorization and rate limiting continue in the next Phase 3 delivery.
-
-## Updating an installed development copy
-
-After replacing project files, keep the existing `.env` and `storage/installed.lock`, then run:
+Preserve `.env`, `composer.lock`, `storage/installed.lock` and everything under `storage/private/`. Then follow [docs/UPDATING.md](docs/UPDATING.md).
 
 ```bash
 composer install
-composer migrate
+php bin/cms migrate:status
+php bin/cms migrate
 composer test
+php bin/cms cache:clear
+php bin/cms release:check
 ```
 
-Phase 3B provides `/login`, POST-only `/logout`, a protected `/admin` dashboard, session regeneration, suspended-account enforcement, login history and basic login throttling.
+Phase 7C added PHPMailer. If it is not yet present in your lock file, run `composer update phpmailer/phpmailer` once before the standard commands.
 
-## Local password recovery
+NovaNuke 0.2.0-alpha.1 adds CommonMark. Existing installations that preserve an older lock file must run `composer update league/commonmark` once.
 
-Phase 3C-A adds password recovery through a development mail log. In a local installation, set:
+## Useful CLI commands
 
-```dotenv
-APP_ENV=development
-APP_DEBUG=true
-MAIL_MAILER=log
-MAIL_FROM_ADDRESS=noreply@localhost
-MAIL_FROM_NAME=NovaNuke
+```bash
+php bin/cms migrate
+php bin/cms migrate:status
+php bin/cms backup:database
+php bin/cms backup:files
+php bin/cms cache:status
+php bin/cms cache:clear
+php bin/cms maintenance:prune --dry-run
+php bin/cms maintenance:prune
+php bin/cms downloads:orphans
+php bin/cms security:audit
+php bin/cms release:check
 ```
 
-Then request a reset at `/forgot-password` and open the newest link in `storage/logs/mail.log`.
+## Local email
 
-Reset tokens expire after 60 minutes, are stored only as SHA-256 hashes, can be used once and are replaced when a new reset is requested. A successful password change increments the user's authentication version, invalidating all older sessions.
+Use `APP_ENV=development` and `MAIL_MAILER=log`. Recovery and verification links are written to `storage/logs/mail.log`. Those links are secrets while active.
 
-The log mailer refuses to operate when `APP_ENV=production`. Before publishing NovaNuke, configure a real SMTP driver and remove `storage/logs/mail.log` because development recovery links are secrets while active.
+For production SMTP and Bluehost guidance, see [docs/MAIL.md](docs/MAIL.md).
 
-## Registration and email verification
+## Security and deployment
 
-Phase 3C-B keeps public registration closed by default. A Super Administrator can change it at `/admin/settings/users` and independently choose whether new accounts require email verification.
+- [Production deployment](docs/PRODUCTION.md)
+- [Security checklist](docs/SECURITY_CHECKLIST.md)
+- [Account security and lifecycle](docs/ACCOUNT_SECURITY.md)
+- [Secure email changes](docs/EMAIL_CHANGE.md)
+- [Email verification recovery](docs/EMAIL_VERIFICATION.md)
+- [Authentication events](docs/AUTH_EVENTS.md)
+- [Backups](docs/BACKUPS.md)
+- [Scheduled maintenance](docs/MAINTENANCE.md)
+- [Recovery](docs/RECOVERY.md)
+- [Release verification](docs/RELEASE.md)
+- [Unit and integration testing](docs/TESTING.md)
+- [In-site notifications](docs/NOTIFICATIONS.md)
+- [SEO and sitemap](docs/SEO.md)
 
-When verification is required, new users receive the `Member` role and remain in `pending_verification` status. The one-time verification link is written to `storage/logs/mail.log` during local development and expires after 24 hours. Opening it activates the account. Reopening a consumed link produces an expired-link screen.
+Detailed module and theme contracts are documented under `docs/`, including `MODULES.md`, `THEMES.md`, `BLOCKS.md` and `MENUS.md`.
 
-Disabling verification affects only future registrations; it does not automatically activate accounts already awaiting verification.
-
-## Roles, permissions and audit history
-
-Phase 3C-C adds server-enforced permissions, user role assignment, suspension/reactivation, persistent database rate limits and administrative activity logs.
-
-- `/admin/users` manages account status and role assignments.
-- `/admin/roles` displays roles and edits permission assignments.
-- `/admin/logs` displays the latest 200 administrative audit events.
-- `docs/AUTHORIZATION.md` documents the internal authorization contract.
-
-NovaNuke prevents users from changing their own roles/status in the panel and prevents removal or suspension of the final active Super Administrator.
-
-## Modules and hooks
-
-Phase 4A introduces manually copied, trusted modules with manifests, compatibility checks, dependencies, isolated migrations, permissions, installation, activation, updates and controlled uninstallation.
-
-- Manage detected modules at `/admin/modules`.
-- Use the bundled `Welcome` module to verify the lifecycle and module-owned Twig views.
-- Read `docs/MODULES.md` before developing or installing a module.
-
-Disabling a module preserves its data. Uninstallation requires typing the module slug and explicitly choosing whether module tables should be deleted.
-
-## Themes and view overrides
-
-Phase 4B adds theme manifests, installation, activation, validated appearance settings, safe asset publishing, layouts, partials and module template overrides.
-
-- Manage themes at `/admin/themes`.
-- Switch between bundled Nova Default and Classic Portal themes.
-- Read `docs/THEMES.md` before creating a theme.
-
-The active theme cannot be uninstalled. Theme source files remain manually managed outside the public web root; only validated assets are copied into `public/assets/themes/`.
+The permission-aware dashboard data and extension behavior are documented in [docs/ADMIN_DASHBOARD.md](docs/ADMIN_DASHBOARD.md).
+General site configuration and the boundary between database settings and `.env` secrets are documented in [docs/SETTINGS.md](docs/SETTINGS.md).
+Translation catalogues and extension conventions are documented in [docs/INTERNATIONALIZATION.md](docs/INTERNATIONALIZATION.md).
+Member profile privacy, avatars and account preferences are documented in [docs/PROFILES.md](docs/PROFILES.md).
 
 ## Tests
 
-Run:
-
 ```bash
 composer test
 ```
 
-No test result should be reported as passing unless it was run under PHP 8.3+.
+For the isolated Laragon database suite, configure `.env.testing` and run `composer test:integration`. See [docs/TESTING.md](docs/TESTING.md).
+
+Never report a test as passing unless it was actually executed under PHP 8.3 or newer. This package remains alpha until its installer, update, permissions, SMTP and restore smoke-test matrix has been completed on the target environment.

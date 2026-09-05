@@ -1,12 +1,14 @@
 {
     "name": "News",
     "slug": "news",
-    "version": "1.3.0",
+    "version": "1.5.0",
+    "api_version": "1.0",
     "description": "Editorial news, categories, topics and tags for NovaNuke.",
     "author": "NovaNuke Project",
     "provider": "Modules\\News\\src\\NewsModule",
-    "cms_min_version": "0.1.0",
+    "cms_min_version": "0.1.0-alpha.17",
     "php_min_version": "8.3.0",
     "dependencies": {},
-    "permissions": ["news.edit", "news.publish"]
+    "permissions": ["news.edit", "news.publish"],
+    "events": ["sitemap.collecting", "media.usage.checking"]
 }

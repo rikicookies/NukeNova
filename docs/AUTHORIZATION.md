@@ -7,11 +7,20 @@ NovaNuke authorizes actions with permission slugs. Hiding a menu item is never c
 - Users may have multiple roles.
 - Roles may have multiple permissions.
 - Permissions use stable dotted slugs such as `users.manage`.
+- Every `/admin` request requires `admin.access` before its controller checks the more specific permission.
 - The `super-administrator` role has a protected server-side bypass.
 - The Super Administrator role cannot be edited through the panel.
 - A non-Super Administrator cannot assign or modify the Super Administrator role.
 - NovaNuke prevents suspension or demotion of the final active Super Administrator.
 - Account status and role changes are written to `activity_logs`.
+
+Run the authorization audit after changing roles:
+
+```bash
+php bin/cms security:audit
+```
+
+The audit fails when a role has administrative permissions but lacks `admin.access`. For example, an Editor who manages News normally needs `admin.access`, `news.edit` and, only when publication is allowed, `news.publish`.
 
 ## Checking a permission
 
@@ -39,4 +48,5 @@ Never rename a released permission slug without a migration because role assignm
 
 - Super Administrator: protected bypass for every permission.
 - Administrator: core administration, users, settings and logs, but cannot edit permission assignments or Super Administrators.
-- Editor, Moderator, Member and Guest: no administrative access until modules assign appropriate permissions.
+- Editor and Moderator: no administrative access until `admin.access` and the required module permissions are assigned.
+- Member and Guest: must never receive administrative permissions.

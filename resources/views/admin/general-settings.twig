@@ -1,0 +1,58 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('settings.title') }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">{{ trans('settings.eyebrow') }}</p>
+    <h1>{{ trans('settings.title') }}</h1>
+    <p>{{ trans('settings.description') }}</p>
+    {% if saved %}<div class="alert alert-success">{{ trans('settings.saved') }}</div>{% endif %}
+    {% if errors %}<div class="alert alert-error"><strong>{{ trans('settings.review') }}</strong></div>{% endif %}
+
+    <form method="post" action="/admin/settings" class="settings-form admin-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>{{ trans('settings.site_name') }}
+            <input name="name" value="{{ values.name|default('') }}" required minlength="2" maxlength="100">
+            {% if errors.name|default(null) %}<small class="field-error">{{ errors.name }}</small>{% endif %}
+        </label>
+        <label>{{ trans('settings.site_description') }}
+            <textarea name="description" rows="3" maxlength="500">{{ values.description|default('') }}</textarea>
+            {% if errors.description|default(null) %}<small class="field-error">{{ errors.description }}</small>{% endif %}
+        </label>
+        <label>{{ trans('settings.site_url') }}
+            <input type="url" name="url" value="{{ values.url|default('') }}" required maxlength="2048" placeholder="https://example.com">
+            {% if errors.url|default(null) %}<small class="field-error">{{ errors.url }}</small>{% endif %}
+        </label>
+        <label>{{ trans('settings.admin_email') }}
+            <input type="email" name="admin_email" value="{{ values.admin_email|default('') }}" required maxlength="254">
+            {% if errors.admin_email|default(null) %}<small class="field-error">{{ errors.admin_email }}</small>{% endif %}
+        </label>
+        <div class="form-grid">
+            <label>{{ trans('settings.language') }}
+                <select name="locale">{% for code, label in cms_locales %}<option value="{{ code }}"{% if values.locale|default('en') == code %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                {% if errors.locale|default(null) %}<small class="field-error">{{ errors.locale }}</small>{% endif %}
+            </label>
+            <label>{{ trans('settings.timezone') }}
+                <select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}"{% if values.timezone|default('UTC') == timezone %} selected{% endif %}>{{ timezone }}</option>{% endfor %}</select>
+                {% if errors.timezone|default(null) %}<small class="field-error">{{ errors.timezone }}</small>{% endif %}
+            </label>
+            <label>{{ trans('settings.date_format') }}
+                <select name="date_format">{% for format, example in date_formats %}<option value="{{ format }}"{% if values.date_format|default('F j, Y') == format %} selected{% endif %}>{{ example }}</option>{% endfor %}</select>
+                {% if errors.date_format|default(null) %}<small class="field-error">{{ errors.date_format }}</small>{% endif %}
+            </label>
+            <label>{{ trans('settings.per_page') }}
+                <input type="number" name="per_page" value="{{ values.per_page|default(10) }}" min="5" max="100" required>
+                {% if errors.per_page|default(null) %}<small class="field-error">{{ errors.per_page }}</small>{% endif %}
+            </label>
+            <label>{{ trans('settings.homepage') }}
+                <select name="homepage">{% for value, label in homepages %}<option value="{{ value }}"{% if values.homepage|default('home') == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+                {% if errors.homepage|default(null) %}<small class="field-error">{{ errors.homepage }}</small>{% endif %}
+            </label>
+        </div>
+        <input type="hidden" name="maintenance" value="0">
+        <label><input type="checkbox" name="maintenance" value="1"{% if values.maintenance|default(false) %} checked{% endif %}> {{ trans('settings.maintenance') }}</label>
+        <p>{{ trans('settings.maintenance_help') }}</p>
+        <button type="submit">{{ trans('settings.save') }}</button>
+    </form>
+    <p><a href="/admin">{{ trans('settings.back') }}</a></p>
+</section>
+{% endblock %}

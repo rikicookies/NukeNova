@@ -17,9 +17,10 @@ final class BlockRepository
     public function all(): array
     {
         $rows = $this->database->query('SELECT * FROM blocks ORDER BY position, sort_order, id')->fetchAll();
+        $roleMap=$this->roleMap(false);
         foreach ($rows as &$row) {
             $row = $this->decode($row);
-            $row['role_ids'] = $this->roleIds((int) $row['id']);
+            $row['role_ids'] = $roleMap[(int)$row['id']]??[];
         }
 
         return $rows;
@@ -43,9 +44,10 @@ final class BlockRepository
             . 'AND (ends_at IS NULL OR ends_at >= UTC_TIMESTAMP()) ORDER BY position, sort_order, id'
         );
         $rows = $statement->fetchAll();
+        $roleMap=$this->roleMap(true);
         foreach ($rows as &$row) {
             $row = $this->decode($row);
-            $row['role_slugs'] = $this->roleSlugs((int) $row['id']);
+            $row['role_slugs'] = $roleMap[(int)$row['id']]??[];
         }
 
         return $rows;
@@ -125,19 +127,9 @@ final class BlockRepository
         return $row;
     }
 
-    /** @return list<int> */
-    private function roleIds(int $id): array
+    /** @return array<int,list<int|string>> */
+    private function roleMap(bool $slugs):array
     {
-        $statement = $this->database->prepare('SELECT role_id FROM block_roles WHERE block_id=:id ORDER BY role_id');
-        $statement->execute(['id' => $id]);
-        return array_map('intval', $statement->fetchAll(PDO::FETCH_COLUMN));
-    }
-
-    /** @return list<string> */
-    private function roleSlugs(int $id): array
-    {
-        $statement = $this->database->prepare('SELECT r.slug FROM block_roles br INNER JOIN roles r ON r.id=br.role_id WHERE br.block_id=:id');
-        $statement->execute(['id' => $id]);
-        return array_map('strval', $statement->fetchAll(PDO::FETCH_COLUMN));
+        $sql=$slugs?'SELECT br.block_id,r.slug AS role_value FROM block_roles br INNER JOIN roles r ON r.id=br.role_id ORDER BY br.block_id,r.slug':'SELECT block_id,role_id AS role_value FROM block_roles ORDER BY block_id,role_id';$rows=$this->database->query($sql)->fetchAll();$map=[];foreach($rows as$row){$id=(int)$row['block_id'];$map[$id][]= $slugs?(string)$row['role_value']:(int)$row['role_value'];}return$map;
     }
 }

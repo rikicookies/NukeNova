@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Installer;
 
+use NovaNuke\Core\Version;
 use NovaNuke\Core\Database\Migrator;
 use PDO;
 use RuntimeException;
@@ -11,10 +12,14 @@ use Throwable;
 
 final class InstallerService
 {
+    private readonly InstallationLock $installationLock;
+
     public function __construct(
         private readonly string $rootPath,
         private readonly EnvWriter $envWriter,
+        ?InstallationLock $installationLock = null,
     ) {
+        $this->installationLock = $installationLock ?? new InstallationLock();
     }
 
     /** @return list<string> */
@@ -60,16 +65,15 @@ final class InstallerService
             'SESSION_NAME' => 'novanuke_session',
             'SESSION_SECURE' => str_starts_with(strtolower($data->siteUrl), 'https://'),
             'SESSION_SAME_SITE' => 'Lax',
+            'SECURITY_HEADERS_ENABLED' => true,
+            'SECURITY_HSTS_ENABLED' => false,
+            'SECURITY_HSTS_MAX_AGE' => 31536000,
+            'MAIL_MAILER' => 'log',
+            'MAIL_FROM_ADDRESS' => 'noreply@localhost',
+            'MAIL_FROM_NAME' => $data->siteName,
         ]);
 
-        $lock = json_encode([
-            'installed_at' => gmdate('c'),
-            'version' => '0.1.0-dev',
-        ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
-
-        if (file_put_contents($lockPath, $lock . PHP_EOL, LOCK_EX) === false) {
-            throw new RuntimeException('Installation finished, but the installer lock could not be created.');
-        }
+        $this->installationLock->create($lockPath, Version::CURRENT);
 
         return $migrations;
     }
@@ -158,9 +162,15 @@ final class InstallerService
 
         foreach ([
             ['site.name', $data->siteName, 'string', 'site'],
+            ['site.description', 'A modern modular CMS with an old-school spirit.', 'string', 'site'],
             ['site.url', rtrim($data->siteUrl, '/'), 'string', 'site'],
+            ['site.admin_email', strtolower($data->adminEmail), 'string', 'site'],
             ['site.locale', $data->locale, 'string', 'site'],
             ['site.timezone', $data->timezone, 'string', 'site'],
+            ['site.date_format', 'F j, Y', 'string', 'site'],
+            ['site.per_page', '10', 'integer', 'site'],
+            ['site.homepage', 'home', 'string', 'site'],
+            ['system.maintenance', '0', 'boolean', 'system'],
             ['users.registration_open', '0', 'boolean', 'users'],
         ] as [$key, $value, $type, $group]) {
             $statement->execute([

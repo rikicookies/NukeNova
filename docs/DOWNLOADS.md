@@ -18,7 +18,13 @@ The first release accepts ZIP, PDF, TXT, PNG, JPEG and WebP files up to 50 MB. V
 
 Browser-supplied MIME values and original paths are ignored. PHP code and unlisted extensions are rejected. Ensure PHP's `upload_max_filesize` and `post_max_size` are at least 50 MB if that maximum is required.
 
-Replacing a local file, switching to an external source or soft-deleting a download does not immediately erase the old private file. This conservative behavior avoids destructive data loss during the development release. Periodic orphan cleanup will be added after backups and recovery tooling exist.
+Replacing a local file, switching to an external source or soft-deleting a download does not immediately erase the old private file. This conservative behavior avoids destructive data loss. After creating and safely exporting both database and file backups, inspect unreferenced files with:
+
+```bash
+php bin/cms downloads:orphans
+```
+
+The default is a non-destructive dry run. Files still referenced by any download row—including soft-deleted rows—are retained. Generated files less than 24 hours old, symbolic links and filenames not matching NovaNuke's generated format are also protected. Delete only the eligible set with `php bin/cms downloads:orphans --delete` after reviewing the dry run.
 
 ## Publication and access
 

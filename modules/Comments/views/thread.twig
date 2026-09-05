@@ -2,7 +2,7 @@
     {% import _self as tree %}
     {% for comment in items %}
         <article class="comment comment-depth-{{ depth }}" id="comment-{{ comment.id }}">
-            <header><strong>{{ comment.username|default(comment.guest_name|default('Former member', true), true) }}</strong><small>{{ comment.created_at }}{% if comment.edited_at %} · edited{% endif %}</small></header>
+            <header><strong>{{ comment.username|default(comment.guest_name|default('Former member', true), true) }}</strong><small>{{ comment.created_at|date(cms_date_format, cms_timezone) }}{% if comment.edited_at %} · edited{% endif %}</small></header>
             <div class="comment-body">{{ comment.body|nl2br }}</div>
             <div class="comment-actions">
                 <details><summary>Reply</summary>

@@ -3,15 +3,15 @@
 <div class="nova-home-columns {{ blocks['left-sidebar']|default([]) ? 'has-left' : '' }} {{ blocks['right-sidebar']|default([]) ? 'has-right' : '' }}">
 {% if blocks['left-sidebar']|default([]) %}<aside>{% include "blocks/region.twig" with {items: blocks['left-sidebar'], position: 'left-sidebar'} %}</aside>{% endif %}
 <section class="nova-hero">
-    {% if theme.settings.show_version %}<p class="eyebrow">Version {{ version }}</p>{% endif %}
-    <h1>NovaNuke is ready to grow.</h1>
+    {% if theme.settings.show_version %}<p class="eyebrow">{{ trans('theme::home.version', {version: version}) }}</p>{% endif %}
+    <h1>{{ trans('theme::home.ready') }}</h1>
     <p>{{ theme.settings.site_tagline }}</p>
     <div class="nova-actions">
         {% if user %}
-            <span>Signed in as <strong>{{ user.username }}</strong></span>
-            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+            <span>{{ trans('home.signed_in', {username: user.username}) }}</span>
+            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">{{ trans('common.sign_out') }}</button></form>
         {% else %}
-            <a href="/login">Sign in</a><a href="/register">Create account</a>
+            <a href="/login">{{ trans('common.sign_in') }}</a><a href="/register">{{ trans('common.create_account') }}</a>
         {% endif %}
     </div>
 </section>

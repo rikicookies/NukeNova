@@ -2,14 +2,14 @@
 
 {% block content %}
     <section class="welcome-card">
-        <p class="eyebrow">Version {{ version }}</p>
-        <h1>A modern modular CMS with an old-school spirit.</h1>
-        <p>The NovaNuke HTTP core is running. Installation, authentication, modules, themes and content will arrive in the next phases.</p>
+        <p class="eyebrow">{{ trans('home.version', {version: version}) }}</p>
+        <h1>{{ trans('home.headline') }}</h1>
+        <p>{{ trans('home.description') }}</p>
         {% if user %}
-            <p>Signed in as <strong>{{ user.username }}</strong>.</p>
-            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+            <p>{{ trans('home.signed_in', {username: user.username}) }}</p>
+            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">{{ trans('common.sign_out') }}</button></form>
         {% else %}
-            <p><a class="auth-link" href="/login">Sign in</a> · <a class="auth-link" href="/register">Create account</a></p>
+            <p><a class="auth-link" href="/login">{{ trans('common.sign_in') }}</a> · <a class="auth-link" href="/register">{{ trans('common.create_account') }}</a></p>
         {% endif %}
     </section>
 {% endblock %}

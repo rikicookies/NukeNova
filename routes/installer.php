@@ -12,12 +12,13 @@ use NovaNuke\Installer\InstallationValidator;
 use NovaNuke\Installer\InstallerController;
 use NovaNuke\Installer\InstallerService;
 use NovaNuke\Installer\RequirementsChecker;
+use NovaNuke\Core\I18n\LocaleRegistry;
 
 $controller = static function (Container $container): InstallerController {
     return new InstallerController(
         NOVANUKE_ROOT,
         new RequirementsChecker(),
-        new InstallationValidator(),
+        new InstallationValidator($container->get(LocaleRegistry::class)),
         new InstallerService(NOVANUKE_ROOT, new EnvWriter()),
         $container->get(CsrfTokenManager::class),
         $container->get(ViewRenderer::class),

@@ -8,20 +8,23 @@ use PDO;
 
 final class ModuleRepository
 {
+    private ?bool $availableCache=null;
+    /** @var array<string,array<string,mixed>>|null */ private ?array $allCache=null;
     public function __construct(private readonly PDO $database)
     {
     }
 
     public function available(): bool
     {
+        if($this->availableCache!==null)return$this->availableCache;
         $statement = $this->database->query("SHOW TABLES LIKE 'modules'");
-
-        return $statement->fetchColumn() !== false;
+        return$this->availableCache=$statement->fetchColumn() !== false;
     }
 
     /** @return array<string, array<string, mixed>> */
     public function all(): array
     {
+        if($this->allCache!==null)return$this->allCache;
         if (! $this->available()) {
             return [];
         }
@@ -34,7 +37,7 @@ final class ModuleRepository
             $result[(string) $row['slug']] = $row;
         }
 
-        return $result;
+        return $this->allCache=$result;
     }
 
     /** @return array<string, array<string, mixed>> */
@@ -57,6 +60,7 @@ final class ModuleRepository
             'version' => $manifest->version,
             'manifest' => json_encode($manifest->toArray(), JSON_THROW_ON_ERROR),
         ]);
+        $this->invalidate();
     }
 
     public function setEnabled(string $slug, bool $enabled): void
@@ -65,6 +69,7 @@ final class ModuleRepository
             'UPDATE modules SET enabled = :enabled, updated_at = UTC_TIMESTAMP(), last_error = NULL WHERE slug = :slug'
         );
         $statement->execute(['enabled' => $enabled ? 1 : 0, 'slug' => $slug]);
+        $this->invalidate();
     }
 
     public function setError(string $slug, string $message): void
@@ -73,11 +78,14 @@ final class ModuleRepository
             'UPDATE modules SET last_error = :last_error, updated_at = UTC_TIMESTAMP() WHERE slug = :slug'
         );
         $statement->execute(['last_error' => mb_substr($message, 0, 4000), 'slug' => $slug]);
+        $this->invalidate();
     }
 
     public function remove(string $slug): void
     {
         $statement = $this->database->prepare('DELETE FROM modules WHERE slug = :slug');
         $statement->execute(['slug' => $slug]);
+        $this->invalidate();
     }
+    private function invalidate():void{$this->allCache=null;}
 }

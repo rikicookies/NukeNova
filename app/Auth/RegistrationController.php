@@ -17,6 +17,7 @@ final class RegistrationController
         private readonly RegistrationService $registration,
         private readonly RegistrationValidator $validator,
         private readonly RateLimiter $throttle,
+        private readonly RateLimiter $resendThrottle,
         private readonly CsrfTokenManager $csrf,
         private readonly ViewRenderer $views,
         private readonly string $locale,
@@ -82,6 +83,27 @@ final class RegistrationController
         ]), $verified ? 200 : 410);
     }
 
+    public function resendForm(): Response
+    {
+        return $this->resendView();
+    }
+
+    public function resend(Request $request): Response
+    {
+        if (! $this->csrf->validate($request->input('_token'))) {
+            return Response::html('Invalid or expired CSRF token.', 419);
+        }
+        $result = (new VerificationResendInput())->validate($request->input('email'));
+        $key = hash('sha256', 'verification-resend|' . $result['email'] . '|' . $request->ip());
+        if ($result['error'] !== null) return $this->resendView($result['email'], $result['error'], false, 422);
+        if ($this->resendThrottle->tooManyAttempts($key)) {
+            return $this->resendView($result['email'], 'Too many requests. Try again later.', false, 429);
+        }
+        $this->resendThrottle->hit($key);
+        $this->registration->resendVerification($result['email']);
+        return $this->resendView('', null, true);
+    }
+
     /** @param array<string, string> $errors
      *  @param array<string, mixed> $old
      */
@@ -92,6 +114,13 @@ final class RegistrationController
             'errors' => $errors,
             'old' => $old,
             'verification_required' => $this->registration->verificationRequired(),
+        ]), $status);
+    }
+
+    private function resendView(string $email = '', ?string $error = null, bool $sent = false, int $status = 200): Response
+    {
+        return Response::html($this->views->render('auth/resend-verification.twig', [
+            'email' => $email, 'error' => $error, 'sent' => $sent, 'csrf_token' => $this->csrf->token(),
         ]), $status);
     }
 }

@@ -2,10 +2,11 @@
     "name": "Polls",
     "slug": "polls",
     "version": "1.0.0",
+    "api_version": "1.0",
     "description": "Scheduled single or multiple-choice polls with results and an active-poll block.",
     "author": "NovaNuke Project",
     "provider": "Modules\\Polls\\src\\PollsModule",
-    "cms_min_version": "0.1.0",
+    "cms_min_version": "0.1.0-alpha.1",
     "php_min_version": "8.3.0",
     "dependencies": {},
     "permissions": ["polls.manage"]

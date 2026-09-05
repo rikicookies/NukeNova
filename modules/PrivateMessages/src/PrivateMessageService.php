@@ -4,26 +4,31 @@ declare(strict_types=1);
 
 namespace Modules\PrivateMessages\src;
 
+use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use RuntimeException;
 
 final class PrivateMessageService
 {
-    public function __construct(private readonly PrivateMessageRepository $repository,private readonly PrivateMessageInput $input,private readonly DatabaseRateLimiter $sendLimiter,private readonly DatabaseRateLimiter $reportLimiter) {}
+    public function __construct(private readonly PrivateMessageRepository $repository,private readonly PrivateMessageInput $input,private readonly DatabaseRateLimiter $sendLimiter,private readonly DatabaseRateLimiter $reportLimiter,private readonly EventDispatcher $events) {}
 
     public function compose(int $sender,string $username,mixed $subject,mixed $body): int
     {
         $username=$this->input->recipient($username);$subject=$this->input->subject($subject);$body=$this->input->body($body);
         $recipient=$this->repository->userByUsername($username); if($recipient===null)throw new RuntimeException('Recipient was not found.');
         $recipientId=(int)$recipient['id']; if($recipientId===$sender)throw new RuntimeException('You cannot message yourself.');
-        $this->assertCanSend($sender,$recipientId); return $this->repository->create($sender,$recipientId,$subject,$body);
+        $this->assertCanSend($sender,$recipientId); $created=$this->repository->createWithMessage($sender,$recipientId,$subject,$body);
+        $this->events->dispatch('private-message.sent',new PrivateMessageSent($recipientId,$created['conversation_id'],(string)$created['message_id']));
+        return $created['conversation_id'];
     }
 
     public function reply(int $conversation,int $sender,mixed $body): int
     {
         $body=$this->input->body($body);
         $thread=$this->repository->conversation($conversation,$sender); if($thread===null)throw new RuntimeException('Conversation not found.');
-        $this->assertCanSend($sender,(int)$thread['other']['id']); return $this->repository->reply($conversation,$sender,$body);
+        $recipient=(int)$thread['other']['id'];$this->assertCanSend($sender,$recipient);$message=$this->repository->reply($conversation,$sender,$body);
+        $this->events->dispatch('private-message.sent',new PrivateMessageSent($recipient,$conversation,(string)$message));
+        return $message;
     }
 
     public function report(int $message,int $user,mixed $reason): void
