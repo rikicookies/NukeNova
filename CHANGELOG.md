@@ -76,6 +76,11 @@ All notable NovaNuke changes will be documented here.
 - Draft, scheduled and published news workflow with server-side authorization.
 - News categories, topics, tags, featured entries, basic SEO and session-limited view counting.
 - Extensible module entries through the `admin.menu.building` hook.
+- Reusable Comments module with polymorphic content targets and module-owned migrations.
+- Threaded replies, configurable moderation, guest policy and a 15-minute author edit window.
+- Comment abuse reports, duplicate-report protection and persistent submission rate limits.
+- News 1.1.0 optional Comments integration through `comments.content.checking`.
+- Comment provider and security documentation plus hierarchy/contract tests.
 
 ### Changed
 

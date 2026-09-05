@@ -14,4 +14,14 @@
     {% if article.tag_list %}<footer>Tags: {{ article.tag_list|join(', ') }}</footer>{% endif %}
     <p><a href="/news">Return to news</a></p>
 </article>
+{% if comments_available %}
+    {% include '@comments/thread.twig' with {
+        content_type: 'news', content_id: article.id, comments: comments,
+        guests_allowed: comments_guests_allowed, csrf_token: comments_csrf_token,
+        return_to: comments_return_to, message: comments_message, error: comments_error,
+        current_user: comments_user
+    } only %}
+{% elseif article.comments_enabled %}
+    <p class="comments-unavailable">Comments are temporarily unavailable.</p>
+{% endif %}
 {% endblock %}

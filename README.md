@@ -4,7 +4,7 @@ NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke an
 
 ## Current status
 
-Phase 4C-A adds the first configurable block system. The current project includes:
+Phase 5B adds reusable threaded comments and moderation. The current project includes:
 
 - PSR-4 autoloading;
 - environment-based configuration;
@@ -24,7 +24,7 @@ Phase 4C-A adds the first configurable block system. The current project include
 - initial roles and first Super Administrator creation;
 - atomic `.env` generation and an installation lock.
 
-Authentication, authorization, modules, themes and sanitized HTML blocks are operational. News, pages, comments and additional content modules arrive in later phases.
+Authentication, authorization, modules, themes, blocks, menus, News and Comments are operational. Pages and additional content modules arrive in later phases.
 
 ## Requirements
 
@@ -74,6 +74,8 @@ Phase 4C-A adds scheduled, role-aware and page-aware blocks with sanitized enric
 Phase 4C-B adds multiple hierarchical menus with validated internal, module and external links plus per-item role visibility.
 
 Phase 5A adds the installable News editorial module with drafts, scheduled publication, categories, topics and tags.
+
+Phase 5B adds the optional Comments module with nested replies, moderation, reports, guest policy, edit windows and persistent submission limits. Install and enable Comments from `/admin/modules`, update News to 1.1.0, then manage the feature at `/admin/comments`. See `docs/COMMENTS.md` for the reusable content-provider contract.
 
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 

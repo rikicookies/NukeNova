@@ -22,6 +22,8 @@ Creating an article dispatches `content.created`; editing dispatches `content.up
 
 The module listens to `admin.menu.building` to add its dashboard entry without modifying the core dashboard for module-specific functionality.
 
+News 1.1.0 also listens to `comments.content.checking`. It accepts only an existing public article whose `comments_enabled` flag is on. If the optional Comments module is disabled, News continues to render normally and shows no comment forms.
+
 ## View counts
 
 The detail controller increments a view at most once per article in the current session and retains only the latest 100 IDs. This is a basic counter, not an analytics or identity-tracking system.

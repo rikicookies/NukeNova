@@ -13,6 +13,8 @@ use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\Security\HtmlSanitizer;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
+use Modules\Comments\src\CommentService;
+use Modules\Comments\src\CommentTargetChecking;
 
 final class NewsModule implements ModuleInterface
 {
@@ -28,8 +30,17 @@ final class NewsModule implements ModuleInterface
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('News', '/admin/news', 'news.edit');
         });
+        $context->events->listen('comments.content.checking', static function (object $event) use ($context): void {
+            if ($event instanceof CommentTargetChecking && $event->type === 'news'
+                && $context->container->get(NewsRepository::class)->acceptsComments($event->contentId)) {
+                $event->accept();
+            }
+        });
         $public = static fn (Container $container): PublicNewsController => new PublicNewsController(
             $container->get(NewsRepository::class), $container->get(SessionManager::class), $container->get(ViewRenderer::class),
+            $container->has(CommentService::class) ? $container->get(CommentService::class) : null,
+            $container->has(CommentService::class) ? $container->get(\NovaNuke\Core\Security\CsrfTokenManager::class) : null,
+            $container->has(CommentService::class) ? $container->get(\NovaNuke\Auth\AuthManager::class) : null,
         );
         $admin = static fn (Container $container): AdminNewsController => new AdminNewsController(
             $container->get(NewsRepository::class), $container->get(NewsInput::class),

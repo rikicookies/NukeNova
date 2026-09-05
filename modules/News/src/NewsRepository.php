@@ -134,6 +134,16 @@ final class NewsRepository
         $statement->execute(['id' => $id]);
     }
 
+    public function acceptsComments(int $id): bool
+    {
+        $statement = $this->database->prepare(
+            "SELECT COUNT(*) FROM news_articles WHERE id=:id AND deleted_at IS NULL AND comments_enabled=1 "
+            . "AND published_at<=UTC_TIMESTAMP() AND status IN ('published','scheduled')"
+        );
+        $statement->execute(['id' => $id]);
+        return (int) $statement->fetchColumn() === 1;
+    }
+
     private function assertTaxonomy(?int $id, string $table): void
     {
         if ($id === null) return;

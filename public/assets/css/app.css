@@ -159,3 +159,23 @@ body { margin: 0; min-height: 100vh; }
 .news-article > img { width: 100%; max-height: 520px; margin: 1.5rem 0; border-radius: .7rem; object-fit: cover; }
 .article-content { margin: 2rem 0; color: #d5deea; line-height: 1.75; }
 @media (max-width: 700px) { .taxonomy-grid { grid-template-columns: 1fr; } }
+.comments-section { width: min(960px, 100%); margin-top: 1.5rem; padding: clamp(1.25rem, 4vw, 2.5rem); border: 1px solid #293650; border-radius: 1rem; background: #0b111d; }
+.comments-section h2 { margin: .2rem 0 1.5rem; font-size: clamp(2rem, 5vw, 3.25rem); }
+.comment-form, .comment-actions form { display: grid; gap: .7rem; margin: 1rem 0; }
+.comment-form label, .comment-actions label { color: #aeb9cc; font-size: .8rem; font-weight: 700; }
+.comment-form input, .comment-form textarea, .comment-actions input, .comment-actions textarea { width: 100%; margin-top: .35rem; padding: .7rem; border: 1px solid #34415a; border-radius: .45rem; background: #080d17; color: #fff; }
+.comment-form textarea, .comment-actions textarea { min-height: 100px; resize: vertical; }
+.comment-form button, .comment-actions button, .inline-form button, .admin-table button { width: fit-content; padding: .6rem .85rem; border: 0; border-radius: .45rem; background: #263c59; color: #fff; cursor: pointer; }
+.comment-list { display: grid; gap: .8rem; margin-top: 2rem; }
+.comment { padding: 1rem; border-left: 3px solid #34415a; border-radius: .4rem; background: #0e1727; }
+.comment-depth-1 { margin-left: 1rem; }.comment-depth-2 { margin-left: 2rem; }.comment-depth-3 { margin-left: 3rem; }.comment-depth-4, .comment-depth-5 { margin-left: 4rem; }
+.comment header { display: flex; flex-wrap: wrap; gap: .75rem; align-items: baseline; }
+.comment header small { color: #8997ac; }
+.comment-body { margin: .75rem 0; color: #d5deea; line-height: 1.65; overflow-wrap: anywhere; }
+.comment-actions { display: flex; flex-wrap: wrap; gap: .7rem; }
+.comment-actions details { flex: 1 1 130px; }
+.comment-actions summary { color: #8be9fd; cursor: pointer; font-size: .8rem; }
+.comment-preview { display: block; max-width: 36rem; margin-top: .4rem; overflow: hidden; color: #c4cede; text-overflow: ellipsis; white-space: nowrap; }
+.inline-form { display: flex; gap: .5rem; }
+.inline-form select { padding: .5rem; border: 1px solid #34415a; border-radius: .4rem; background: #080d17; color: #fff; }
+.comments-unavailable, .comments-empty { color: #8997ac; }

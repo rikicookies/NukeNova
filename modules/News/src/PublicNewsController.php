@@ -7,12 +7,19 @@ namespace Modules\News\src;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
+use Modules\Comments\src\CommentService;
+use NovaNuke\Auth\AuthManager;
 use Twig\Markup;
 
 final class PublicNewsController
 {
-    public function __construct(private readonly NewsRepository $news, private readonly SessionManager $session, private readonly ViewRenderer $views)
+    public function __construct(
+        private readonly NewsRepository $news, private readonly SessionManager $session,
+        private readonly ViewRenderer $views, private readonly ?CommentService $comments = null,
+        private readonly ?CsrfTokenManager $csrf = null, private readonly ?AuthManager $auth = null,
+    )
     {
     }
 
@@ -39,6 +46,19 @@ final class PublicNewsController
             $article['view_count'] = (int) $article['view_count'] + 1;
         }
         $article['content_html'] = new Markup((string) $article['content'], 'UTF-8');
-        return Response::html($this->views->render('@news/show.twig', ['article' => $article]));
+        $commentData = ['comments_available' => false];
+        if ($this->comments !== null && $this->csrf !== null && (int) $article['comments_enabled'] === 1) {
+            $commentData = [
+                'comments_available' => true,
+                'comments' => $this->comments->for('news', (int) $article['id']),
+                'comments_guests_allowed' => $this->comments->guestsAllowed(),
+                'comments_csrf_token' => $this->csrf->token(),
+                'comments_return_to' => '/news/' . $article['slug'],
+                'comments_message' => $this->session->pull('comments.message'),
+                'comments_error' => $this->session->pull('comments.error'),
+                'comments_user' => $this->auth?->user(),
+            ];
+        }
+        return Response::html($this->views->render('@news/show.twig', ['article' => $article] + $commentData));
     }
 }
