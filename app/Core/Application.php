@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace NovaNuke\Core;
 
 use NovaNuke\Auth\AuthManager;
-use NovaNuke\Auth\LoginThrottle;
 use NovaNuke\Auth\PasswordResetService;
 use NovaNuke\Auth\RegistrationService;
 use NovaNuke\Core\Config\ConfigLoader;
@@ -18,8 +17,12 @@ use NovaNuke\Core\Http\Routing\Router;
 use NovaNuke\Core\Mail\LogMailer;
 use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Security\AuthorizationService;
+use NovaNuke\Core\Security\DatabaseRateLimiter;
+use NovaNuke\Core\Security\RateLimiter;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\Settings\SettingsRepository;
+use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\View\ViewRenderer;
 use PDO;
 
@@ -87,8 +90,17 @@ final class Application
             $c->get(PDO::class),
             $c->get(SessionManager::class),
         ));
-        $container->bind(LoginThrottle::class, static fn (Container $c) => new LoginThrottle(
-            $c->get(SessionManager::class),
+        $container->bind(RateLimiter::class, static fn (Container $c) => new DatabaseRateLimiter(
+            $c->get(PDO::class),
+            5,
+            300,
+            'login',
+        ));
+        $container->bind(AuthorizationService::class, static fn (Container $c) => new AuthorizationService(
+            $c->get(PDO::class),
+        ));
+        $container->bind(ActivityLogger::class, static fn (Container $c) => new ActivityLogger(
+            $c->get(PDO::class),
         ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',

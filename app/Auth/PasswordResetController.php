@@ -8,6 +8,7 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Security\RateLimiter;
 use RuntimeException;
 use Throwable;
 
@@ -15,7 +16,7 @@ final class PasswordResetController
 {
     public function __construct(
         private readonly PasswordResetService $resets,
-        private readonly LoginThrottle $throttle,
+        private readonly RateLimiter $throttle,
         private readonly PasswordPolicy $passwords,
         private readonly CsrfTokenManager $csrf,
         private readonly ViewRenderer $views,

@@ -8,12 +8,15 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Security\RateLimiter;
+use NovaNuke\Core\Security\AuthorizationService;
 
 final class AuthController
 {
     public function __construct(
         private readonly AuthManager $auth,
-        private readonly LoginThrottle $throttle,
+        private readonly AuthorizationService $authorization,
+        private readonly RateLimiter $throttle,
         private readonly LoginValidator $validator,
         private readonly CsrfTokenManager $csrf,
         private readonly ViewRenderer $views,
@@ -25,7 +28,7 @@ final class AuthController
         $currentUser = $this->auth->user();
         if ($currentUser !== null) {
             return Response::redirect(
-                $this->auth->isSuperAdministrator((int) $currentUser['id']) ? '/admin' : '/'
+                $this->authorization->allows((int) $currentUser['id'], 'admin.access') ? '/admin' : '/'
             );
         }
 
@@ -57,7 +60,7 @@ final class AuthController
                 $this->throttle->clear($key);
                 $this->csrf->rotate();
                 return Response::redirect(
-                    $this->auth->isSuperAdministrator((int) $user['id']) ? '/admin' : '/'
+                    $this->authorization->allows((int) $user['id'], 'admin.access') ? '/admin' : '/'
                 );
             }
 

@@ -1,0 +1,19 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Roles — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Authorization</p>
+    <h1>Roles</h1>
+    <p>Permissions are enforced by the server on every protected operation.</p>
+    <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Role</th><th>Slug</th><th>Permissions</th><th></th></tr></thead>
+        <tbody>{% for role in roles %}<tr>
+            <td><strong>{{ role.name }}</strong>{% if role.description %}<small>{{ role.description }}</small>{% endif %}</td>
+            <td><code>{{ role.slug }}</code></td>
+            <td>{{ role.permission_count }}</td>
+            <td><a href="/admin/roles/{{ role.id }}">View{% if role.slug != 'super-administrator' %} / edit{% endif %}</a></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

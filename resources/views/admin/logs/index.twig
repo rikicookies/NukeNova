@@ -1,0 +1,20 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Activity logs — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Audit</p>
+    <h1>Activity logs</h1>
+    <p>The latest 200 security-relevant administrative changes.</p>
+    <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>Date</th><th>Actor</th><th>Action</th><th>Subject</th><th>Context</th></tr></thead>
+        <tbody>{% for log in logs %}<tr>
+            <td>{{ log.created_at }}</td>
+            <td>{{ log.actor_username ?: 'System' }}</td>
+            <td><code>{{ log.action }}</code></td>
+            <td>{{ log.subject_type }}{% if log.subject_id %} #{{ log.subject_id }}{% endif %}</td>
+            <td><small>{{ log.context ?: '—' }}</small></td>
+        </tr>{% else %}<tr><td colspan="5">No activity recorded yet.</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

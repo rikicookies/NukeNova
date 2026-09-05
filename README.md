@@ -111,6 +111,17 @@ When verification is required, new users receive the `Member` role and remain in
 
 Disabling verification affects only future registrations; it does not automatically activate accounts already awaiting verification.
 
+## Roles, permissions and audit history
+
+Phase 3C-C adds server-enforced permissions, user role assignment, suspension/reactivation, persistent database rate limits and administrative activity logs.
+
+- `/admin/users` manages account status and role assignments.
+- `/admin/roles` displays roles and edits permission assignments.
+- `/admin/logs` displays the latest 200 administrative audit events.
+- `docs/AUTHORIZATION.md` documents the internal authorization contract.
+
+NovaNuke prevents users from changing their own roles/status in the panel and prevents removal or suspension of the final active Super Administrator.
+
 ## Tests
 
 Run:

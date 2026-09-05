@@ -8,6 +8,7 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Security\RateLimiter;
 use RuntimeException;
 
 final class RegistrationController
@@ -15,7 +16,7 @@ final class RegistrationController
     public function __construct(
         private readonly RegistrationService $registration,
         private readonly RegistrationValidator $validator,
-        private readonly LoginThrottle $throttle,
+        private readonly RateLimiter $throttle,
         private readonly CsrfTokenManager $csrf,
         private readonly ViewRenderer $views,
         private readonly string $locale,

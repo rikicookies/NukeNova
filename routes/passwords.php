@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Auth\LoginThrottle;
 use NovaNuke\Auth\PasswordPolicy;
 use NovaNuke\Auth\PasswordResetController;
 use NovaNuke\Auth\PasswordResetService;
@@ -10,12 +9,12 @@ use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
-use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\View\ViewRenderer;
 
 $passwordController = static fn (Container $container): PasswordResetController => new PasswordResetController(
     $container->get(PasswordResetService::class),
-    new LoginThrottle($container->get(SessionManager::class), 3, 900),
+    new DatabaseRateLimiter($container->get(\PDO::class), 3, 900, 'password-reset'),
     new PasswordPolicy(),
     $container->get(CsrfTokenManager::class),
     $container->get(ViewRenderer::class),

@@ -1,0 +1,31 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Manage {{ edited_user.username }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Account</p>
+    <h1>{{ edited_user.username }}</h1>
+    <p>{{ edited_user.email }}</p>
+    {% if saved %}<div class="success-message">User authorization saved.</div>{% endif %}
+    {% if edited_user.id == current_user_id %}<div class="notice-message">Your own roles and status cannot be changed from this screen.</div>{% endif %}
+    <form method="post" action="/admin/users/{{ edited_user.id }}">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="field-label">Account status
+            <select name="status" {% if edited_user.id == current_user_id %}disabled{% endif %}>
+                <option value="active" {% if edited_user.status == 'active' %}selected{% endif %}>Active</option>
+                <option value="suspended" {% if edited_user.status == 'suspended' %}selected{% endif %}>Suspended</option>
+            </select>
+        </label>
+        <h2>Roles</h2>
+        <div class="permission-grid">
+            {% for role in roles %}
+            <label class="toggle-row">
+                <input type="checkbox" name="roles[]" value="{{ role.id }}" {% if role.id in assigned_roles %}checked{% endif %} {% if edited_user.id == current_user_id %}disabled{% endif %}>
+                <span><strong>{{ role.name }}</strong><code>{{ role.slug }}</code><small>{{ role.description }}</small></span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if edited_user.id != current_user_id %}<button class="install-button" type="submit">Save user</button>{% endif %}
+    </form>
+    <p><a class="auth-link" href="/admin/users">Return to users</a></p>
+</section>
+{% endblock %}

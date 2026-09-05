@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Auth\LoginThrottle;
 use NovaNuke\Auth\PasswordPolicy;
 use NovaNuke\Auth\RegistrationController;
 use NovaNuke\Auth\RegistrationService;
@@ -12,7 +11,7 @@ use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
-use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\View\ViewRenderer;
 
 $registrationController = static function (Container $container): RegistrationController {
@@ -20,7 +19,7 @@ $registrationController = static function (Container $container): RegistrationCo
     return new RegistrationController(
         $container->get(RegistrationService::class),
         new RegistrationValidator(new PasswordPolicy()),
-        new LoginThrottle($container->get(SessionManager::class), 3, 900),
+        new DatabaseRateLimiter($container->get(\PDO::class), 3, 900, 'registration'),
         $container->get(CsrfTokenManager::class),
         $container->get(ViewRenderer::class),
         (string) $config->get('app.locale', 'en'),

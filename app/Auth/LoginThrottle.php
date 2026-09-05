@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace NovaNuke\Auth;
 
 use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Security\RateLimiter;
 
-final class LoginThrottle
+final class LoginThrottle implements RateLimiter
 {
     private const KEY = '_login_attempts';
 

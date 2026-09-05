@@ -53,4 +53,26 @@ body { margin: 0; min-height: 100vh; }
 .toggle-row input { width: 1.15rem; height: 1.15rem; margin-top: .15rem; accent-color: #8be9fd; }
 .toggle-row span, .toggle-row strong, .toggle-row small { display: block; }
 .toggle-row small { margin-top: .3rem; color: #8c99ad; font-weight: 400; }
+.admin-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin: 2rem 0; }
+.admin-links a { padding: 1rem; border: 1px solid #293650; border-radius: .7rem; background: #09101c; color: #8be9fd; text-decoration: none; }
+.admin-page { width: min(1100px, 100%); }
+.admin-page > h1 { margin: .2rem 0; font-size: clamp(2.5rem, 7vw, 4.5rem); letter-spacing: -.055em; }
+.admin-page > p { color: #aeb9cc; }
+.table-wrap { margin: 2rem 0; overflow-x: auto; border: 1px solid #293650; border-radius: .8rem; }
+.admin-table { width: 100%; border-collapse: collapse; background: #0b111d; }
+.admin-table th, .admin-table td { padding: .9rem 1rem; border-bottom: 1px solid #222d42; text-align: left; vertical-align: top; white-space: nowrap; }
+.admin-table th { color: #8997ac; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.admin-table td { font-size: .85rem; }
+.admin-table td small, .admin-table td strong { display: block; }
+.admin-table td small { color: #8997ac; }
+.admin-table a { color: #8be9fd; }
+.permission-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin: 1.5rem 0; }
+.toggle-row code { margin-top: .2rem; color: #8be9fd; font-size: .72rem; }
+.notice-message { margin: 1.5rem 0; padding: 1rem; border: 1px solid #66512a; border-radius: .6rem; background: #332914; color: #f5d78b; }
+.field-label { display: block; max-width: 420px; margin: 2rem 0; color: #aeb9cc; font-weight: 700; }
+.field-label select { width: 100%; margin-top: .5rem; padding: .8rem; border: 1px solid #34415a; border-radius: .6rem; background: #080d17; color: #fff; }
+.badge { display: inline-block; padding: .25rem .5rem; border-radius: 999px; background: #26334a; font-size: .7rem; }
+.badge-active { background: #123a2d; color: #8ee9bd; }
+.badge-suspended { background: #48212a; color: #ff9bab; }
+@media (max-width: 700px) { .admin-links, .permission-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .dashboard-grid { grid-template-columns: 1fr; } }

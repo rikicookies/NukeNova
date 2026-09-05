@@ -1,0 +1,19 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Users — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Accounts</p>
+    <h1>Users</h1>
+    <div class="table-wrap"><table class="admin-table">
+        <thead><tr><th>User</th><th>Status</th><th>Roles</th><th>Last login</th><th></th></tr></thead>
+        <tbody>{% for item in users %}<tr>
+            <td><strong>{{ item.username }}</strong><small>{{ item.email }}</small></td>
+            <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+            <td>{{ item.roles ?: 'No role' }}</td>
+            <td>{{ item.last_login_at ?: 'Never' }}</td>
+            <td><a href="/admin/users/{{ item.id }}">Manage</a></td>
+        </tr>{% endfor %}</tbody>
+    </table></div>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

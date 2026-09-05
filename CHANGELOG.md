@@ -43,6 +43,14 @@ All notable NovaNuke changes will be documented here.
 - Automatic Member role assignment for public registrations.
 - Super Administrator user-registration settings screen.
 - Registration validation and verification mail tests.
+- Server-enforced role and permission authorization service.
+- Sixteen initial core and module permission definitions.
+- User role assignment, suspension and reactivation screens.
+- Role permission management screen.
+- Protection for the final active Super Administrator.
+- Persistent database-backed rate limits for login, recovery and registration.
+- Administrative activity log and viewer.
+- Authorization developer documentation and role-safety tests.
 
 ### Changed
 

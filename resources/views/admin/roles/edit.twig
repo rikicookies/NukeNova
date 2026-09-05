@@ -1,0 +1,26 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ role.name }} permissions — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Authorization</p>
+    <h1>{{ role.name }}</h1>
+    <p><code>{{ role.slug }}</code></p>
+    {% if saved %}<div class="success-message">Role permissions saved.</div>{% endif %}
+    {% if role.slug == 'super-administrator' %}
+        <div class="notice-message">This protected role always has every permission and cannot be edited.</div>
+    {% endif %}
+    <form method="post" action="/admin/roles/{{ role.id }}">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <div class="permission-grid">
+            {% for permission in permissions %}
+            <label class="toggle-row">
+                <input type="checkbox" name="permissions[]" value="{{ permission.id }}" {% if permission.selected %}checked{% endif %} {% if role.slug == 'super-administrator' %}disabled{% endif %}>
+                <span><strong>{{ permission.name }}</strong><code>{{ permission.slug }}</code><small>{{ permission.description }}</small></span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if role.slug != 'super-administrator' %}<button class="install-button" type="submit">Save permissions</button>{% endif %}
+    </form>
+    <p><a class="auth-link" href="/admin/roles">Return to roles</a></p>
+</section>
+{% endblock %}
