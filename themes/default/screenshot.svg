@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750">
+  <rect width="1200" height="750" fill="#070a11"/>
+  <rect x="70" y="55" width="1060" height="70" rx="12" fill="#0c1321" stroke="#293650"/>
+  <text x="105" y="100" fill="#8be9fd" font-family="Arial,sans-serif" font-size="28" font-weight="700">NovaNuke</text>
+  <rect x="155" y="180" width="890" height="430" rx="28" fill="#0c1321" stroke="#8be9fd"/>
+  <text x="215" y="280" fill="#8be9fd" font-family="Arial,sans-serif" font-size="18" font-weight="700">MODERN MODULAR CMS</text>
+  <text x="215" y="380" fill="#edf3fc" font-family="Arial,sans-serif" font-size="66" font-weight="700">Old-school spirit.</text>
+  <text x="215" y="430" fill="#aeb9cc" font-family="Arial,sans-serif" font-size="26">Clean layouts, module overrides and configurable color.</text>
+  <rect x="215" y="490" width="170" height="54" rx="10" fill="#8be9fd"/>
+  <text x="260" y="525" fill="#071018" font-family="Arial,sans-serif" font-size="20" font-weight="700">Explore</text>
+</svg>

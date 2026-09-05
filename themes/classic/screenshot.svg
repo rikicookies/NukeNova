@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="750" viewBox="0 0 1200 750">
+  <rect width="1200" height="750" fill="#c7c9cc"/><rect x="35" y="35" width="1130" height="85" rx="8" fill="#293440"/><text x="75" y="88" fill="#f4c95d" font-family="Verdana" font-size="30" font-weight="700">Classic Portal</text>
+  <rect x="35" y="135" width="220" height="520" rx="6" fill="#f5f5f3" stroke="#59616b"/><rect x="270" y="135" width="660" height="520" rx="6" fill="#f5f5f3" stroke="#59616b"/><rect x="945" y="135" width="220" height="520" rx="6" fill="#f5f5f3" stroke="#59616b"/>
+  <rect x="35" y="135" width="220" height="50" fill="#303b48"/><rect x="945" y="135" width="220" height="50" fill="#303b48"/><text x="60" y="168" fill="#f4c95d" font-family="Verdana" font-size="16">NAVIGATION</text><text x="970" y="168" fill="#f4c95d" font-family="Verdana" font-size="16">ACCOUNT</text>
+  <text x="315" y="245" fill="#8c6413" font-family="Verdana" font-size="14">LATEST NEWS</text><text x="315" y="330" fill="#283544" font-family="Georgia" font-size="54" font-weight="700">Community portal</text><text x="315" y="380" fill="#59616b" font-family="Verdana" font-size="20">Classic columns. Modern PHP.</text>
+</svg>

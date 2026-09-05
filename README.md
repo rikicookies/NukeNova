@@ -132,6 +132,16 @@ Phase 4A introduces manually copied, trusted modules with manifests, compatibili
 
 Disabling a module preserves its data. Uninstallation requires typing the module slug and explicitly choosing whether module tables should be deleted.
 
+## Themes and view overrides
+
+Phase 4B adds theme manifests, installation, activation, validated appearance settings, safe asset publishing, layouts, partials and module template overrides.
+
+- Manage themes at `/admin/themes`.
+- Switch between bundled Nova Default and Classic Portal themes.
+- Read `docs/THEMES.md` before creating a theme.
+
+The active theme cannot be uninstalled. Theme source files remain manually managed outside the public web root; only validated assets are copied into `public/assets/themes/`.
+
 ## Tests
 
 Run:

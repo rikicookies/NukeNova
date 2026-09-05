@@ -1,0 +1,8 @@
+{% extends "layouts/default.twig" %}
+{% block content %}
+<div class="two-sidebar-layout">
+    <aside>{% block left_sidebar %}{% endblock %}</aside>
+    <section>{% block main_content %}{% endblock %}</section>
+    <aside>{% block right_sidebar %}{% endblock %}</aside>
+</div>
+{% endblock %}

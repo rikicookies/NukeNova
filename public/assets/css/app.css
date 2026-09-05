@@ -89,4 +89,15 @@ body { margin: 0; min-height: 100vh; }
 .uninstall-form { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; padding-top: .6rem; border-top: 1px solid #293650; }
 .uninstall-form label { color: #9ba8bb; font-size: .75rem; }
 @media (max-width: 750px) { .module-grid { grid-template-columns: 1fr; } }
+.theme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 2rem 0; }
+.theme-card { overflow: hidden; border: 1px solid #293650; border-radius: .9rem; background: #0b111d; }
+.theme-card.active-theme { border-color: #8be9fd; }
+.theme-card > img, .theme-placeholder { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: #121a2a; }
+.theme-placeholder { display: grid; place-items: center; color: #8be9fd; font-size: 1.4rem; font-weight: 900; }
+.theme-card-body { padding: 1.25rem; }
+.theme-card-body > p { color: #aeb9cc; }
+.theme-settings { display: grid; gap: .7rem; margin: 1.25rem 0; padding-top: 1rem; border-top: 1px solid #293650; }
+.theme-settings .field-label { margin: 0; }
+.theme-settings input:not([type="checkbox"]) { width: 100%; margin-top: .4rem; padding: .6rem; border: 1px solid #34415a; border-radius: .45rem; background: #080d17; color: #fff; }
+@media (max-width: 750px) { .theme-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .dashboard-grid { grid-template-columns: 1fr; } }

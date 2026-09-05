@@ -1,0 +1,39 @@
+{
+    "name": "Nova Default",
+    "slug": "default",
+    "version": "1.0.0",
+    "description": "The responsive default NovaNuke theme with one or two sidebar-ready layouts.",
+    "author": "NovaNuke Project",
+    "cms_min_version": "0.1.0",
+    "screenshot": "screenshot.svg",
+    "layouts": [
+        "default",
+        "full-width",
+        "two-sidebars"
+    ],
+    "positions": [
+        "header",
+        "left-sidebar",
+        "right-sidebar",
+        "before-content",
+        "after-content",
+        "footer"
+    ],
+    "settings": {
+        "accent_color": {
+            "type": "color",
+            "label": "Accent color",
+            "default": "#8be9fd"
+        },
+        "site_tagline": {
+            "type": "text",
+            "label": "Site tagline",
+            "default": "A modern CMS with an old-school spirit."
+        },
+        "show_version": {
+            "type": "boolean",
+            "label": "Show development version",
+            "default": true
+        }
+    }
+}

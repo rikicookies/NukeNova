@@ -8,6 +8,7 @@ use NovaNuke\Admin\RolesController;
 use NovaNuke\Admin\UsersController;
 use NovaNuke\Admin\ActivityLogsController;
 use NovaNuke\Admin\ModulesController;
+use NovaNuke\Admin\ThemesController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -17,6 +18,7 @@ use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Modules\ModuleManager;
+use NovaNuke\Core\Themes\ThemeManager;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
     $auth = $container->get(AuthManager::class);
@@ -109,4 +111,19 @@ $router->get('/admin/modules', static fn (Request $request, Container $container
 );
 $router->post('/admin/modules/{slug}/{action}', static fn (Request $request, Container $container): Response =>
     $modulesController($container)->action($request)
+);
+
+$themesController = static fn (Container $container): ThemesController => new ThemesController(
+    $container->get(ThemeManager::class),
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/themes', static fn (Request $request, Container $container): Response =>
+    $themesController($container)->index()
+);
+$router->post('/admin/themes/{slug}/{action}', static fn (Request $request, Container $container): Response =>
+    $themesController($container)->action($request)
 );

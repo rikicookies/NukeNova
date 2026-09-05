@@ -40,4 +40,24 @@ final class SettingsRepository
             'group_name' => $group,
         ]);
     }
+
+    public function string(string $key, string $default = ''): string
+    {
+        $statement = $this->database->prepare('SELECT `value` FROM settings WHERE `key` = :key LIMIT 1');
+        $statement->execute(['key' => $key]);
+        $value = $statement->fetchColumn();
+
+        return $value === false ? $default : (string) $value;
+    }
+
+    public function setString(string $key, string $value, string $group = 'general'): void
+    {
+        $statement = $this->database->prepare(
+            'INSERT INTO settings (`key`, `value`, `type`, group_name, created_at, updated_at) '
+            . 'VALUES (:key, :value, :type, :group_name, UTC_TIMESTAMP(), UTC_TIMESTAMP()) '
+            . 'ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `type` = VALUES(`type`), '
+            . 'group_name = VALUES(group_name), updated_at = UTC_TIMESTAMP()'
+        );
+        $statement->execute(['key' => $key, 'value' => $value, 'type' => 'string', 'group_name' => $group]);
+    }
 }

@@ -30,6 +30,10 @@ use NovaNuke\Core\Modules\ModuleDetector;
 use NovaNuke\Core\Modules\ModuleManager;
 use NovaNuke\Core\Modules\ModuleMigrator;
 use NovaNuke\Core\Modules\ModuleRepository;
+use NovaNuke\Core\Themes\ThemeAssetPublisher;
+use NovaNuke\Core\Themes\ThemeDetector;
+use NovaNuke\Core\Themes\ThemeManager;
+use NovaNuke\Core\Themes\ThemeRepository;
 use PDO;
 
 final class Application
@@ -121,6 +125,15 @@ final class Application
             $c->get(Router::class),
             $c->get(EventDispatcher::class),
         ));
+        $container->bind(ThemeManager::class, static fn (Container $c) => new ThemeManager(
+            new ThemeDetector($rootPath . '/themes'),
+            new ThemeRepository($c->get(PDO::class)),
+            new ThemeAssetPublisher($rootPath . '/public/assets/themes'),
+            $c->get(SettingsRepository::class),
+            $c->get(ViewRenderer::class),
+            $c->get(EventDispatcher::class),
+            self::VERSION,
+        ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
             $rootPath . '/storage/cache/twig',
@@ -167,6 +180,7 @@ final class Application
         require $this->rootPath . '/routes/passwords.php';
         require $this->rootPath . '/routes/registration.php';
         require $this->rootPath . '/routes/admin.php';
+        $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
     }
 }

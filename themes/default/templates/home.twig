@@ -1,0 +1,16 @@
+{% extends "layouts/default.twig" %}
+{% block content %}
+<section class="nova-hero">
+    {% if theme.settings.show_version %}<p class="eyebrow">Version {{ version }}</p>{% endif %}
+    <h1>NovaNuke is ready to grow.</h1>
+    <p>{{ theme.settings.site_tagline }}</p>
+    <div class="nova-actions">
+        {% if user %}
+            <span>Signed in as <strong>{{ user.username }}</strong></span>
+            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+        {% else %}
+            <a href="/login">Sign in</a><a href="/register">Create account</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

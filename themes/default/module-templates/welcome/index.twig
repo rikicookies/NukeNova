@@ -1,0 +1,10 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Themed Welcome — NovaNuke{% endblock %}
+{% block content %}
+<section class="nova-hero module-override">
+    <p class="eyebrow">Theme override</p>
+    <h1>Welcome, restyled.</h1>
+    <p>{{ message }}</p>
+    <small>This template comes from <code>themes/default/module-templates/welcome/</code>, not from the module.</small>
+</section>
+{% endblock %}

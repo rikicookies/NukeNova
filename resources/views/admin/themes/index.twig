@@ -1,0 +1,60 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Themes — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Appearance</p>
+    <h1>Themes</h1>
+    <p>Copy trusted themes into <code>themes/</code>, install them and select one active theme.</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+
+    <div class="theme-grid">
+        {% for slug, item in themes %}
+        <article class="theme-card {{ item.active ? 'active-theme' : '' }}">
+            {% if item.installed and item.manifest and item.manifest.screenshot %}
+                <img src="/assets/themes/{{ slug }}/{{ item.manifest.screenshot }}" alt="{{ item.manifest.name }} screenshot">
+            {% else %}<div class="theme-placeholder">{{ item.manifest ? item.manifest.name : item.name }}</div>{% endif %}
+            <div class="theme-card-body">
+                <div class="module-heading"><div><h2>{{ item.manifest ? item.manifest.name : item.name }}</h2><code>{{ slug }}</code></div>{% if item.active %}<span class="badge badge-active">Active</span>{% endif %}</div>
+                {% if item.manifest %}<p>{{ item.manifest.description }}</p><small>Available {{ item.manifest.version }} · Installed {{ item.installed_version ?: '—' }}</small>{% endif %}
+                {% if not item.compatible %}<div class="notice-message">{{ item.compatibility_reason }}</div>{% endif %}
+
+                <div class="module-actions">
+                {% if not item.installed and item.manifest and item.compatible %}
+                    <form method="post" action="/admin/themes/{{ slug }}/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
+                {% elseif item.installed and item.manifest %}
+                    {% if item.update_available %}<form method="post" action="/admin/themes/{{ slug }}/update"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
+                    {% if not item.active %}<form method="post" action="/admin/themes/{{ slug }}/activate"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Activate</button></form>{% endif %}
+                {% endif %}
+                </div>
+
+                {% if item.installed and item.manifest and item.manifest.settings %}
+                <form class="theme-settings" method="post" action="/admin/themes/{{ slug }}/configure">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}">
+                    {% for key, definition in item.manifest.settings %}
+                        {% if definition.type == 'boolean' %}
+                            <label class="toggle-row"><input type="checkbox" name="{{ key }}" value="1" {% if item.settings[key] %}checked{% endif %}><span><strong>{{ definition.label|default(key) }}</strong></span></label>
+                        {% elseif definition.type == 'color' %}
+                            <label class="field-label">{{ definition.label|default(key) }}<input type="color" name="{{ key }}" value="{{ item.settings[key] }}"></label>
+                        {% else %}
+                            <label class="field-label">{{ definition.label|default(key) }}<input name="{{ key }}" value="{{ item.settings[key] }}" maxlength="200"></label>
+                        {% endif %}
+                    {% endfor %}
+                    <button class="install-button" type="submit">Save appearance</button>
+                </form>
+                {% endif %}
+
+                {% if item.installed and not item.active %}
+                <form class="uninstall-form" method="post" action="/admin/themes/{{ slug }}/uninstall">
+                    <input type="hidden" name="_token" value="{{ csrf_token }}">
+                    <label>Type <code>{{ slug }}</code><input name="confirm_slug" required autocomplete="off"></label>
+                    <button class="danger-button" type="submit">Uninstall</button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

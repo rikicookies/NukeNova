@@ -32,6 +32,25 @@ final class ViewRenderer
         $this->loader->addPath($path, $namespace);
     }
 
+    public function prependPath(string $path): void
+    {
+        $this->loader->prependPath($path);
+    }
+
+    public function prependNamespace(string $namespace, string $path): void
+    {
+        if (! preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $namespace)) {
+            throw new \InvalidArgumentException('Invalid view namespace.');
+        }
+
+        $this->loader->prependPath($path, $namespace);
+    }
+
+    public function addGlobal(string $name, mixed $value): void
+    {
+        $this->twig->addGlobal($name, $value);
+    }
+
     /** @param array<string, mixed> $data */
     public function render(string $template, array $data = []): string
     {

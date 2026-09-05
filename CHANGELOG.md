@@ -59,6 +59,13 @@ All notable NovaNuke changes will be documented here.
 - Administrative modules panel and audit events.
 - Official Welcome lifecycle demonstration module.
 - Module development documentation and manifest/event tests.
+- Theme manifests, detection, compatibility and lifecycle management.
+- Active theme selection and validated appearance settings.
+- Safe publishing of theme CSS, JavaScript, images and fonts.
+- Twig layout, partial and core template overrides.
+- Theme-level module template overrides.
+- Nova Default and Classic Portal reference themes.
+- Theme development documentation and manifest/asset security tests.
 
 ### Changed
 

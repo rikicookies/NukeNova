@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en" style="--classic-accent: {{ theme.settings.accent_color }}">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="{{ theme.asset_base }}/css/classic.css">
+</head>
+<body class="classic-theme">
+    {% include "partials/header.twig" %}
+    <main class="classic-shell">{% block content %}{% endblock %}</main>
+    {% include "partials/footer.twig" %}
+</body>
+</html>
