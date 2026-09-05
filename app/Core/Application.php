@@ -204,6 +204,11 @@ final class Application
         require $this->rootPath . '/routes/passwords.php';
         require $this->rootPath . '/routes/registration.php';
         require $this->rootPath . '/routes/admin.php';
+        $settings = $this->container->get(SettingsRepository::class);
+        $views = $this->container->get(ViewRenderer::class);
+        $views->addGlobal('cms_name', $settings->string('site.name', 'NovaNuke'));
+        $views->addGlobal('cms_url', $settings->string('site.url', ''));
+        $views->addGlobal('cms_locale', $settings->string('site.locale', 'en'));
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
         $this->container->get(BlockManager::class)->boot();

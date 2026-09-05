@@ -28,6 +28,15 @@ final class Response
         );
     }
 
+    /** @param array<string,string> $headers */
+    public static function xml(string $content, int $status = 200, array $headers = []): self
+    {
+        return new self($content, $status, array_replace([
+            'Content-Type' => 'application/xml; charset=UTF-8',
+            'X-Content-Type-Options' => 'nosniff',
+        ], $headers));
+    }
+
     public static function redirect(string $location, int $status = 302): self
     {
         if (! str_starts_with($location, '/')) {
@@ -45,6 +54,14 @@ final class Response
     public function content(): string
     {
         return $this->content;
+    }
+
+    public function header(string $name): ?string
+    {
+        foreach ($this->headers as $header => $value) {
+            if (strcasecmp($header, $name) === 0) return $value;
+        }
+        return null;
     }
 
     public function send(): void

@@ -87,6 +87,11 @@ All notable NovaNuke changes will be documented here.
 - Optional page comments with publication and viewer-access validation.
 - Page directory, internal-menu guidance and Pages developer documentation.
 - Extensible `page.rendering` hook with post-listener template validation.
+- News 1.2.0 RSS 2.0 feed containing the latest 20 publicly available articles.
+- DOM-based XML generation, absolute feed URLs, RSS dates and safe locale normalization.
+- RSS response type, MIME-sniffing protection and five-minute public cache metadata.
+- RSS autodiscovery and visible feed links in Nova Default and Classic Portal 1.4.0.
+- Installed site name, URL and locale exposed consistently to public Twig templates.
 
 ### Changed
 

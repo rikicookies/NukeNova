@@ -22,4 +22,15 @@ final class ResponseTest extends TestCase
     {
         self::assertSame(303, Response::redirect('/admin/themes', 303)->status());
     }
+
+    public function testXmlResponsesDeclareRssAndDisableMimeSniffing(): void
+    {
+        $response = Response::xml('<?xml version="1.0"?><rss/>', 200, [
+            'Content-Type' => 'application/rss+xml; charset=UTF-8', 'Cache-Control' => 'public, max-age=300',
+        ]);
+
+        self::assertSame('application/rss+xml; charset=UTF-8', $response->header('content-type'));
+        self::assertSame('nosniff', $response->header('X-Content-Type-Options'));
+        self::assertSame('public, max-age=300', $response->header('Cache-Control'));
+    }
 }

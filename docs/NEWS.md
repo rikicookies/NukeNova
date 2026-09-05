@@ -24,6 +24,14 @@ The module listens to `admin.menu.building` to add its dashboard entry without m
 
 News 1.1.0 also listens to `comments.content.checking`. It accepts only an existing public article whose `comments_enabled` flag is on. If the optional Comments module is disabled, News continues to render normally and shows no comment forms.
 
+## RSS
+
+News 1.2.0 publishes RSS 2.0 at `/news/rss.xml`. It contains at most the 20 newest articles whose publication time has arrived. Drafts, deleted articles and future scheduled articles are never included.
+
+The feed uses the installed site name, URL and locale. URLs are absolute, publication dates use the RSS date format, XML values are created as DOM text nodes, and the response declares `application/rss+xml`, disables MIME sniffing and permits five minutes of public caching. Both bundled themes advertise the feed in the document head.
+
+`site.url` must remain a valid HTTP or HTTPS base URL without credentials, query parameters or fragments. NovaNuke refuses to generate misleading feed links when that setting is unsafe.
+
 ## View counts
 
 The detail controller increments a view at most once per article in the current session and retains only the latest 100 IDs. This is a basic counter, not an analytics or identity-tracking system.

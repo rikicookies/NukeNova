@@ -128,6 +128,16 @@ final class NewsRepository
         return $article;
     }
 
+    public function rssArticles(): array
+    {
+        return $this->database->query(
+            "SELECT a.title,a.slug,a.summary,a.content,a.published_at,u.username,c.name AS category_name "
+            . "FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id "
+            . "WHERE a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') "
+            . 'ORDER BY a.published_at DESC,a.id DESC LIMIT 20'
+        )->fetchAll();
+    }
+
     public function incrementViews(int $id): void
     {
         $statement = $this->database->prepare('UPDATE news_articles SET view_count=view_count+1 WHERE id=:id');

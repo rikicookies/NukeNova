@@ -4,7 +4,7 @@ NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke an
 
 ## Current status
 
-Phase 5C adds installable informational pages with hierarchy and access control. The current project includes:
+Phase 5D completes the MVP content layer with a secure RSS feed. The current project includes:
 
 - PSR-4 autoloading;
 - environment-based configuration;
@@ -78,6 +78,8 @@ Phase 5A adds the installable News editorial module with drafts, scheduled publi
 Phase 5B adds the optional Comments module with nested replies, moderation, reports, guest policy, edit windows and persistent submission limits. Install and enable Comments from `/admin/modules`, update News to 1.1.0, then manage the feature at `/admin/comments`. See `docs/COMMENTS.md` for the reusable content-provider contract.
 
 Phase 5C adds the Pages module with drafts and scheduling, parent/child relationships, sanitized enriched content, SEO metadata, theme-overridable templates, directory visibility, role-aware access and optional Comments integration. See `docs/PAGES.md`.
+
+Phase 5D updates News to 1.2.0 with RSS 2.0 at `/news/rss.xml`, absolute canonical URLs, safe XML generation and theme autodiscovery. Bundled themes update to 1.4.0.
 
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 
