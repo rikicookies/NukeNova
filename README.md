@@ -4,7 +4,7 @@ NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke an
 
 ## Current status
 
-Phase 5D completes the MVP content layer with a secure RSS feed. The current project includes:
+Phase 7C adds authenticated encrypted SMTP delivery for production while retaining log delivery for Laragon. The current project includes:
 
 - PSR-4 autoloading;
 - environment-based configuration;
@@ -24,7 +24,7 @@ Phase 5D completes the MVP content layer with a secure RSS feed. The current pro
 - initial roles and first Super Administrator creation;
 - atomic `.env` generation and an installation lock.
 
-Authentication, authorization, modules, themes, blocks, menus, News, Comments and Pages are operational. Additional content modules arrive in later phases.
+Authentication, authorization, modules, themes, blocks, menus, News, Comments, Pages, Downloads, Search, Private Messages, Polls, Web Links and Statistics are operational.
 
 ## Requirements
 
@@ -80,6 +80,24 @@ Phase 5B adds the optional Comments module with nested replies, moderation, repo
 Phase 5C adds the Pages module with drafts and scheduling, parent/child relationships, sanitized enriched content, SEO metadata, theme-overridable templates, directory visibility, role-aware access and optional Comments integration. See `docs/PAGES.md`.
 
 Phase 5D updates News to 1.2.0 with RSS 2.0 at `/news/rss.xml`, absolute canonical URLs, safe XML generation and theme autodiscovery. Bundled themes update to 1.4.0.
+
+Phase 6A adds Downloads 1.0.0 with private local storage, validated uploads, external sources, hierarchical categories, publication and role access, catalog search/ordering, protected counters and broken-link reports. See `docs/DOWNLOADS.md`.
+
+Phase 6B adds Search 1.0.0 with providers for News 1.3.0, Pages 1.1.0 and Downloads 1.1.0. Unified results support type filters, safe highlighting and permission-aware discovery. Privacy-preserving popular-term logging is optional and disabled by default. See `docs/SEARCH.md`.
+
+Phase 6C adds Private Messages 1.0.0 with inbox and sent views, replies, participant-specific deletion, blocking, abuse reports and persistent rate limits. See `docs/PRIVATE_MESSAGES.md`.
+
+Phase 6D adds Polls 1.0.0 with scheduling, single or multiple selection, results, reasonable duplicate-vote controls and a dynamic active-poll block. See `docs/POLLS.md`.
+
+Phase 6E adds Web Links 1.0.0 with moderated submissions, categories, featured links, protected visit counters, safe external redirects and broken-link reports. See `docs/WEB_LINKS.md`.
+
+Phase 6F adds Statistics 1.0.0 with aggregate daily traffic, content totals, broad referrer/device/browser summaries, an optional public page and a dynamic summary block. See `docs/STATISTICS.md`.
+
+Phase 7A adds configurable CSP and HTTP security headers, `/admin/system`, `php bin/cms backup:database`, and production guidance for Laragon, Apache, Nginx and traditional shared hosting. See `docs/PRODUCTION.md`, `docs/BACKUPS.md` and `docs/SECURITY_CHECKLIST.md`.
+
+Phase 7B adds CSRF-protected maintenance mode, a permission audit on `/admin/system`, and `cache:status` / `cache:clear` CLI commands for generated caches.
+
+Phase 7C adds PHPMailer-backed SMTP over SSL/TLS or STARTTLS, strict mail configuration validation, safe HTML/text recovery messages and mail readiness diagnostics. See `docs/MAIL.md`.
 
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 

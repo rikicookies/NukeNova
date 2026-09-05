@@ -23,7 +23,7 @@ final class RequirementsChecker
             ];
         }
 
-        foreach (['storage', 'storage/cache', 'storage/logs', 'storage/sessions'] as $directory) {
+        foreach (['storage', 'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private', 'storage/private/downloads'] as $directory) {
             $path = $rootPath . '/' . $directory;
             $checks[] = [
                 'name' => "Writable {$directory}",

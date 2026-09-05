@@ -15,6 +15,10 @@ All notable NovaNuke changes will be documented here.
 - Twig view rendering and starter page.
 - Apache front controller configuration.
 - Initial PHPUnit test suite.
+- Safe cache status and clearing commands restricted to `storage/cache`, including optional OPcache reset.
+- Authenticated SMTP mail transport with encrypted SSL/TLS and STARTTLS options.
+- HTML and plain-text password recovery and email verification messages.
+- SMTP readiness diagnostics and Bluehost-oriented production documentation.
 - Web installer with server requirement checks.
 - CSRF token and hardened session foundations.
 - Atomic environment configuration writer.
@@ -92,6 +96,42 @@ All notable NovaNuke changes will be documented here.
 - RSS response type, MIME-sniffing protection and five-minute public cache metadata.
 - RSS autodiscovery and visible feed links in Nova Default and Classic Portal 1.4.0.
 - Installed site name, URL and locale exposed consistently to public Twig templates.
+- Downloads 1.0.0 module with local private files and tracked external sources.
+- Hierarchical download categories, publication workflow, featured items and role-aware access.
+- Server-validated upload extension, MIME, size, filename generation and real-path containment.
+- Streamed attachment responses and safe HTTP/HTTPS external redirects.
+- Newest, popular and alphabetical catalog ordering plus MySQL-backed search.
+- Twenty-four-hour duplicate counter suppression without raw visitor identity storage.
+- CSRF-protected, deduplicated and rate-limited broken-download reports.
+- `download.completed` extension event and Downloads security documentation.
+- Search 1.0.0 with a provider registry exposed through `search.providers.registering`.
+- Unified newest-first search across News 1.3.0, Pages 1.1.0 and Downloads 1.1.0.
+- Content-type filtering, global pagination and safely escaped result highlighting.
+- Publication and viewer-role enforcement inside every bundled search provider.
+- Optional privacy-preserving popular-term counts, disabled by default.
+- Search provider documentation and registry, aggregation and XSS-focused tests.
+- Private Messages 1.0.0 with inbox, sent history, unread state and two-user conversations.
+- Participant-specific conversation removal without deleting the other user's history.
+- Bidirectional message blocking, abuse reports and a permission-protected moderation queue.
+- Persistent per-account send and report limits plus CSRF-protected message actions.
+- Plain-text message validation and Private Messages security documentation.
+- Polls 1.0.0 with draft, active and closed states plus optional UTC scheduling.
+- Single and multiple-choice voting with immutable options after voting begins.
+- HMAC-based authenticated and guest duplicate-vote controls without raw voter network data.
+- Public results, administrative poll management and a reusable active-poll block.
+- Generic `block.rendering` hook for trusted module-provided block content.
+- Preservation of module block type and configuration when layout settings are edited.
+- Web Links 1.0.0 with categories, featured entries and moderated user submissions.
+- Search and newest, popular or alphabetical ordering for the public link directory.
+- Strict HTTP/HTTPS validation and controller-mediated external redirects.
+- Twenty-four-hour duplicate visit suppression without storing raw visitor identities.
+- Deduplicated, rate-limited broken-link reports and an administrative review queue.
+- Statistics 1.0.0 with daily aggregate traffic and no individual browsing histories.
+- Broad section, referrer-host, browser-family and device-family summaries.
+- Administrative totals, recent activity and most-viewed content across optional modules.
+- Independently configurable collection and public-statistics settings.
+- Disabled-by-default dynamic statistics summary block and privacy documentation.
+- Request referrer validation with private/authentication routes excluded from tracking.
 
 ### Changed
 
@@ -100,3 +140,13 @@ All notable NovaNuke changes will be documented here.
 - Administrative CSRF tokens remain stable during a signed-in session, preventing stale forms across tabs.
 - Theme actions use a POST/Redirect/GET response to prevent accidental form resubmission.
 - Classic Portal blocks retain their panel styling while updated theme assets are being republished.
+
+### Security
+
+- Application-level CSP, MIME-sniffing, framing, referrer and browser-capability headers across successful and error responses.
+- Explicit opt-in HSTS restricted to production HTTPS configurations.
+- Permission-protected system diagnostics without credentials, tokens, private paths or detailed server errors.
+- Atomic CLI database backups stored outside the public tree with restrictive permissions and unpredictable names.
+- Production deployment, shared-hosting, backup/restore and security-checklist documentation.
+- CSRF-protected maintenance controls with 503 responses, recovery access and Super Administrator preview.
+- Authorization auditing for active super administrators, required core permissions and unsafe public-role grants.

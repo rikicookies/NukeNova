@@ -16,11 +16,14 @@ use NovaNuke\Core\Http\Kernel;
 use NovaNuke\Core\Http\Routing\Router;
 use NovaNuke\Core\Mail\LogMailer;
 use NovaNuke\Core\Mail\Mailer;
+use NovaNuke\Core\Mail\SmtpConfiguration;
+use NovaNuke\Core\Mail\SmtpMailer;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\Security\RateLimiter;
 use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Security\SecurityHeaders;
 use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\View\ViewRenderer;
@@ -42,6 +45,11 @@ use NovaNuke\Core\Menus\MenuManager;
 use NovaNuke\Core\Menus\MenuRepository;
 use NovaNuke\Core\Menus\MenuTreeBuilder;
 use NovaNuke\Core\Menus\MenuUrlResolver;
+use NovaNuke\Core\System\SystemInspector;
+use NovaNuke\Core\Backup\DatabaseBackup;
+use NovaNuke\Core\System\MaintenanceMode;
+use NovaNuke\Core\Security\AuthorizationAudit;
+use NovaNuke\Core\Cache\CacheManager;
 use PDO;
 
 final class Application
@@ -85,16 +93,27 @@ final class Application
         ));
         $container->bind(Mailer::class, static function () use ($config): Mailer {
             $mailer = (string) $config->get('mail.mailer', 'log');
-            if ($mailer !== 'log') {
-                throw new \RuntimeException("Unsupported mailer: {$mailer}");
+            if ($mailer === 'log') {
+                return new LogMailer(
+                    (string) $config->require('mail.log_path'),
+                    (string) $config->get('app.environment', 'production'),
+                    (string) $config->get('mail.from_address', 'noreply@localhost'),
+                    (string) $config->get('mail.from_name', 'NovaNuke'),
+                );
             }
-
-            return new LogMailer(
-                (string) $config->require('mail.log_path'),
-                (string) $config->get('app.environment', 'production'),
-                (string) $config->get('mail.from_address', 'noreply@localhost'),
-                (string) $config->get('mail.from_name', 'NovaNuke'),
-            );
+            if ($mailer === 'smtp') {
+                return new SmtpMailer(new SmtpConfiguration(
+                    (string) $config->get('mail.host', ''),
+                    (int) $config->get('mail.port', 465),
+                    (string) $config->get('mail.username', ''),
+                    (string) $config->get('mail.password', ''),
+                    strtolower((string) $config->get('mail.encryption', 'ssl')),
+                    (int) $config->get('mail.timeout', 15),
+                    (string) $config->get('mail.from_address', ''),
+                    (string) $config->get('mail.from_name', 'NovaNuke'),
+                ));
+            }
+            throw new \RuntimeException("Unsupported mailer: {$mailer}");
         });
         $container->bind(PasswordResetService::class, static fn (Container $c) => new PasswordResetService(
             $c->get(PDO::class),
@@ -149,6 +168,7 @@ final class Application
             new BlockVisibility(),
             $c->get(AuthManager::class),
             $c->get(ViewRenderer::class),
+            $c->get(EventDispatcher::class),
         ));
         $container->bind(MenuManager::class, static fn (Container $c) => new MenuManager(
             $c->get(PDO::class),
@@ -167,10 +187,40 @@ final class Application
             (bool) $config->get('app.debug', false),
             $rootPath . '/storage/logs/novanuke.log',
         ));
+        $container->bind(SecurityHeaders::class, static fn () => new SecurityHeaders(
+            (bool) $config->get('security.headers_enabled', true),
+            (bool) $config->get('security.hsts_enabled', false),
+            (int) $config->get('security.hsts_max_age', 31536000),
+            (string) $config->get('app.url', 'http://localhost'),
+            (string) $config->get('app.environment', 'production'),
+        ));
+        $container->bind(SystemInspector::class, static fn (Container $c) => new SystemInspector(
+            $config,
+            $c->get(ModuleManager::class),
+            $rootPath,
+            $c->get(AuthorizationAudit::class),
+        ));
+        $container->bind(AuthorizationAudit::class, static fn (Container $c) => new AuthorizationAudit(
+            $c->get(PDO::class),
+        ));
+        $container->bind(DatabaseBackup::class, static fn (Container $c) => new DatabaseBackup(
+            $c->get(PDO::class),
+            $rootPath . '/storage/private/backups',
+        ));
+        $container->bind(CacheManager::class, static fn () => new CacheManager(
+            $rootPath . '/storage/cache',
+        ));
+        $container->bind(MaintenanceMode::class, static fn (Container $c) => new MaintenanceMode(
+            $c->get(SettingsRepository::class),
+            $c->get(AuthManager::class),
+            is_file($rootPath . '/storage/installed.lock'),
+        ));
         $container->bind(Kernel::class, static fn (Container $c) => new Kernel(
             $c,
             $c->get(Router::class),
             $c->get(ErrorHandler::class),
+            $c->get(SecurityHeaders::class),
+            $c->get(MaintenanceMode::class),
         ));
 
         $app->loadRoutes();

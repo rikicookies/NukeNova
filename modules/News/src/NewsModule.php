@@ -15,6 +15,7 @@ use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
 use Modules\Comments\src\CommentService;
 use Modules\Comments\src\CommentTargetChecking;
+use Modules\Search\src\SearchProvidersRegistering;
 
 final class NewsModule implements ModuleInterface
 {
@@ -28,6 +29,9 @@ final class NewsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
+            if ($event instanceof SearchProvidersRegistering) $event->registry->add(new NewsSearchProvider($context->container->get(\PDO::class)));
+        });
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('News', '/admin/news', 'news.edit');
         });

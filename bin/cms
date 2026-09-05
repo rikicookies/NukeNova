@@ -4,6 +4,8 @@
 declare(strict_types=1);
 
 use NovaNuke\Core\Database\Migrator;
+use NovaNuke\Core\Backup\DatabaseBackup;
+use NovaNuke\Core\Cache\CacheManager;
 $application = require dirname(__DIR__) . '/bootstrap/app.php';
 $command = $argv[1] ?? 'help';
 
@@ -22,4 +24,35 @@ if ($command === 'migrate') {
     exit(0);
 }
 
-fwrite(STDOUT, "NovaNuke CLI\n\nAvailable commands:\n  migrate  Run pending database migrations\n");
+if ($command === 'backup:database') {
+    try {
+        $path = $application->container()->get(DatabaseBackup::class)->create();
+        fwrite(STDOUT, "Database backup created: {$path}\n");
+        fwrite(STDOUT, "Protect this file: it contains password hashes, tokens and site data.\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Backup failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'cache:clear') {
+    try {
+        $removed = $application->container()->get(CacheManager::class)->clear();
+        fwrite(STDOUT, "Cache cleared: {$removed} item(s) removed.\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Cache clear failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'cache:status') {
+    $status = $application->container()->get(CacheManager::class)->status();
+    fwrite(STDOUT, 'Cache path: ' . ($status['path_exists'] ? 'available' : 'missing') . "\n");
+    fwrite(STDOUT, 'Writable: ' . ($status['writable'] ? 'yes' : 'no') . "\n");
+    fwrite(STDOUT, "Cached files: {$status['files']}\n");
+    exit($status['path_exists'] && $status['writable'] ? 0 : 1);
+}
+
+fwrite(STDOUT, "NovaNuke CLI\n\nAvailable commands:\n  migrate          Run pending database migrations\n  backup:database  Create a private SQL database backup\n  cache:clear      Remove generated cache files safely\n  cache:status     Inspect cache availability\n");

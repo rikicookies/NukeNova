@@ -33,4 +33,41 @@ final class ResponseTest extends TestCase
         self::assertSame('nosniff', $response->header('X-Content-Type-Options'));
         self::assertSame('public, max-age=300', $response->header('Cache-Control'));
     }
+
+    public function testExternalRedirectsAllowOnlySafeHttpDestinations(): void
+    {
+        $response = Response::externalRedirect('https://example.test/file.zip');
+        self::assertSame('https://example.test/file.zip', $response->header('Location'));
+        self::assertSame('no-referrer', $response->header('Referrer-Policy'));
+
+        $this->expectException(InvalidArgumentException::class);
+        Response::externalRedirect('javascript:alert(1)');
+    }
+
+    public function testDownloadResponsesSanitizeHeadersWithoutLoadingTheFile(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'nova-response-'); file_put_contents($path, 'data');
+        try {
+            $response = Response::download($path, 'bad"name.zip', "text/plain\r\nX-Test: bad");
+            self::assertSame('application/octet-stream', $response->header('Content-Type'));
+            self::assertStringContainsString('bad_name.zip', (string) $response->header('Content-Disposition'));
+            self::assertSame('4', $response->header('Content-Length'));
+        } finally { @unlink($path); }
+    }
+
+    public function testHeadersAreReplacedCaseInsensitivelyAndResponsesStayImmutable(): void
+    {
+        $original = Response::html('ok')->withHeader('X-Test', 'first');
+        $changed = $original->withHeader('x-test', 'second');
+
+        self::assertSame('first', $original->header('X-Test'));
+        self::assertSame('second', $changed->header('X-Test'));
+        self::assertCount(2, $changed->headers());
+    }
+
+    public function testResponseHeadersRejectLineBreaks(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        Response::html('ok')->withHeader('X-Test', "safe\r\nInjected: bad");
+    }
 }

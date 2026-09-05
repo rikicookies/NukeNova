@@ -10,7 +10,7 @@
         <label>Starts at (UTC)<input type="datetime-local" name="starts_at" value="{{ block.starts_at|default('', true)|replace({' ': 'T'}) }}"></label>
         <label>Ends at (UTC)<input type="datetime-local" name="ends_at" value="{{ block.ends_at|default('', true)|replace({' ': 'T'}) }}"></label>
     </div>
-    <label class="wide-field">Enriched HTML<textarea name="content" rows="6">{{ block.content|default('') }}</textarea><small>Safe formatting and links are allowed. Scripts, PHP, iframes and event attributes are removed.</small></label>
+    {% if block.type|default('html') == 'html' %}<label class="wide-field">Enriched HTML<textarea name="content" rows="6">{{ block.content|default('') }}</textarea><small>Safe formatting and links are allowed. Scripts, PHP, iframes and event attributes are removed.</small></label>{% else %}<p class="notice-message">Dynamic content is supplied by the trusted <code>{{ block.type }}</code> module provider. Layout and visibility can be changed here.</p>{% endif %}
     <div class="form-grid">
         <label>Page visibility<select name="visibility_mode"><option value="all" {{ block.visibility_mode|default('all') == 'all' ? 'selected' : '' }}>Every page</option><option value="only" {{ block.visibility_mode|default('all') == 'only' ? 'selected' : '' }}>Only listed pages</option><option value="except" {{ block.visibility_mode|default('all') == 'except' ? 'selected' : '' }}>Everywhere except listed pages</option></select></label>
         <label>Page patterns<textarea name="page_patterns" rows="3" placeholder="/news/*&#10;/welcome">{{ block.page_patterns|default([])|join('\n') }}</textarea></label>

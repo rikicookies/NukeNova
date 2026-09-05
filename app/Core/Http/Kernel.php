@@ -6,6 +6,8 @@ namespace NovaNuke\Core\Http;
 
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Routing\Router;
+use NovaNuke\Core\Security\SecurityHeaders;
+use NovaNuke\Core\System\MaintenanceMode;
 use Throwable;
 
 final class Kernel
@@ -14,6 +16,8 @@ final class Kernel
         private readonly Container $container,
         private readonly Router $router,
         private readonly ErrorHandler $errors,
+        private readonly SecurityHeaders $securityHeaders,
+        private readonly MaintenanceMode $maintenance,
     ) {
         $this->errors->register();
     }
@@ -21,6 +25,13 @@ final class Kernel
     public function handle(Request $request): Response
     {
         try {
+            if ($this->maintenance->blocks($request)) {
+                return $this->securityHeaders->apply(Response::html(
+                    '<!doctype html><html lang="en"><meta charset="utf-8"><title>Maintenance</title>'
+                    . '<main><h1>We will be back shortly.</h1><p>The site is undergoing scheduled maintenance.</p></main>',
+                    503,
+                )->withHeader('Retry-After', '900')->withHeader('Cache-Control', 'no-store'));
+            }
             $match = $this->router->match($request);
             $request = $request->withAttributes($match->parameters);
             $response = ($match->route->handler)($request, $this->container);
@@ -29,9 +40,9 @@ final class Kernel
                 throw new \LogicException('Route handlers must return a Response.');
             }
 
-            return $response;
+            return $this->securityHeaders->apply($response);
         } catch (Throwable $error) {
-            return $this->errors->render($error);
+            return $this->securityHeaders->apply($this->errors->render($error));
         }
     }
 }

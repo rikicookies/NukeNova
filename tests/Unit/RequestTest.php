@@ -10,6 +10,13 @@ use PHPUnit\Framework\TestCase;
 
 final class RequestTest extends TestCase
 {
+    public function testRefererRejectsControlCharacters(): void
+    {
+        $safe = new Request('GET', '/', [], [], [], [], ['HTTP_REFERER' => 'https://example.com/page']);
+        $unsafe = new Request('GET', '/', [], [], [], [], ['HTTP_REFERER' => "https://example.com\nInjected"]);
+        self::assertSame('https://example.com/page', $safe->referer());
+        self::assertSame('', $unsafe->referer());
+    }
     #[DataProvider('paths')]
     public function testItNormalizesPaths(string $uri, string $expected): void
     {
@@ -23,5 +30,13 @@ final class RequestTest extends TestCase
             'trailing slash' => ['/news/', '/news'],
             'query string' => ['/news?page=2', '/news'],
         ];
+    }
+
+    public function testItReturnsOnlyRequestedUploadedFileMetadata(): void
+    {
+        $request = new Request('POST', '/upload', files: ['package' => ['name' => 'file.zip', 'error' => UPLOAD_ERR_OK]]);
+
+        self::assertSame('file.zip', $request->file('package')['name']);
+        self::assertNull($request->file('missing'));
     }
 }

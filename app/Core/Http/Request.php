@@ -69,6 +69,13 @@ final class Request
         return array_replace($this->query, $this->request);
     }
 
+    /** @return array<string,mixed>|null */
+    public function file(string $key): ?array
+    {
+        $file = $this->files[$key] ?? null;
+        return is_array($file) ? $file : null;
+    }
+
     public function attribute(string $key, mixed $default = null): mixed
     {
         return $this->attributes[$key] ?? $default;
@@ -92,5 +99,11 @@ final class Request
     public function userAgent(): string
     {
         return mb_substr((string) ($this->server['HTTP_USER_AGENT'] ?? ''), 0, 500);
+    }
+
+    public function referer(): string
+    {
+        $value = (string) ($this->server['HTTP_REFERER'] ?? '');
+        return strlen($value) <= 2048 && ! preg_match('/[\x00-\x1F\x7F]/', $value) ? $value : '';
     }
 }

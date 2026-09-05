@@ -1,0 +1,8 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Search administration — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page"><p class="eyebrow">Administration</p><h1>Search</h1>
+{% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+<form class="settings-form" method="post" action="/admin/search"><input type="hidden" name="_token" value="{{ csrf_token }}"><label class="toggle-row"><input type="checkbox" name="log_terms" value="1" {{ logging_enabled ? 'checked' : '' }}><span><strong>Record normalized popular search terms</strong><small>No user identifier or IP address is stored. Logging remains optional.</small></span></label><button type="submit">Save settings</button></form>
+<h2>Popular terms</h2><div class="table-wrap"><table class="admin-table"><thead><tr><th>Term</th><th>Searches</th><th>Last searched</th></tr></thead><tbody>{% for item in popular %}<tr><td>{{ item.term }}</td><td>{{ item.search_count }}</td><td>{{ item.last_searched_at }}</td></tr>{% else %}<tr><td colspan="3">No terms recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

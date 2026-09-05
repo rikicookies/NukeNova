@@ -25,6 +25,15 @@ final class BlockRepository
         return $rows;
     }
 
+    /** @return array<string,mixed>|null */
+    public function find(int $id): ?array
+    {
+        $statement = $this->database->prepare('SELECT * FROM blocks WHERE id=:id');
+        $statement->execute(['id' => $id]);
+        $row = $statement->fetch();
+        return is_array($row) ? $this->decode($row) : null;
+    }
+
     /** @return list<array<string, mixed>> */
     public function active(): array
     {

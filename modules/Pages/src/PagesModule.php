@@ -6,6 +6,7 @@ namespace Modules\Pages\src;
 
 use Modules\Comments\src\CommentService;
 use Modules\Comments\src\CommentTargetChecking;
+use Modules\Search\src\SearchProvidersRegistering;
 use NovaNuke\Core\Admin\AdminMenuBuilding;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
@@ -26,6 +27,9 @@ final class PagesModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
+            if ($event instanceof SearchProvidersRegistering) $event->registry->add(new PagesSearchProvider($context->container->get(\PDO::class)));
+        });
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Pages', '/admin/pages', 'pages.edit');
         });

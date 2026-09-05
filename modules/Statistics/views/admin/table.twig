@@ -1,0 +1,1 @@
+<div class="table-wrap"><table class="admin-table"><thead><tr><th>{{ label|replace({'_':' '})|title }}</th><th>Views</th></tr></thead><tbody>{% for item in rows %}<tr><td>{{ attribute(item,label) }}</td><td>{{ item.views }}</td></tr>{% else %}<tr><td colspan="2">No data.</td></tr>{% endfor %}</tbody></table></div>

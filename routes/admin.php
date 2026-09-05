@@ -11,6 +11,7 @@ use NovaNuke\Admin\ModulesController;
 use NovaNuke\Admin\ThemesController;
 use NovaNuke\Admin\BlocksController;
 use NovaNuke\Admin\MenusController;
+use NovaNuke\Admin\SystemInfoController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -26,6 +27,7 @@ use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Menus\MenuManager;
 use NovaNuke\Core\Admin\AdminMenuBuilding;
 use NovaNuke\Core\Events\EventDispatcher;
+use NovaNuke\Core\System\SystemInspector;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
     $auth = $container->get(AuthManager::class);
@@ -112,6 +114,22 @@ $logsController = static fn (Container $container): ActivityLogsController => ne
 );
 $router->get('/admin/logs', static fn (Request $request, Container $container): Response =>
     $logsController($container)->index()
+);
+
+$systemController = static fn (Container $container): SystemInfoController => new SystemInfoController(
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(SystemInspector::class),
+    $container->get(ViewRenderer::class),
+    $container->get(SettingsRepository::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+);
+$router->get('/admin/system', static fn (Request $request, Container $container): Response =>
+    $systemController($container)->index($request)
+);
+$router->post('/admin/system', static fn (Request $request, Container $container): Response =>
+    $systemController($container)->update($request)
 );
 
 $modulesController = static fn (Container $container): ModulesController => new ModulesController(

@@ -23,4 +23,4 @@ No selected role means all visitors. Guests use the `guest` role. Administrative
 
 Allowed HTML includes paragraphs, headings, lists, emphasis, code, quotes, links and simple containers. NovaNuke removes scripts, styles, embeds, iframes, SVG, event attributes and unapproved attributes. Links accept relative URLs, anchors, HTTP, HTTPS and email only. Links opening a new tab receive `noopener noreferrer`.
 
-Blocks cannot contain PHP, Twig, JavaScript event handlers or executable templates. Module-provided dynamic block types will use registered server-side providers in a later phase rather than code entered in the administration panel.
+Blocks cannot contain PHP, Twig, JavaScript event handlers or executable templates. Trusted installed modules can provide dynamic content through `block.rendering`; the core renders it only when a filesystem module explicitly responds. Administrator-entered HTML remains sanitized and cannot access this hook.

@@ -7,6 +7,7 @@ namespace NovaNuke\Core\Blocks;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Events\EventDispatcher;
 use PDO;
 use RuntimeException;
 use Twig\Markup;
@@ -22,6 +23,7 @@ final class BlockManager
         private readonly BlockVisibility $visibility,
         private readonly AuthManager $auth,
         private readonly ViewRenderer $views,
+        private readonly EventDispatcher $events,
     ) {
     }
 
@@ -76,13 +78,17 @@ final class BlockManager
             throw new RuntimeException('One or more selected roles are invalid.');
         }
 
+        $existing = $id === null ? null : $this->repository->find((int) $id);
+        if ($id !== null && $existing === null) throw new RuntimeException('Block not found.');
+        $type = (string) ($existing['type'] ?? 'html');
+
         return $this->repository->save($id, [
             'title' => $title,
             'slug' => $slug,
-            'type' => 'html',
+            'type' => $type,
             'position' => $position,
-            'content' => $this->sanitizer->sanitize((string) ($input['content'] ?? '')),
-            'configuration' => json_encode([], JSON_THROW_ON_ERROR),
+            'content' => $type === 'html' ? $this->sanitizer->sanitize((string) ($input['content'] ?? '')) : ($existing['content'] ?? null),
+            'configuration' => json_encode($type === 'html' ? [] : ($existing['configuration'] ?? []), JSON_THROW_ON_ERROR),
             'visibility_mode' => $mode,
             'page_patterns' => json_encode($patterns, JSON_THROW_ON_ERROR),
             'module_slugs' => json_encode($modules, JSON_THROW_ON_ERROR),
@@ -129,11 +135,18 @@ final class BlockManager
             if ($block['role_slugs'] !== [] && array_intersect($roles, $block['role_slugs']) === []) {
                 continue;
             }
+            $html = (string) $block['content'];
+            if ($block['type'] !== 'html') {
+                $rendering = new BlockRendering($block);
+                $this->events->dispatch('block.rendering', $rendering);
+                if ($rendering->html === null) continue;
+                $html = $rendering->html;
+            }
             $regions[$block['position']][] = [
                 'slug' => $block['slug'],
                 'title' => $block['title'],
                 'show_title' => (bool) $block['show_title'],
-                'html' => new Markup((string) $block['content'], 'UTF-8'),
+                'html' => new Markup($html, 'UTF-8'),
             ];
         }
         $this->views->addGlobal('blocks', $regions);

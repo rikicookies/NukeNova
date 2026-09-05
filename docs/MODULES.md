@@ -114,6 +114,8 @@ $context->events->dispatch('example.created', new ExampleCreated($id));
 
 Do not put passwords, tokens, PDO connections or complete requests into event payloads.
 
+Searchable content modules can listen to `search.providers.registering` and add a provider implementing `SearchProviderInterface`. The provider is responsible for publication and viewer-access checks. See `docs/SEARCH.md` for the complete contract.
+
 ## Migrations
 
 Migration files return an object implementing `NovaNuke\Core\Database\Migration`. Filenames must be unique within the module and sort chronologically.

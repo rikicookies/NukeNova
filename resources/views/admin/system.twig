@@ -1,0 +1,46 @@
+{% extends "layouts/default.twig" %}
+{% block title %}System information — NovaNuke{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">Production readiness</p>
+    <h1>System information</h1>
+    <p>This page deliberately omits credentials, tokens, paths and detailed server errors.</p>
+    {% if saved %}<div class="alert alert-success">System settings saved.</div>{% endif %}
+
+    <form method="post" action="/admin/system" class="settings-form">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <input type="hidden" name="maintenance" value="0">
+        <label><input type="checkbox" name="maintenance" value="1"{% if maintenance %} checked{% endif %}> Maintenance mode</label>
+        <p>Visitors receive a temporary 503 page. Administrative routes and signed-in Super Administrators remain available.</p>
+        <button type="submit">Save system settings</button>
+    </form>
+
+    {% if system.warnings %}
+        <div class="alert alert-error"><strong>Review before production:</strong><ul>{% for warning in system.warnings %}<li>{{ warning }}</li>{% endfor %}</ul></div>
+    {% else %}
+        <div class="alert alert-success">No baseline production warnings detected.</div>
+    {% endif %}
+
+    <div class="dashboard-grid">
+        <article><strong>NovaNuke</strong><span>{{ system.cms_version }}</span></article>
+        <article><strong>PHP</strong><span>{{ system.php_version }}</span></article>
+        <article><strong>Environment</strong><span>{{ system.environment }}</span></article>
+        <article><strong>Debug</strong><span>{{ system.debug ? 'Enabled' : 'Disabled' }}</span></article>
+        <article><strong>HTTPS URL</strong><span>{{ system.https_url ? 'Yes' : 'No' }}</span></article>
+        <article><strong>Secure session</strong><span>{{ system.secure_session ? 'Yes' : 'No' }}</span></article>
+        <article><strong>Security headers</strong><span>{{ system.security_headers ? 'Enabled' : 'Disabled' }}</span></article>
+        <article><strong>HSTS</strong><span>{{ system.hsts ? 'Enabled' : 'Disabled' }}</span></article>
+        <article><strong>Mail transport</strong><span>{{ system.mail_transport }}</span></article>
+        <article><strong>SMTP configuration</strong><span>{{ system.smtp_configured ? 'Valid' : 'Not active' }}</span></article>
+        <article><strong>Modules</strong><span>{{ system.modules_enabled }} enabled / {{ system.modules_total }} detected</span></article>
+    </div>
+
+    <h2>Required PHP extensions</h2>
+    <ul>{% for name, available in system.extensions %}<li>{{ name }}: {{ available ? 'available' : 'missing' }}</li>{% endfor %}</ul>
+    <h2>Writable storage</h2>
+    <ul>{% for name, available in system.writable %}<li>{{ name }}: {{ available ? 'writable' : 'not writable' }}</li>{% endfor %}</ul>
+    <h2>Authorization audit</h2>
+    <ul>{% for check in system.authorization_audit %}<li><strong>{{ check.passed ? 'PASS' : 'FAIL' }} — {{ check.label }}</strong>: {{ check.detail }}</li>{% endfor %}</ul>
+    <p><a href="/admin">Back to dashboard</a></p>
+</section>
+{% endblock %}

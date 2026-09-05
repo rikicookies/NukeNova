@@ -43,4 +43,5 @@ final class AuthorizationService
 
         return array_values(array_map('strval', $statement->fetchAll(PDO::FETCH_COLUMN)));
     }
+
 }

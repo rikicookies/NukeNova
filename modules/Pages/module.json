@@ -1,7 +1,7 @@
 {
     "name": "Pages",
     "slug": "pages",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Static and informational pages with publication, hierarchy and access control.",
     "author": "NovaNuke Project",
     "provider": "Modules\\Pages\\src\\PagesModule",
