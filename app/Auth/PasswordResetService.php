@@ -113,4 +113,26 @@ final class PasswordResetService
             throw $error;
         }
     }
+
+    public function isValid(string $email, string $token): bool
+    {
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL) || ! ResetToken::isWellFormed($token)) {
+            return false;
+        }
+
+        $statement = $this->database->prepare(
+            'SELECT COUNT(*) FROM password_reset_tokens prt '
+            . 'INNER JOIN users u ON u.id = prt.user_id '
+            . 'WHERE u.email = :email AND prt.token_hash = :token_hash '
+            . 'AND prt.used_at IS NULL AND prt.expires_at > UTC_TIMESTAMP() '
+            . 'AND u.status = :status AND u.deleted_at IS NULL'
+        );
+        $statement->execute([
+            'email' => strtolower($email),
+            'token_hash' => ResetToken::hash($token),
+            'status' => 'active',
+        ]);
+
+        return (int) $statement->fetchColumn() === 1;
+    }
 }

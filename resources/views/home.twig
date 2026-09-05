@@ -5,5 +5,11 @@
         <p class="eyebrow">Version {{ version }}</p>
         <h1>A modern modular CMS with an old-school spirit.</h1>
         <p>The NovaNuke HTTP core is running. Installation, authentication, modules, themes and content will arrive in the next phases.</p>
+        {% if user %}
+            <p>Signed in as <strong>{{ user.username }}</strong>.</p>
+            <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+        {% else %}
+            <p><a class="auth-link" href="/login">Sign in</a> · <a class="auth-link" href="/register">Create account</a></p>
+        {% endif %}
     </section>
 {% endblock %}

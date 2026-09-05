@@ -37,6 +37,12 @@ All notable NovaNuke changes will be documented here.
 - Generic recovery responses that do not reveal registered email addresses.
 - Password reset request throttling.
 - Reset token, password policy and log mailer tests.
+- Immediate validation screen for consumed or expired password reset links.
+- Public registration, closed by default.
+- Configurable email verification and 24-hour one-time verification tokens.
+- Automatic Member role assignment for public registrations.
+- Super Administrator user-registration settings screen.
+- Registration validation and verification mail tests.
 
 ### Changed
 

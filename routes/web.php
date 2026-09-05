@@ -6,11 +6,15 @@ use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Auth\AuthManager;
+use NovaNuke\Core\Security\CsrfTokenManager;
 
 $router->get('/', static function (Request $request, Container $container): Response {
     $html = $container->get(ViewRenderer::class)->render('home.twig', [
         'cms_name' => 'NovaNuke',
         'version' => '0.1.0-dev',
+        'user' => $container->get(AuthManager::class)->user(),
+        'csrf_token' => $container->get(CsrfTokenManager::class)->token(),
     ]);
 
     return Response::html($html);

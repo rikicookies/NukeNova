@@ -48,4 +48,9 @@ body { margin: 0; min-height: 100vh; }
 .dashboard-grid strong, .dashboard-grid span { display: block; }
 .dashboard-grid span { margin-top: .4rem; color: #8be9fd; font-size: .8rem; }
 .secondary-button { background: #26334a; color: #eaf0fa; }
+.settings-form { display: grid; gap: 1rem; margin: 2rem 0; }
+.toggle-row { display: flex; gap: 1rem; align-items: flex-start; padding: 1rem; border: 1px solid #293650; border-radius: .7rem; background: #09101c; cursor: pointer; }
+.toggle-row input { width: 1.15rem; height: 1.15rem; margin-top: .15rem; accent-color: #8be9fd; }
+.toggle-row span, .toggle-row strong, .toggle-row small { display: block; }
+.toggle-row small { margin-top: .3rem; color: #8c99ad; font-weight: 400; }
 @media (max-width: 650px) { .dashboard-grid { grid-template-columns: 1fr; } }

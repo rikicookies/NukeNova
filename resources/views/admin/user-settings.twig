@@ -1,0 +1,23 @@
+{% extends "layouts/default.twig" %}
+{% block title %}User settings — NovaNuke{% endblock %}
+{% block content %}
+<section class="dashboard-card">
+    <p class="eyebrow">Administration</p>
+    <h1>User settings.</h1>
+    <p>Control public registration and email verification.</p>
+    {% if saved %}<div class="success-message">Settings saved.</div>{% endif %}
+    <form class="settings-form" method="post" action="/admin/settings/users">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="toggle-row">
+            <input type="checkbox" name="registration_open" value="1" {% if registration_open %}checked{% endif %}>
+            <span><strong>Open public registration</strong><small>Allow visitors to create Member accounts.</small></span>
+        </label>
+        <label class="toggle-row">
+            <input type="checkbox" name="email_verification_required" value="1" {% if verification_required %}checked{% endif %}>
+            <span><strong>Require email verification</strong><small>New accounts remain inactive until the one-time link is opened.</small></span>
+        </label>
+        <button class="install-button" type="submit">Save settings</button>
+    </form>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

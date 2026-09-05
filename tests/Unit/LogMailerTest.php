@@ -32,4 +32,20 @@ final class LogMailerTest extends TestCase
         (new LogMailer('/unused', 'production', 'from@example.test', 'NovaNuke'))
             ->sendPasswordReset('user@example.test', 'http://localhost/reset/token', 60);
     }
+
+    public function testItWritesEmailVerificationMail(): void
+    {
+        $path = sys_get_temp_dir() . '/novanuke-verification-' . bin2hex(random_bytes(5));
+        try {
+            (new LogMailer($path, 'development', 'from@example.test', 'NovaNuke'))
+                ->sendEmailVerification('member@example.test', 'http://localhost/verify-email/token', 1440);
+            $content = file_get_contents($path);
+            self::assertStringContainsString('Verify your NovaNuke email', $content);
+            self::assertStringContainsString('/verify-email/token', $content);
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
 }

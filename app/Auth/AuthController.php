@@ -22,8 +22,11 @@ final class AuthController
 
     public function showLogin(): Response
     {
-        if ($this->auth->user() !== null) {
-            return Response::redirect('/admin');
+        $currentUser = $this->auth->user();
+        if ($currentUser !== null) {
+            return Response::redirect(
+                $this->auth->isSuperAdministrator((int) $currentUser['id']) ? '/admin' : '/'
+            );
         }
 
         return Response::html($this->views->render('auth/login.twig', [
@@ -53,7 +56,9 @@ final class AuthController
             if ($user !== null) {
                 $this->throttle->clear($key);
                 $this->csrf->rotate();
-                return Response::redirect('/admin');
+                return Response::redirect(
+                    $this->auth->isSuperAdministrator((int) $user['id']) ? '/admin' : '/'
+                );
             }
 
             $this->throttle->hit($key);

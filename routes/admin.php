@@ -3,10 +3,12 @@
 declare(strict_types=1);
 
 use NovaNuke\Auth\AuthManager;
+use NovaNuke\Admin\UserSettingsController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\View\ViewRenderer;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
@@ -25,3 +27,16 @@ $router->get('/admin', static function (Request $request, Container $container):
         'csrf_token' => $container->get(CsrfTokenManager::class)->token(),
     ]));
 });
+
+$userSettingsController = static fn (Container $container): UserSettingsController => new UserSettingsController(
+    $container->get(AuthManager::class),
+    $container->get(SettingsRepository::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/settings/users', static fn (Request $request, Container $container): Response =>
+    $userSettingsController($container)->show()
+);
+$router->post('/admin/settings/users', static fn (Request $request, Container $container): Response =>
+    $userSettingsController($container)->update($request)
+);

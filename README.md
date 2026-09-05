@@ -103,6 +103,14 @@ Reset tokens expire after 60 minutes, are stored only as SHA-256 hashes, can be 
 
 The log mailer refuses to operate when `APP_ENV=production`. Before publishing NovaNuke, configure a real SMTP driver and remove `storage/logs/mail.log` because development recovery links are secrets while active.
 
+## Registration and email verification
+
+Phase 3C-B keeps public registration closed by default. A Super Administrator can change it at `/admin/settings/users` and independently choose whether new accounts require email verification.
+
+When verification is required, new users receive the `Member` role and remain in `pending_verification` status. The one-time verification link is written to `storage/logs/mail.log` during local development and expires after 24 hours. Opening it activates the account. Reopening a consumed link produces an expired-link screen.
+
+Disabling verification affects only future registrations; it does not automatically activate accounts already awaiting verification.
+
 ## Tests
 
 Run:

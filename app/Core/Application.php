@@ -7,6 +7,7 @@ namespace NovaNuke\Core;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Auth\LoginThrottle;
 use NovaNuke\Auth\PasswordResetService;
+use NovaNuke\Auth\RegistrationService;
 use NovaNuke\Core\Config\ConfigLoader;
 use NovaNuke\Core\Config\ConfigRepository;
 use NovaNuke\Core\Container\Container;
@@ -18,6 +19,7 @@ use NovaNuke\Core\Mail\LogMailer;
 use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\Security\SessionManager;
+use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\View\ViewRenderer;
 use PDO;
 
@@ -54,6 +56,9 @@ final class Application
             $c->get(SessionManager::class),
         ));
         $container->bind(PDO::class, static fn () => (new ConnectionFactory($config))->create());
+        $container->bind(SettingsRepository::class, static fn (Container $c) => new SettingsRepository(
+            $c->get(PDO::class),
+        ));
         $container->bind(Mailer::class, static function () use ($config): Mailer {
             $mailer = (string) $config->get('mail.mailer', 'log');
             if ($mailer !== 'log') {
@@ -69,6 +74,12 @@ final class Application
         });
         $container->bind(PasswordResetService::class, static fn (Container $c) => new PasswordResetService(
             $c->get(PDO::class),
+            $c->get(Mailer::class),
+            (string) $config->get('app.url', 'http://localhost'),
+        ));
+        $container->bind(RegistrationService::class, static fn (Container $c) => new RegistrationService(
+            $c->get(PDO::class),
+            $c->get(SettingsRepository::class),
             $c->get(Mailer::class),
             (string) $config->get('app.url', 'http://localhost'),
         ));
@@ -123,6 +134,7 @@ final class Application
         require $this->rootPath . '/routes/web.php';
         require $this->rootPath . '/routes/auth.php';
         require $this->rootPath . '/routes/passwords.php';
+        require $this->rootPath . '/routes/registration.php';
         require $this->rootPath . '/routes/admin.php';
     }
 }

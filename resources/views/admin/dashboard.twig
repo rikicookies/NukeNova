@@ -10,6 +10,7 @@
         <article><strong>Account</strong><span>Super Administrator</span></article>
         <article><strong>Next</strong><span>Permissions and recovery</span></article>
     </div>
+    <p><a class="auth-link" href="/admin/settings/users">Registration settings</a></p>
     <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
 </section>
 {% endblock %}

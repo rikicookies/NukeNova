@@ -71,14 +71,15 @@ final class PasswordResetController
     public function showReset(Request $request): Response
     {
         $token = (string) $request->attribute('token');
-        if (! ResetToken::isWellFormed($token)) {
-            return Response::html('This password reset link is invalid.', 400);
+        $email = strtolower(trim((string) $request->query('email', '')));
+        if (! $this->resets->isValid($email, $token)) {
+            return Response::html($this->views->render('auth/reset-link-invalid.twig'), 410);
         }
 
         return Response::html($this->views->render('auth/reset-password.twig', [
             'csrf_token' => $this->csrf->token(),
             'token' => $token,
-            'email' => (string) $request->query('email', ''),
+            'email' => $email,
             'error' => null,
         ]));
     }
