@@ -7,6 +7,7 @@ use NovaNuke\Admin\UserSettingsController;
 use NovaNuke\Admin\RolesController;
 use NovaNuke\Admin\UsersController;
 use NovaNuke\Admin\ActivityLogsController;
+use NovaNuke\Admin\ModulesController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -15,6 +16,7 @@ use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Modules\ModuleManager;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
     $auth = $container->get(AuthManager::class);
@@ -92,4 +94,19 @@ $logsController = static fn (Container $container): ActivityLogsController => ne
 );
 $router->get('/admin/logs', static fn (Request $request, Container $container): Response =>
     $logsController($container)->index()
+);
+
+$modulesController = static fn (Container $container): ModulesController => new ModulesController(
+    $container->get(ModuleManager::class),
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/modules', static fn (Request $request, Container $container): Response =>
+    $modulesController($container)->index()
+);
+$router->post('/admin/modules/{slug}/{action}', static fn (Request $request, Container $container): Response =>
+    $modulesController($container)->action($request)
 );

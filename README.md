@@ -122,6 +122,16 @@ Phase 3C-C adds server-enforced permissions, user role assignment, suspension/re
 
 NovaNuke prevents users from changing their own roles/status in the panel and prevents removal or suspension of the final active Super Administrator.
 
+## Modules and hooks
+
+Phase 4A introduces manually copied, trusted modules with manifests, compatibility checks, dependencies, isolated migrations, permissions, installation, activation, updates and controlled uninstallation.
+
+- Manage detected modules at `/admin/modules`.
+- Use the bundled `Welcome` module to verify the lifecycle and module-owned Twig views.
+- Read `docs/MODULES.md` before developing or installing a module.
+
+Disabling a module preserves its data. Uninstallation requires typing the module slug and explicitly choosing whether module tables should be deleted.
+
 ## Tests
 
 Run:

@@ -75,4 +75,18 @@ body { margin: 0; min-height: 100vh; }
 .badge-active { background: #123a2d; color: #8ee9bd; }
 .badge-suspended { background: #48212a; color: #ff9bab; }
 @media (max-width: 700px) { .admin-links, .permission-grid { grid-template-columns: 1fr; } }
+.module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 2rem 0; }
+.module-card { padding: 1.25rem; border: 1px solid #293650; border-radius: .9rem; background: #0b111d; }
+.module-heading { display: flex; justify-content: space-between; gap: 1rem; }
+.module-heading h2 { margin: 0; }
+.module-card > p { color: #aeb9cc; line-height: 1.6; }
+.module-card dl { display: grid; grid-template-columns: auto 1fr; gap: .35rem 1rem; font-size: .8rem; }
+.module-card dt { color: #7f8da3; }
+.module-card dd { margin: 0; }
+.module-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin-top: 1rem; }
+.module-actions button { padding: .55rem .8rem; border: 0; border-radius: .45rem; background: #263c59; color: #eaf0fa; cursor: pointer; }
+.module-actions .danger-button { background: #48212a; color: #ffb4c0; }
+.uninstall-form { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; padding-top: .6rem; border-top: 1px solid #293650; }
+.uninstall-form label { color: #9ba8bb; font-size: .75rem; }
+@media (max-width: 750px) { .module-grid { grid-template-columns: 1fr; } }
 @media (max-width: 650px) { .dashboard-grid { grid-template-columns: 1fr; } }

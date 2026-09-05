@@ -24,10 +24,18 @@ use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\Settings\SettingsRepository;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Events\EventDispatcher;
+use NovaNuke\Core\Modules\ModuleCompatibilityChecker;
+use NovaNuke\Core\Modules\ModuleDetector;
+use NovaNuke\Core\Modules\ModuleManager;
+use NovaNuke\Core\Modules\ModuleMigrator;
+use NovaNuke\Core\Modules\ModuleRepository;
 use PDO;
 
 final class Application
 {
+    public const VERSION = '0.1.0';
+
     private function __construct(
         private readonly string $rootPath,
         private readonly Container $container,
@@ -44,6 +52,7 @@ final class Application
         $container->instance(self::class, $app = new self($rootPath, $container));
         $container->instance(ConfigRepository::class, $config);
         $container->instance(Router::class, new Router());
+        $container->instance(EventDispatcher::class, new EventDispatcher());
         $container->bind(SessionManager::class, static function () use ($config): SessionManager {
             $session = new SessionManager(
                 (string) $config->get('session.name', 'novanuke_session'),
@@ -102,6 +111,16 @@ final class Application
         $container->bind(ActivityLogger::class, static fn (Container $c) => new ActivityLogger(
             $c->get(PDO::class),
         ));
+        $container->bind(ModuleManager::class, static fn (Container $c) => new ModuleManager(
+            $c->get(PDO::class),
+            new ModuleDetector($rootPath . '/modules'),
+            new ModuleRepository($c->get(PDO::class)),
+            new ModuleMigrator($c->get(PDO::class)),
+            new ModuleCompatibilityChecker(self::VERSION),
+            $c,
+            $c->get(Router::class),
+            $c->get(EventDispatcher::class),
+        ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
             $rootPath . '/storage/cache/twig',
@@ -148,5 +167,6 @@ final class Application
         require $this->rootPath . '/routes/passwords.php';
         require $this->rootPath . '/routes/registration.php';
         require $this->rootPath . '/routes/admin.php';
+        $this->container->get(ModuleManager::class)->bootEnabled();
     }
 }

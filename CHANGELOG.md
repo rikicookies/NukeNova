@@ -51,6 +51,14 @@ All notable NovaNuke changes will be documented here.
 - Persistent database-backed rate limits for login, recovery and registration.
 - Administrative activity log and viewer.
 - Authorization developer documentation and role-safety tests.
+- Module manifests, detection and compatibility checks.
+- Module installation, activation, deactivation, updating and controlled uninstallation.
+- Module-owned migration history and dependency protection.
+- Synchronous prioritized event dispatcher for hooks.
+- Namespaced Twig view paths for modules.
+- Administrative modules panel and audit events.
+- Official Welcome lifecycle demonstration module.
+- Module development documentation and manifest/event tests.
 
 ### Changed
 

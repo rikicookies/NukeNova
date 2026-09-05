@@ -1,0 +1,55 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Modules — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Extensions</p>
+    <h1>Modules</h1>
+    <p>Copy trusted modules into <code>modules/</code>, then install and enable them here.</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+
+    <div class="module-grid">
+        {% for slug, item in modules %}
+        <article class="module-card">
+            <div class="module-heading">
+                <div>
+                    <h2>{{ item.manifest ? item.manifest.name : item.name }}</h2>
+                    <code>{{ slug }}</code>
+                </div>
+                <span class="badge {{ item.enabled ? 'badge-active' : '' }}">{{ item.enabled ? 'Enabled' : (item.installed ? 'Disabled' : 'Available') }}</span>
+            </div>
+            {% if item.manifest %}
+                <p>{{ item.manifest.description }}</p>
+                <dl><dt>Available</dt><dd>{{ item.manifest.version }}</dd><dt>Installed</dt><dd>{{ item.installed_version ?: '—' }}</dd><dt>Author</dt><dd>{{ item.manifest.author ?: 'Unknown' }}</dd></dl>
+            {% else %}
+                <p>Module files are missing from disk.</p>
+            {% endif %}
+            {% if not item.compatible %}<div class="notice-message">{{ item.compatibility_reason }}</div>{% endif %}
+            {% if item.last_error %}<div class="form-errors"><ul><li>{{ item.last_error }}</li></ul></div>{% endif %}
+
+            <div class="module-actions">
+                {% if not item.installed and item.manifest and item.compatible %}
+                    <form method="post" action="/admin/modules/{{ slug }}/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
+                {% elseif item.installed and item.manifest %}
+                    {% if item.update_available and item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/update"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
+                    {% if item.enabled %}
+                        <form method="post" action="/admin/modules/{{ slug }}/disable"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Disable</button></form>
+                    {% elseif item.compatible %}
+                        <form method="post" action="/admin/modules/{{ slug }}/enable"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Enable</button></form>
+                    {% endif %}
+                    <form class="uninstall-form" method="post" action="/admin/modules/{{ slug }}/uninstall">
+                        <input type="hidden" name="_token" value="{{ csrf_token }}">
+                        <label><input type="checkbox" name="delete_data" value="1"> Delete module tables and data</label>
+                        <label>Type <code>{{ slug }}</code><input name="confirm_slug" required autocomplete="off"></label>
+                        <button class="danger-button" type="submit">Uninstall</button>
+                    </form>
+                {% endif %}
+            </div>
+        </article>
+        {% else %}
+            <div class="notice-message">No module manifests were detected.</div>
+        {% endfor %}
+    </div>
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

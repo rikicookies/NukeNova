@@ -17,7 +17,8 @@
             "app/Support/helpers.php"
         ],
         "psr-4": {
-            "NovaNuke\\": "app/"
+            "NovaNuke\\": "app/",
+            "Modules\\": "modules/"
         }
     },
     "autoload-dev": {
