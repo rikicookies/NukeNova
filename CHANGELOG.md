@@ -81,6 +81,12 @@ All notable NovaNuke changes will be documented here.
 - Comment abuse reports, duplicate-report protection and persistent submission rate limits.
 - News 1.1.0 optional Comments integration through `comments.content.checking`.
 - Comment provider and security documentation plus hierarchy/contract tests.
+- Installable Pages module with drafts, scheduled publication and friendly URLs.
+- Page hierarchy with cycle prevention, public/member/role access and safe enriched content.
+- Default and landing page templates with theme override support and basic SEO metadata.
+- Optional page comments with publication and viewer-access validation.
+- Page directory, internal-menu guidance and Pages developer documentation.
+- Extensible `page.rendering` hook with post-listener template validation.
 
 ### Changed
 

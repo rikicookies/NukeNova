@@ -1,0 +1,3 @@
+{% extends "layouts/default.twig" %}{% block title %}Pages — NovaNuke{% endblock %}{% block content %}
+<section class="pages-directory"><header><p class="eyebrow">Explore</p><h1>Pages</h1></header><div class="page-directory-grid">{% for page in pages %}<article><h2><a href="/pages/{{ page.slug }}">{{ page.menu_title|default(page.title, true) }}</a></h2>{% if page.access_type != 'public' %}<span class="badge">{{ page.access_type }}</span>{% endif %}</article>{% else %}<p>No pages are available in the directory.</p>{% endfor %}</div></section>
+{% endblock %}
