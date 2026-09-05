@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/app.css">
+    {% block meta %}{% endblock %}
 </head>
 <body>
     {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}

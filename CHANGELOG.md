@@ -72,6 +72,10 @@ All notable NovaNuke changes will be documented here.
 - Multiple menus with hierarchical items, ordering and role visibility.
 - Validated internal, module and HTTP/HTTPS external menu destinations.
 - Theme-overridable recursive menu rendering and seeded primary navigation.
+- Installable News module with editorial permissions and public friendly URLs.
+- Draft, scheduled and published news workflow with server-side authorization.
+- News categories, topics, tags, featured entries, basic SEO and session-limited view counting.
+- Extensible module entries through the `admin.menu.building` hook.
 
 ### Changed
 

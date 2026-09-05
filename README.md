@@ -73,6 +73,8 @@ Phase 4C-A adds scheduled, role-aware and page-aware blocks with sanitized enric
 
 Phase 4C-B adds multiple hierarchical menus with validated internal, module and external links plus per-item role visibility.
 
+Phase 5A adds the installable News editorial module with drafts, scheduled publication, categories, topics and tags.
+
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 
 Authentication, authorization and rate limiting continue in the next Phase 3 delivery.

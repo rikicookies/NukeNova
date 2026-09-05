@@ -6,6 +6,7 @@
     <title>{% block title %}{{ cms_name|default('NovaNuke') }}{% endblock %}</title>
     <link rel="stylesheet" href="/assets/css/app.css">
     <link rel="stylesheet" href="{{ theme.asset_base }}/css/theme.css">
+    {% block meta %}{% endblock %}
 </head>
 <body class="theme-default">
     {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}

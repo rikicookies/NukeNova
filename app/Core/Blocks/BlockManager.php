@@ -6,6 +6,7 @@ namespace NovaNuke\Core\Blocks;
 
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Security\HtmlSanitizer;
 use PDO;
 use RuntimeException;
 use Twig\Markup;

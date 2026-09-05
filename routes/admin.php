@@ -24,6 +24,8 @@ use NovaNuke\Core\Modules\ModuleManager;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Menus\MenuManager;
+use NovaNuke\Core\Admin\AdminMenuBuilding;
+use NovaNuke\Core\Events\EventDispatcher;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
     $auth = $container->get(AuthManager::class);
@@ -36,9 +38,18 @@ $router->get('/admin', static function (Request $request, Container $container):
         return Response::html('Forbidden', 403);
     }
 
+    $menu = new AdminMenuBuilding();
+    $container->get(EventDispatcher::class)->dispatch('admin.menu.building', $menu);
+    $moduleLinks = array_values(array_filter(
+        $menu->items(),
+        static fn (array $item): bool => $container->get(AuthorizationService::class)
+            ->allows((int) $user['id'], $item['permission']),
+    ));
+
     return Response::html($container->get(ViewRenderer::class)->render('admin/dashboard.twig', [
         'user' => $user,
         'csrf_token' => $container->get(CsrfTokenManager::class)->token(),
+        'module_admin_links' => $moduleLinks,
     ]));
 });
 

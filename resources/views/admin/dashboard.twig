@@ -19,6 +19,7 @@
         <a href="/admin/themes">Themes</a>
         <a href="/admin/blocks">Blocks</a>
         <a href="/admin/menus">Menus</a>
+        {% for link in module_admin_links|default([]) %}<a href="{{ link.url }}">{{ link.label }}</a>{% endfor %}
     </nav>
     <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
 </section>

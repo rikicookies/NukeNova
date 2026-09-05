@@ -1,0 +1,17 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ article.seo_title|default(article.title, true) }} — NovaNuke{% endblock %}
+{% block meta %}{% if article.seo_description %}<meta name="description" content="{{ article.seo_description }}">{% endif %}{% endblock %}
+{% block content %}
+<article class="news-article">
+    <header>
+        {% if article.is_featured %}<span class="badge badge-active">Featured</span>{% endif %}
+        <h1>{{ article.title }}</h1>
+        <p>{{ article.summary|default('', true) }}</p>
+        <small>By {{ article.username }} · {{ article.published_at }} · {{ article.view_count }} views</small>
+    </header>
+    {% if article.featured_image %}<img src="{{ article.featured_image }}" alt="">{% endif %}
+    <div class="article-content">{{ article.content_html }}</div>
+    {% if article.tag_list %}<footer>Tags: {{ article.tag_list|join(', ') }}</footer>{% endif %}
+    <p><a href="/news">Return to news</a></p>
+</article>
+{% endblock %}

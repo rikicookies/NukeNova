@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Tests\Unit;
 
-use NovaNuke\Core\Blocks\HtmlSanitizer;
+use NovaNuke\Core\Security\HtmlSanitizer;
 use PHPUnit\Framework\TestCase;
 
 final class HtmlSanitizerTest extends TestCase

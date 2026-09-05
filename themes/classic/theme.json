@@ -1,7 +1,7 @@
 {
     "name": "Classic Portal",
     "slug": "classic",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "A three-column portal theme inspired by classic community sites.",
     "author": "NovaNuke Project",
     "cms_min_version": "0.1.0",

@@ -37,7 +37,7 @@ use NovaNuke\Core\Themes\ThemeRepository;
 use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Blocks\BlockRepository;
 use NovaNuke\Core\Blocks\BlockVisibility;
-use NovaNuke\Core\Blocks\HtmlSanitizer;
+use NovaNuke\Core\Security\HtmlSanitizer;
 use NovaNuke\Core\Menus\MenuManager;
 use NovaNuke\Core\Menus\MenuRepository;
 use NovaNuke\Core\Menus\MenuTreeBuilder;

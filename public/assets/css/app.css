@@ -140,3 +140,22 @@ body { margin: 0; min-height: 100vh; }
 .site-header { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
 .site-header .menu-level-0 > .menu-item > a { color: #8be9fd; text-decoration: none; }
 .site-header .menu-item > .menu-level { padding: .5rem; border: 1px solid #293650; border-radius: .5rem; background: #0b111d; }
+.news-editor { display: grid; gap: 1rem; }
+.news-editor button, .taxonomy-grid button, .install-button { width: fit-content; padding: .7rem 1rem; border: 0; border-radius: .45rem; background: #263c59; color: #fff; cursor: pointer; text-decoration: none; }
+.taxonomy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.taxonomy-grid form { display: grid; gap: .7rem; }
+.taxonomy-grid input, .taxonomy-grid textarea { width: 100%; margin-top: .3rem; padding: .65rem; border: 1px solid #34415a; border-radius: .45rem; background: #080d17; color: #fff; }
+.news-page, .news-article { width: min(960px, 100%); }
+.news-page > header h1, .news-article h1 { margin: .2rem 0 1rem; font-size: clamp(2.5rem, 7vw, 5rem); line-height: 1; }
+.category-links, .pagination { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0 2rem; }
+.category-links a, .pagination a { padding: .45rem .65rem; border: 1px solid #34415a; border-radius: .4rem; color: #8be9fd; text-decoration: none; }
+.pagination .current { background: #263c59; color: #fff; }
+.news-list { display: grid; gap: 1rem; }
+.news-card { padding: 1.25rem; border: 1px solid #293650; border-radius: .8rem; background: #0b111d; }
+.news-card h2 { margin: .5rem 0; }
+.news-card h2 a, .news-article a { color: #8be9fd; }
+.news-card p, .news-card small, .news-article small { color: #9caabd; }
+.news-article { padding: clamp(1.25rem, 5vw, 3.5rem); border: 1px solid #293650; border-radius: 1rem; background: #0b111d; }
+.news-article > img { width: 100%; max-height: 520px; margin: 1.5rem 0; border-radius: .7rem; object-fit: cover; }
+.article-content { margin: 2rem 0; color: #d5deea; line-height: 1.75; }
+@media (max-width: 700px) { .taxonomy-grid { grid-template-columns: 1fr; } }
