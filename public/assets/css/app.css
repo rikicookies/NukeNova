@@ -117,4 +117,26 @@ body { margin: 0; min-height: 100vh; }
 .cms-block h2 { margin: 0 0 .75rem; font-size: 1rem; }
 .cms-block-content { color: #c4cede; line-height: 1.65; }
 .cms-block-content a { color: #8be9fd; }
+.classic-theme .classic-block { margin: .75rem 0; overflow: hidden; border: 1px solid #5e6d86; border-radius: .25rem; background: #f4f4f1; color: #18202b; box-shadow: 0 1px 2px rgb(0 0 0 / 18%); }
+.classic-theme .classic-block > h2 { margin: 0; padding: .45rem .65rem; background: #303e50; color: #f4b900; font-family: Arial, sans-serif; font-size: .82rem; letter-spacing: .02em; text-transform: uppercase; }
+.classic-theme .classic-block-body { padding: .7rem; color: #18202b; font-size: .88rem; line-height: 1.55; }
+.classic-theme .classic-block-body > :first-child { margin-top: 0; }
+.classic-theme .classic-block-body > :last-child { margin-bottom: 0; }
+.classic-theme .classic-block-body a { color: #315f9a; }
 @media (max-width: 700px) { .form-grid { grid-template-columns: 1fr; } }
+.menu-level { margin: 0; padding: 0; list-style: none; }
+.menu-level-0 { display: flex; gap: .6rem; align-items: center; }
+.menu-item { position: relative; }
+.menu-item > .menu-level { display: none; position: absolute; z-index: 20; top: 100%; left: 0; min-width: 180px; padding-top: .3rem; }
+.menu-item:hover > .menu-level, .menu-item:focus-within > .menu-level { display: grid; }
+.menu-item > .menu-level .menu-item > a { display: block; white-space: nowrap; }
+.menu-level .menu-level .menu-level { top: 0; left: 100%; padding-top: 0; padding-left: .3rem; }
+.menu-editor { margin: 1.5rem 0; padding: 1.25rem; border: 1px solid #293650; border-radius: .9rem; background: #0b111d; }
+.menu-editor > form { display: grid; gap: 1rem; }
+.menu-editor button { width: fit-content; padding: .65rem .9rem; border: 0; border-radius: .45rem; background: #263c59; color: #fff; cursor: pointer; }
+.menu-editor .danger-button { background: #48212a; color: #ffb4c0; }
+.menu-items { margin: 1rem 0; }
+.menu-editor summary small { margin-left: .5rem; color: #8997ac; }
+.site-header { display: flex; gap: 1rem; align-items: center; justify-content: space-between; }
+.site-header .menu-level-0 > .menu-item > a { color: #8be9fd; text-decoration: none; }
+.site-header .menu-item > .menu-level { padding: .5rem; border: 1px solid #293650; border-radius: .5rem; background: #0b111d; }

@@ -71,6 +71,8 @@ The installer uses CSRF protection, HTTP-only session cookies, strict session mo
 
 Phase 4C-A adds scheduled, role-aware and page-aware blocks with sanitized enriched HTML and six theme positions.
 
+Phase 4C-B adds multiple hierarchical menus with validated internal, module and external links plus per-item role visibility.
+
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 
 Authentication, authorization and rate limiting continue in the next Phase 3 delivery.

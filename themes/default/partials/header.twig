@@ -1,11 +1,4 @@
 <header class="theme-header">
     <a class="theme-brand" href="/">{{ cms_name|default('NovaNuke') }}</a>
-    <nav aria-label="Primary navigation">
-        <a href="/">Home</a>
-        {% if user|default(null) %}
-            <span>{{ user.username }}</span>
-        {% else %}
-            <a href="/login">Sign in</a>
-        {% endif %}
-    </nav>
+    {% import "menus/navigation.twig" as navigation %}<nav aria-label="Primary navigation">{{ navigation.render(menus.primary|default([])) }}</nav>
 </header>

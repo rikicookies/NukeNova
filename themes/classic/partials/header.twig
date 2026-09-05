@@ -1,1 +1,1 @@
-<header class="classic-header"><div><a href="/">{{ cms_name|default('NovaNuke') }}</a><small>{{ theme.settings.site_tagline }}</small></div><nav><a href="/">Home</a><a href="/welcome">Welcome</a><a href="/login">Account</a></nav></header>
+<header class="classic-header"><div><a href="/">{{ cms_name|default('NovaNuke') }}</a><small>{{ theme.settings.site_tagline }}</small></div>{% import "menus/navigation.twig" as navigation %}<nav aria-label="Primary navigation">{{ navigation.render(menus.primary|default([])) }}</nav></header>

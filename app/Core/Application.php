@@ -38,6 +38,10 @@ use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Blocks\BlockRepository;
 use NovaNuke\Core\Blocks\BlockVisibility;
 use NovaNuke\Core\Blocks\HtmlSanitizer;
+use NovaNuke\Core\Menus\MenuManager;
+use NovaNuke\Core\Menus\MenuRepository;
+use NovaNuke\Core\Menus\MenuTreeBuilder;
+use NovaNuke\Core\Menus\MenuUrlResolver;
 use PDO;
 
 final class Application
@@ -146,6 +150,14 @@ final class Application
             $c->get(AuthManager::class),
             $c->get(ViewRenderer::class),
         ));
+        $container->bind(MenuManager::class, static fn (Container $c) => new MenuManager(
+            $c->get(PDO::class),
+            new MenuRepository($c->get(PDO::class)),
+            new MenuUrlResolver(),
+            new MenuTreeBuilder(),
+            $c->get(AuthManager::class),
+            $c->get(ViewRenderer::class),
+        ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
             $rootPath . '/storage/cache/twig',
@@ -195,5 +207,6 @@ final class Application
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
         $this->container->get(BlockManager::class)->boot();
+        $this->container->get(MenuManager::class)->boot();
     }
 }

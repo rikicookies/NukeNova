@@ -10,6 +10,7 @@ use NovaNuke\Admin\ActivityLogsController;
 use NovaNuke\Admin\ModulesController;
 use NovaNuke\Admin\ThemesController;
 use NovaNuke\Admin\BlocksController;
+use NovaNuke\Admin\MenusController;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
@@ -22,6 +23,7 @@ use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Modules\ModuleManager;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\Blocks\BlockManager;
+use NovaNuke\Core\Menus\MenuManager;
 
 $router->get('/admin', static function (Request $request, Container $container): Response {
     $auth = $container->get(AuthManager::class);
@@ -149,4 +151,29 @@ $router->post('/admin/blocks/save', static fn (Request $request, Container $cont
 );
 $router->post('/admin/blocks/{id}/delete', static fn (Request $request, Container $container): Response =>
     $blocksController($container)->delete($request)
+);
+
+$menusController = static fn (Container $container): MenusController => new MenusController(
+    $container->get(MenuManager::class),
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(SessionManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/menus', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->index()
+);
+$router->post('/admin/menus/save', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->saveMenu($request)
+);
+$router->post('/admin/menu-items/save', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->saveItem($request)
+);
+$router->post('/admin/menus/{id}/delete', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->deleteMenu($request)
+);
+$router->post('/admin/menu-items/{id}/delete', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->deleteItem($request)
 );

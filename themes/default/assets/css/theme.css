@@ -1,9 +1,12 @@
 .theme-default { background: #070a11; color: #edf3fc; }
 .theme-header, .theme-footer { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; display: flex; align-items: center; justify-content: space-between; padding: 1.2rem 0; }
 .theme-header { border-bottom: 1px solid #273149; }
-.theme-header nav { display: flex; gap: 1rem; align-items: center; }
+.theme-header nav { display: block; }
 .theme-header a, .theme-footer a { color: var(--theme-accent); text-decoration: none; }
 .theme-brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -.04em; }
+.theme-header .menu-level-0 > .menu-item > a { display: block; padding: .5rem .65rem; border-radius: .45rem; }
+.theme-header .menu-level-0 > .is-active > a { background: color-mix(in srgb, var(--theme-accent), transparent 86%); }
+.theme-header .menu-item > .menu-level { padding: .45rem; border: 1px solid #273149; border-radius: .55rem; background: #0c1321; box-shadow: 0 15px 35px rgb(0 0 0 / 35%); }
 .theme-shell { width: min(1180px, calc(100% - 2rem)); min-height: 75vh; margin: 0 auto; display: grid; place-items: center; padding: 3rem 0; }
 .nova-hero { max-width: 860px; padding: clamp(2rem, 7vw, 5rem); border: 1px solid #293650; border-radius: 1.4rem; background: radial-gradient(circle at top right, color-mix(in srgb, var(--theme-accent) 16%, transparent), transparent 45%), #0c1321; box-shadow: 0 30px 90px rgb(0 0 0 / 30%); }
 .nova-hero h1 { margin: .2rem 0 1rem; font-size: clamp(3rem, 9vw, 6rem); line-height: .9; letter-spacing: -.075em; }
@@ -13,7 +16,7 @@
 .module-override { border-color: var(--theme-accent); }
 .theme-footer { border-top: 1px solid #273149; color: #7f8ca0; font-size: .8rem; }
 .two-sidebar-layout { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr) minmax(180px, 1fr); gap: 1rem; width: 100%; }
-@media (max-width: 760px) { .theme-header { align-items: flex-start; } .theme-header nav { flex-wrap: wrap; justify-content: flex-end; } .two-sidebar-layout { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .theme-header { align-items: flex-start; } .theme-header .menu-level-0 { flex-wrap: wrap; justify-content: flex-end; } .two-sidebar-layout { grid-template-columns: 1fr; } }
 .block-region-header, .block-region-footer { width: min(1180px, calc(100% - 2rem)); margin: 1rem auto; }
 .theme-default .cms-block { border-color: color-mix(in srgb, var(--theme-accent), transparent 72%); background: color-mix(in srgb, var(--theme-accent), #101624 94%); }
 .theme-default .cms-block h2 { color: var(--theme-accent); }

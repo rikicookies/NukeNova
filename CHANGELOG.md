@@ -69,6 +69,9 @@ All notable NovaNuke changes will be documented here.
 - Configurable block positions, schedules, page rules and role visibility.
 - Sanitized enriched HTML blocks with no executable administrator code.
 - Administrative block editor and block activity events.
+- Multiple menus with hierarchical items, ordering and role visibility.
+- Validated internal, module and HTTP/HTTPS external menu destinations.
+- Theme-overridable recursive menu rendering and seeded primary navigation.
 
 ### Changed
 
@@ -76,3 +79,4 @@ All notable NovaNuke changes will be documented here.
 - Migration recording accounts for MySQL implicit DDL commits.
 - Administrative CSRF tokens remain stable during a signed-in session, preventing stale forms across tabs.
 - Theme actions use a POST/Redirect/GET response to prevent accidental form resubmission.
+- Classic Portal blocks retain their panel styling while updated theme assets are being republished.
