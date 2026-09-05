@@ -6,6 +6,7 @@ namespace NovaNuke\Core;
 
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Auth\LoginThrottle;
+use NovaNuke\Auth\PasswordResetService;
 use NovaNuke\Core\Config\ConfigLoader;
 use NovaNuke\Core\Config\ConfigRepository;
 use NovaNuke\Core\Container\Container;
@@ -13,6 +14,8 @@ use NovaNuke\Core\Database\ConnectionFactory;
 use NovaNuke\Core\Http\ErrorHandler;
 use NovaNuke\Core\Http\Kernel;
 use NovaNuke\Core\Http\Routing\Router;
+use NovaNuke\Core\Mail\LogMailer;
+use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
@@ -51,6 +54,24 @@ final class Application
             $c->get(SessionManager::class),
         ));
         $container->bind(PDO::class, static fn () => (new ConnectionFactory($config))->create());
+        $container->bind(Mailer::class, static function () use ($config): Mailer {
+            $mailer = (string) $config->get('mail.mailer', 'log');
+            if ($mailer !== 'log') {
+                throw new \RuntimeException("Unsupported mailer: {$mailer}");
+            }
+
+            return new LogMailer(
+                (string) $config->require('mail.log_path'),
+                (string) $config->get('app.environment', 'production'),
+                (string) $config->get('mail.from_address', 'noreply@localhost'),
+                (string) $config->get('mail.from_name', 'NovaNuke'),
+            );
+        });
+        $container->bind(PasswordResetService::class, static fn (Container $c) => new PasswordResetService(
+            $c->get(PDO::class),
+            $c->get(Mailer::class),
+            (string) $config->get('app.url', 'http://localhost'),
+        ));
         $container->bind(AuthManager::class, static fn (Container $c) => new AuthManager(
             $c->get(PDO::class),
             $c->get(SessionManager::class),
@@ -101,6 +122,7 @@ final class Application
 
         require $this->rootPath . '/routes/web.php';
         require $this->rootPath . '/routes/auth.php';
+        require $this->rootPath . '/routes/passwords.php';
         require $this->rootPath . '/routes/admin.php';
     }
 }

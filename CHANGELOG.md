@@ -30,6 +30,13 @@ All notable NovaNuke changes will be documented here.
 - Login history migration and last-access recording.
 - `composer migrate` command for installed sites.
 - Login validation and safe redirect tests.
+- Password recovery request and reset screens.
+- Hashed, expiring, single-use password reset tokens.
+- Development log mailer with a production safety lock.
+- Authentication versioning to invalidate prior sessions after password changes.
+- Generic recovery responses that do not reveal registered email addresses.
+- Password reset request throttling.
+- Reset token, password policy and log mailer tests.
 
 ### Changed
 

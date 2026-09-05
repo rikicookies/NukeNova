@@ -85,6 +85,24 @@ composer test
 
 Phase 3B provides `/login`, POST-only `/logout`, a protected `/admin` dashboard, session regeneration, suspended-account enforcement, login history and basic login throttling.
 
+## Local password recovery
+
+Phase 3C-A adds password recovery through a development mail log. In a local installation, set:
+
+```dotenv
+APP_ENV=development
+APP_DEBUG=true
+MAIL_MAILER=log
+MAIL_FROM_ADDRESS=noreply@localhost
+MAIL_FROM_NAME=NovaNuke
+```
+
+Then request a reset at `/forgot-password` and open the newest link in `storage/logs/mail.log`.
+
+Reset tokens expire after 60 minutes, are stored only as SHA-256 hashes, can be used once and are replaced when a new reset is requested. A successful password change increments the user's authentication version, invalidating all older sessions.
+
+The log mailer refuses to operate when `APP_ENV=production`. Before publishing NovaNuke, configure a real SMTP driver and remove `storage/logs/mail.log` because development recovery links are secrets while active.
+
 ## Tests
 
 Run:

@@ -10,6 +10,7 @@ use PDO;
 final class AuthManager
 {
     private const USER_KEY = '_auth_user_id';
+    private const VERSION_KEY = '_auth_version';
 
     public function __construct(
         private readonly PDO $database,
@@ -21,7 +22,7 @@ final class AuthManager
     public function attempt(string $login, string $password, string $ip, string $userAgent): ?array
     {
         $statement = $this->database->prepare(
-            'SELECT id, username, email, password_hash, status FROM users '
+            'SELECT id, username, email, password_hash, auth_version, status FROM users '
             . 'WHERE deleted_at IS NULL AND (email = :email OR username = :username) LIMIT 1'
         );
         $statement->execute(['email' => strtolower($login), 'username' => $login]);
@@ -43,6 +44,7 @@ final class AuthManager
 
         $this->session->regenerate();
         $this->session->put(self::USER_KEY, (int) $user['id']);
+        $this->session->put(self::VERSION_KEY, (int) $user['auth_version']);
         $this->recordLogin((int) $user['id'], $ip, $userAgent);
         unset($user['password_hash']);
 
@@ -58,12 +60,13 @@ final class AuthManager
         }
 
         $statement = $this->database->prepare(
-            'SELECT id, username, email, status FROM users WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+            'SELECT id, username, email, status, auth_version FROM users WHERE id = :id AND deleted_at IS NULL LIMIT 1'
         );
         $statement->execute(['id' => (int) $id]);
         $user = $statement->fetch();
 
-        if (! is_array($user) || $user['status'] !== 'active') {
+        $sessionVersion = (int) $this->session->get(self::VERSION_KEY, 0);
+        if (! is_array($user) || $user['status'] !== 'active' || (int) $user['auth_version'] !== $sessionVersion) {
             $this->logout();
             return null;
         }
@@ -74,6 +77,7 @@ final class AuthManager
     public function logout(): void
     {
         $this->session->remove(self::USER_KEY);
+        $this->session->remove(self::VERSION_KEY);
         $this->session->invalidate();
     }
 
