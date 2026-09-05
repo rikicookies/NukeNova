@@ -131,8 +131,6 @@ final class UsersController
             'status' => $status,
             'role_ids' => implode(',', $validRoles),
         ], $request->ip());
-        $this->csrf->rotate();
-
         return $this->editView($this->user((int) $target['id']), true);
     }
 

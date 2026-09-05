@@ -4,7 +4,7 @@ NovaNuke is a lightweight, modular CMS inspired by the simplicity of PHP-Nuke an
 
 ## Current status
 
-Phase 3A adds the first secure installation flow. The current project includes:
+Phase 4C-A adds the first configurable block system. The current project includes:
 
 - PSR-4 autoloading;
 - environment-based configuration;
@@ -24,14 +24,14 @@ Phase 3A adds the first secure installation flow. The current project includes:
 - initial roles and first Super Administrator creation;
 - atomic `.env` generation and an installation lock.
 
-Login, public registration, password recovery, authorization policies, modules, themes, blocks and content are intentionally not implemented yet.
+Authentication, authorization, modules, themes and sanitized HTML blocks are operational. News, pages, comments and additional content modules arrive in later phases.
 
 ## Requirements
 
 - PHP 8.3 or newer;
 - Composer 2;
 - MySQL 8+ or a compatible MariaDB release;
-- PHP extensions: PDO, PDO MySQL, JSON, Mbstring and OpenSSL.
+- PHP extensions: PDO, PDO MySQL, JSON, Mbstring, OpenSSL, Fileinfo and DOM.
 
 ## Local setup
 
@@ -68,6 +68,8 @@ Do not expose the project root to the web. The document root must be the `public
 - The public entry point is isolated in `public/`.
 
 The installer uses CSRF protection, HTTP-only session cookies, strict session mode, server-side validation, prepared statements and `password_hash()`.
+
+Phase 4C-A adds scheduled, role-aware and page-aware blocks with sanitized enriched HTML and six theme positions.
 
 After installation, `storage/installed.lock` prevents installer routes from loading. Never remove this file on a production installation. Removing it is a deliberate manual recovery action, not a normal reinstall method.
 

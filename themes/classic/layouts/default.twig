@@ -6,8 +6,10 @@
     <link rel="stylesheet" href="/assets/css/app.css"><link rel="stylesheet" href="{{ theme.asset_base }}/css/classic.css">
 </head>
 <body class="classic-theme">
+    {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}
     {% include "partials/header.twig" %}
-    <main class="classic-shell">{% block content %}{% endblock %}</main>
+    <main class="classic-shell">{% include "blocks/region.twig" with {items: blocks['before-content']|default([]), position: 'before-content'} %}{% block content %}{% endblock %}{% include "blocks/region.twig" with {items: blocks['after-content']|default([]), position: 'after-content'} %}</main>
     {% include "partials/footer.twig" %}
+    {% include "blocks/region.twig" with {items: blocks['footer']|default([]), position: 'footer'} %}
 </body>
 </html>

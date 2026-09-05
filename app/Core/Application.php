@@ -34,6 +34,10 @@ use NovaNuke\Core\Themes\ThemeAssetPublisher;
 use NovaNuke\Core\Themes\ThemeDetector;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\Themes\ThemeRepository;
+use NovaNuke\Core\Blocks\BlockManager;
+use NovaNuke\Core\Blocks\BlockRepository;
+use NovaNuke\Core\Blocks\BlockVisibility;
+use NovaNuke\Core\Blocks\HtmlSanitizer;
 use PDO;
 
 final class Application
@@ -134,6 +138,14 @@ final class Application
             $c->get(EventDispatcher::class),
             self::VERSION,
         ));
+        $container->bind(BlockManager::class, static fn (Container $c) => new BlockManager(
+            $c->get(PDO::class),
+            new BlockRepository($c->get(PDO::class)),
+            new HtmlSanitizer(),
+            new BlockVisibility(),
+            $c->get(AuthManager::class),
+            $c->get(ViewRenderer::class),
+        ));
         $container->bind(ViewRenderer::class, static fn () => new ViewRenderer(
             $rootPath . '/resources/views',
             $rootPath . '/storage/cache/twig',
@@ -182,5 +194,6 @@ final class Application
         require $this->rootPath . '/routes/admin.php';
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
+        $this->container->get(BlockManager::class)->boot();
     }
 }

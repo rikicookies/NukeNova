@@ -1,8 +1,8 @@
 {% extends "layouts/default.twig" %}
 {% block content %}
 <div class="two-sidebar-layout">
-    <aside>{% block left_sidebar %}{% endblock %}</aside>
+    <aside>{% include "blocks/region.twig" with {items: blocks['left-sidebar']|default([]), position: 'left-sidebar'} %}{% block left_sidebar %}{% endblock %}</aside>
     <section>{% block main_content %}{% endblock %}</section>
-    <aside>{% block right_sidebar %}{% endblock %}</aside>
+    <aside>{% include "blocks/region.twig" with {items: blocks['right-sidebar']|default([]), position: 'right-sidebar'} %}{% block right_sidebar %}{% endblock %}</aside>
 </div>
 {% endblock %}

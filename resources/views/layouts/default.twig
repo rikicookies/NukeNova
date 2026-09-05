@@ -7,11 +7,15 @@
     <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
+    {% include "blocks/region.twig" with {items: blocks['header']|default([]), position: 'header'} %}
     <header class="site-header">
         <a class="brand" href="/">{{ cms_name|default('NovaNuke') }}</a>
     </header>
     <main class="page-shell">
+        {% include "blocks/region.twig" with {items: blocks['before-content']|default([]), position: 'before-content'} %}
         {% block content %}{% endblock %}
+        {% include "blocks/region.twig" with {items: blocks['after-content']|default([]), position: 'after-content'} %}
     </main>
+    {% include "blocks/region.twig" with {items: blocks['footer']|default([]), position: 'footer'} %}
 </body>
 </html>

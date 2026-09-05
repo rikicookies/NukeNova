@@ -70,8 +70,6 @@ final class ModulesController
             $this->activity->log((int) $actor['id'], "module.{$action}", 'module', $slug, [
                 'delete_data' => $action === 'uninstall' && $request->input('delete_data') === '1',
             ], $request->ip());
-            $this->csrf->rotate();
-
             return $this->view("Module action completed: {$action}.");
         } catch (RuntimeException $error) {
             return $this->view(null, $error->getMessage(), 422);

@@ -63,8 +63,6 @@ final class UserSettingsController
             ],
             $request->ip(),
         );
-        $this->csrf->rotate();
-
         return $this->view(true);
     }
 

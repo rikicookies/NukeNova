@@ -15,3 +15,7 @@
 .classic-topic { color: #8c6413; font-size: .7rem; font-weight: 900; letter-spacing: .1em; }
 .classic-footer { width: min(1200px, calc(100% - 1rem)); margin: 0 auto .5rem; padding: .8rem; border: 1px solid #59616b; border-radius: 0 0 .45rem .45rem; background: #252e39; color: #cbd2db; text-align: center; font-size: .7rem; }
 @media (max-width: 850px) { .classic-columns { grid-template-columns: 1fr; } .classic-header { align-items: flex-start; gap: 1rem; } .classic-header nav { flex-wrap: wrap; justify-content: flex-end; } }
+.classic-theme .block-region-header, .classic-theme .block-region-footer { width: min(1120px, calc(100% - 1rem)); margin: .5rem auto; }
+.classic-block { margin: .6rem 0; border: 1px solid #5e6d86; background: #d8e0ec; color: #111; }
+.classic-block h2 { margin: 0; padding: .35rem .55rem; background: var(--classic-accent); color: #fff; font-size: .85rem; }
+.classic-block-body { padding: .65rem; font-size: .85rem; }

@@ -66,8 +66,13 @@ All notable NovaNuke changes will be documented here.
 - Theme-level module template overrides.
 - Nova Default and Classic Portal reference themes.
 - Theme development documentation and manifest/asset security tests.
+- Configurable block positions, schedules, page rules and role visibility.
+- Sanitized enriched HTML blocks with no executable administrator code.
+- Administrative block editor and block activity events.
 
 ### Changed
 
 - NovaNuke now routes unconfigured installations exclusively to the installer.
 - Migration recording accounts for MySQL implicit DDL commits.
+- Administrative CSRF tokens remain stable during a signed-in session, preventing stale forms across tabs.
+- Theme actions use a POST/Redirect/GET response to prevent accidental form resubmission.

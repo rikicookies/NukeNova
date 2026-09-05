@@ -1,0 +1,38 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Blocks — NovaNuke{% endblock %}
+{% macro fields(block, positions, roles) %}
+    <input type="hidden" name="id" value="{{ block.id|default('') }}">
+    <div class="form-grid">
+        <label>Title<input name="title" required maxlength="150" value="{{ block.title|default('') }}"></label>
+        <label>Slug<input name="slug" required maxlength="100" pattern="[a-z][a-z0-9-]*" value="{{ block.slug|default('') }}"></label>
+        <label>Position<select name="position">{% for position in positions %}<option value="{{ position }}" {{ block.position|default('before-content') == position ? 'selected' : '' }}>{{ position }}</option>{% endfor %}</select></label>
+        <label>Order<input type="number" name="sort_order" min="-10000" max="10000" value="{{ block.sort_order|default(0) }}"></label>
+        <label>Starts at (UTC)<input type="datetime-local" name="starts_at" value="{{ block.starts_at|default('', true)|replace({' ': 'T'}) }}"></label>
+        <label>Ends at (UTC)<input type="datetime-local" name="ends_at" value="{{ block.ends_at|default('', true)|replace({' ': 'T'}) }}"></label>
+    </div>
+    <label class="wide-field">Enriched HTML<textarea name="content" rows="6">{{ block.content|default('') }}</textarea><small>Safe formatting and links are allowed. Scripts, PHP, iframes and event attributes are removed.</small></label>
+    <div class="form-grid">
+        <label>Page visibility<select name="visibility_mode"><option value="all" {{ block.visibility_mode|default('all') == 'all' ? 'selected' : '' }}>Every page</option><option value="only" {{ block.visibility_mode|default('all') == 'only' ? 'selected' : '' }}>Only listed pages</option><option value="except" {{ block.visibility_mode|default('all') == 'except' ? 'selected' : '' }}>Everywhere except listed pages</option></select></label>
+        <label>Page patterns<textarea name="page_patterns" rows="3" placeholder="/news/*&#10;/welcome">{{ block.page_patterns|default([])|join('\n') }}</textarea></label>
+        <label>Module slugs<textarea name="module_slugs" rows="3" placeholder="news&#10;welcome">{{ block.module_slugs|default([])|join('\n') }}</textarea></label>
+    </div>
+    <fieldset><legend>Visible to roles</legend><small>No selection means everyone.</small><div class="role-checks">{% for role in roles %}<label><input type="checkbox" name="role_ids[]" value="{{ role.id }}" {{ role.id in (block.role_ids|default([])) ? 'checked' : '' }}>{{ role.name }}</label>{% endfor %}</div></fieldset>
+    <div class="inline-checks"><label><input type="checkbox" name="enabled" value="1" {{ block.enabled|default(1) ? 'checked' : '' }}> Enabled</label><label><input type="checkbox" name="show_title" value="1" {{ block.show_title|default(1) ? 'checked' : '' }}> Show title</label></div>
+{% endmacro %}
+{% block content %}
+<section class="admin-page blocks-admin">
+    <p class="eyebrow">Layout</p><h1>Blocks</h1>
+    <p>Place sanitized content around the main page and control where and when it appears.</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    <details class="editor-panel" open><summary>Create block</summary><form method="post" action="/admin/blocks/save"><input type="hidden" name="_token" value="{{ csrf_token }}">{{ _self.fields({}, positions, roles) }}<button type="submit">Create block</button></form></details>
+    <h2>Configured blocks</h2>
+    {% for block in block_list %}
+        <details class="editor-panel"><summary><strong>{{ block.title }}</strong> <code>{{ block.position }}</code> <span class="badge {{ block.enabled ? 'badge-active' : '' }}">{{ block.enabled ? 'Enabled' : 'Disabled' }}</span></summary>
+            <form method="post" action="/admin/blocks/save"><input type="hidden" name="_token" value="{{ csrf_token }}">{{ _self.fields(block, positions, roles) }}<button type="submit">Save changes</button></form>
+            <form class="delete-block-form" method="post" action="/admin/blocks/{{ block.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><input type="checkbox" name="confirm_delete" value="1" required> Confirm deletion</label><button class="danger-button" type="submit">Delete block</button></form>
+        </details>
+    {% else %}<p>No blocks have been created.</p>{% endfor %}
+    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
+</section>
+{% endblock %}

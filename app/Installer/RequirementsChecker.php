@@ -15,7 +15,7 @@ final class RequirementsChecker
             'detail' => 'Detected ' . PHP_VERSION,
         ]];
 
-        foreach (['pdo', 'pdo_mysql', 'json', 'mbstring', 'openssl', 'fileinfo'] as $extension) {
+        foreach (['pdo', 'pdo_mysql', 'json', 'mbstring', 'openssl', 'fileinfo', 'dom'] as $extension) {
             $checks[] = [
                 'name' => "Extension {$extension}",
                 'passed' => extension_loaded($extension),

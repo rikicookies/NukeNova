@@ -98,8 +98,6 @@ final class RolesController
         $this->activity->log((int) $actor['id'], 'role.permissions.updated', 'role', $role['id'], [
             'permission_ids' => implode(',', $valid),
         ], $request->ip());
-        $this->csrf->rotate();
-
         return $this->editView($role, true);
     }
 

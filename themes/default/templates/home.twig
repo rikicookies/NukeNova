@@ -1,5 +1,7 @@
 {% extends "layouts/default.twig" %}
 {% block content %}
+<div class="nova-home-columns {{ blocks['left-sidebar']|default([]) ? 'has-left' : '' }} {{ blocks['right-sidebar']|default([]) ? 'has-right' : '' }}">
+{% if blocks['left-sidebar']|default([]) %}<aside>{% include "blocks/region.twig" with {items: blocks['left-sidebar'], position: 'left-sidebar'} %}</aside>{% endif %}
 <section class="nova-hero">
     {% if theme.settings.show_version %}<p class="eyebrow">Version {{ version }}</p>{% endif %}
     <h1>NovaNuke is ready to grow.</h1>
@@ -13,4 +15,6 @@
         {% endif %}
     </div>
 </section>
+{% if blocks['right-sidebar']|default([]) %}<aside>{% include "blocks/region.twig" with {items: blocks['right-sidebar'], position: 'right-sidebar'} %}</aside>{% endif %}
+</div>
 {% endblock %}

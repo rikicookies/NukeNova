@@ -1,0 +1,1 @@
+{% if items|default([]) %}<div class="block-region block-region-{{ position }}" data-block-position="{{ position }}">{% for item in items %}<section class="classic-block"><h2>{% if item.show_title %}{{ item.title }}{% else %}&nbsp;{% endif %}</h2><div class="classic-block-body">{{ item.html }}</div></section>{% endfor %}</div>{% endif %}

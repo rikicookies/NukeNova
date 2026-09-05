@@ -10,6 +10,7 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\View\ViewRenderer;
 use RuntimeException;
@@ -22,6 +23,7 @@ final class ThemesController
         private readonly AuthorizationService $authorization,
         private readonly ActivityLogger $activity,
         private readonly CsrfTokenManager $csrf,
+        private readonly SessionManager $session,
         private readonly ViewRenderer $views,
     ) {
     }
@@ -30,7 +32,9 @@ final class ThemesController
     {
         $guard = $this->guard();
 
-        return $guard ?? $this->view();
+        return $guard ?? $this->view(
+            is_string($message = $this->session->pull('themes.message')) ? $message : null,
+        );
     }
 
     public function action(Request $request): Response
@@ -63,9 +67,9 @@ final class ThemesController
             }
             $actor = $this->auth->user();
             $this->activity->log((int) $actor['id'], "theme.{$action}", 'theme', $slug, [], $request->ip());
-            $this->csrf->rotate();
+            $this->session->put('themes.message', "Theme action completed: {$action}.");
 
-            return $this->view("Theme action completed: {$action}.");
+            return Response::redirect('/admin/themes', 303);
         } catch (RuntimeException $error) {
             return $this->view(null, $error->getMessage(), 422);
         }

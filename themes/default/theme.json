@@ -1,7 +1,7 @@
 {
     "name": "Nova Default",
     "slug": "default",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "The responsive default NovaNuke theme with one or two sidebar-ready layouts.",
     "author": "NovaNuke Project",
     "cms_min_version": "0.1.0",

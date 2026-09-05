@@ -14,3 +14,11 @@
 .theme-footer { border-top: 1px solid #273149; color: #7f8ca0; font-size: .8rem; }
 .two-sidebar-layout { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(0, 3fr) minmax(180px, 1fr); gap: 1rem; width: 100%; }
 @media (max-width: 760px) { .theme-header { align-items: flex-start; } .theme-header nav { flex-wrap: wrap; justify-content: flex-end; } .two-sidebar-layout { grid-template-columns: 1fr; } }
+.block-region-header, .block-region-footer { width: min(1180px, calc(100% - 2rem)); margin: 1rem auto; }
+.theme-default .cms-block { border-color: color-mix(in srgb, var(--theme-accent), transparent 72%); background: color-mix(in srgb, var(--theme-accent), #101624 94%); }
+.theme-default .cms-block h2 { color: var(--theme-accent); }
+.nova-home-columns { display: grid; gap: 1rem; align-items: start; }
+.nova-home-columns.has-left { grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); }
+.nova-home-columns.has-right { grid-template-columns: minmax(0, 1fr) minmax(180px, 260px); }
+.nova-home-columns.has-left.has-right { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) minmax(180px, 240px); }
+@media (max-width: 850px) { .nova-home-columns.has-left, .nova-home-columns.has-right, .nova-home-columns.has-left.has-right { grid-template-columns: 1fr; } }

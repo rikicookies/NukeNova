@@ -17,4 +17,9 @@ final class ResponseTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         Response::redirect('https://malicious.example');
     }
+
+    public function testRedirectCanUseSeeOtherAfterAFormSubmission(): void
+    {
+        self::assertSame(303, Response::redirect('/admin/themes', 303)->status());
+    }
 }
