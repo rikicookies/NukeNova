@@ -1,6 +1,6 @@
 # Statistics module
 
-Statistics 1.0.0 provides a permission-protected dashboard at `/admin/statistics`, an optional public page at `/statistics`, and a disabled-by-default summary block.
+Statistics 1.2.0 provides a permission-protected dashboard at `/admin/statistics`, an optional public page at `/statistics`, and a disabled-by-default summary block.
 
 ## Privacy model
 
@@ -23,4 +23,4 @@ The administrative dashboard includes registered and recently active users, publ
 
 Collection is enabled initially. The public page is disabled initially. A user with `statistics.manage` can change both settings; `statistics.view-admin` controls access to the private dashboard.
 
-The module creates a disabled `statistics-summary` block. Enable and position it from `/admin/blocks` when desired.
+The module creates a disabled `statistics-summary` block. Updating Statistics to 1.2.0 restores it if it was deleted without duplicating or overwriting an existing block. Enable and position it from `/admin/blocks` when desired. A rendering failure is logged with sensitive values redacted and skips only this block rather than the full page.

@@ -1,12 +1,12 @@
 # Polls module
 
-Polls 1.0.0 provides scheduled single-choice and multiple-choice community polls at `/polls`, administration at `/admin/polls`, and an active-poll block.
+Polls 1.1.0 provides scheduled single-choice and multiple-choice community polls at `/polls`, administration at `/admin/polls`, and an active-poll block.
 
 ## Installation and block
 
-Install and enable Polls from `/admin/modules`. Its migration creates a block named `Active poll` in the right sidebar. The ordinary Blocks panel can change its title, position, order, schedule, page rules, role visibility and enabled state without converting it to administrator HTML.
+Install and enable Polls from `/admin/modules`. Its migration creates a disabled block named `Active poll` in the right sidebar. The ordinary Blocks panel can change its title, position, order, schedule, page rules, role visibility and enabled state without converting it to administrator HTML. Updating Polls to 1.1.0 safely restores this block if it was deleted; existing blocks are not duplicated or overwritten.
 
-The core's `block.rendering` hook allows trusted modules to render non-HTML block types. If Polls is disabled or no poll is active in its configured date window, the block produces no output.
+The core's `block.rendering` hook allows trusted modules to render non-HTML block types. If Polls is disabled or no poll is active in its configured date window, the block produces no output. A provider failure is logged with sensitive values redacted and only the failing block is skipped.
 
 ## Voting rules
 

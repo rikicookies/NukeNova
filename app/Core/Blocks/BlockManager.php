@@ -7,7 +7,6 @@ namespace NovaNuke\Core\Blocks;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Security\HtmlSanitizer;
-use NovaNuke\Core\Events\EventDispatcher;
 use PDO;
 use RuntimeException;
 use Twig\Markup;
@@ -21,10 +20,10 @@ final class BlockManager
         private readonly BlockRepository $repository,
         private readonly HtmlSanitizer $sanitizer,
         private readonly MarkdownRenderer $markdown,
+        private readonly DynamicBlockRenderer $dynamic,
         private readonly BlockVisibility $visibility,
         private readonly AuthManager $auth,
         private readonly ViewRenderer $views,
-        private readonly EventDispatcher $events,
     ) {
     }
 
@@ -129,12 +128,13 @@ final class BlockManager
             $path = rtrim($path, '/');
         }
         if ($path === '/admin' || str_starts_with($path, '/admin/')) {
-            $this->views->addGlobal('blocks', array_fill_keys(self::POSITIONS, []));
+            $this->views->addGlobal('blocks', new BlockRegions(self::POSITIONS));
             return;
         }
         $roles = $this->viewerRoles();
         $module = explode('/', trim($path, '/'))[0] ?? '';
-        $regions = array_fill_keys(self::POSITIONS, []);
+        $regions = new BlockRegions(self::POSITIONS);
+        $this->views->addGlobal('blocks', $regions);
         foreach ($this->repository->active() as $block) {
             if (! $this->visibility->matches((string) $block['visibility_mode'], $block['page_patterns'], $path)) {
                 continue;
@@ -149,19 +149,16 @@ final class BlockManager
             if ($block['type'] === 'markdown') {
                 $html = $this->markdown->render($html);
             } elseif ($block['type'] !== 'html') {
-                $rendering = new BlockRendering($block);
-                $this->events->dispatch('block.rendering', $rendering);
-                if ($rendering->html === null) continue;
-                $html = $rendering->html;
+                $html = $this->dynamic->render($block);
+                if ($html === null) continue;
             }
-            $regions[$block['position']][] = [
+            $regions->add((string) $block['position'], [
                 'slug' => $block['slug'],
                 'title' => $block['title'],
                 'show_title' => (bool) $block['show_title'],
                 'html' => new Markup($html, 'UTF-8'),
-            ];
+            ]);
         }
-        $this->views->addGlobal('blocks', $regions);
     }
 
     /** @return list<string> */

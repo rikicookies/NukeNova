@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Http;
 
 use NovaNuke\Auth\AuthManager;
+use NovaNuke\Core\Application;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Routing\Router;
 use NovaNuke\Core\Security\AdminAccessGate;
@@ -29,6 +30,7 @@ final class Kernel
     public function handle(Request $request): Response
     {
         try {
+            $this->container->get(Application::class)->boot();
             if ($this->maintenance->blocks($request)) {
                 return $this->securityHeaders->apply(Response::html(
                     '<!doctype html><html lang="en"><meta charset="utf-8"><title>Maintenance</title>'

@@ -17,7 +17,7 @@ Markdown source is stored so it remains editable. At render time NovaNuke uses `
 - `after-content`
 - `footer`
 
-Themes render positions through `blocks/region.twig`. Sidebar positions appear when a page uses the theme's `two-sidebars.twig` layout. A theme may change the markup, but it should retain automatic escaping for the title. Block HTML is sanitized before storage and exposed as trusted markup only after that process.
+Themes render positions through `blocks/region.twig`. The bundled Default and Classic layouts automatically add zero, one or two sidebars according to the active blocks, including on module routes such as News, Pages and Downloads. A theme may change the markup, but it should retain automatic escaping for the title. Block HTML is sanitized before storage and exposed as trusted markup only after that process.
 
 ## Visibility
 

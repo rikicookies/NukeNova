@@ -16,7 +16,13 @@ body { margin: 0; min-height: 100vh; }
 
 .brand { color: #8be9fd; font-weight: 800; text-decoration: none; }
 
-.page-shell { display: grid; min-height: 75vh; place-items: center; padding: 2rem; }
+.page-shell { min-height: 75vh; padding: 2rem; }
+.site-content-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; width: 100%; align-items: start; }
+.site-content-columns.has-left { grid-template-columns: minmax(180px, 240px) minmax(0, 1fr); }
+.site-content-columns.has-right { grid-template-columns: minmax(0, 1fr) minmax(180px, 240px); }
+.site-content-columns.has-left.has-right { grid-template-columns: minmax(180px, 220px) minmax(0, 1fr) minmax(180px, 220px); }
+.site-main-content { min-width: 0; }
+@media (max-width: 850px) { .site-content-columns.has-left, .site-content-columns.has-right, .site-content-columns.has-left.has-right { grid-template-columns: 1fr; } }
 
 .welcome-card {
     max-width: 720px;

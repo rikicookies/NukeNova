@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.1**. It begins the next feature cycle with selectable sanitized HTML or Markdown block content. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.2.0-alpha.4**. It fixes Twig global initialization for dynamic blocks while retaining universal public sidebars and isolated provider failures. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
 ## Included in 0.1.0
 

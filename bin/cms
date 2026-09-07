@@ -80,6 +80,15 @@ if ($command === 'help') {
 
 $application = require $rootPath . '/bootstrap/app.php';
 
+if (in_array($command, ['downloads:orphans', 'maintenance:prune'], true)) {
+    try {
+        $application->boot();
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Application boot failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
 if ($command === 'production:check') {
     $checks=$application->container()->get(ProductionReadiness::class)->run();$passed=true;
     foreach($checks as$check){if($check['required'])$passed=$passed&&$check['passed'];$status=$check['passed']?'PASS':($check['required']?'FAIL':'WARN');fwrite($check['required']&&!$check['passed']?STDERR:STDOUT,"[{$status}] {$check['name']}: {$check['detail']}\n");}

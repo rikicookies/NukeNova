@@ -2,6 +2,65 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.4] - 2026-09-07
+
+### Fixed
+
+- Dynamic Polls and Statistics blocks no longer initialize Twig before the `blocks` global can be registered.
+- Menus are registered first and block regions use a mutable, read-only-to-templates container populated safely after Twig initialization.
+- Dynamic provider isolation remains active without causing `Unable to add global \"blocks\"` errors.
+
+### Added
+
+- Unit coverage for mutating registered block regions after Twig has initialized.
+
+### Compatibility
+
+- No database, module or theme update is required from alpha.3.
+- Module API 1.0 remains unchanged.
+
+## [0.2.0-alpha.3] - 2026-09-07
+
+### Fixed
+
+- Default and Classic layouts render active left/right sidebar blocks around every public child page instead of only Home.
+- Home templates no longer duplicate sidebar output now owned by the shared layout.
+- Application route/module/block boot runs inside the HTTP error boundary, producing a logged response instead of an uncaught bootstrap failure.
+- MIME validation uses a delimiter that does not conflict with the allowed `#` character and no longer raises a PHP warning.
+
+### Added
+
+- Strict-Twig coverage proving both bundled layouts render left and right blocks exactly once while retaining route content.
+
+### Changed
+
+- Default and Classic advance to 1.8.0 and require a controlled theme update to republish CSS assets.
+
+### Compatibility
+
+- No database or module migration is required from alpha.2.
+- Module API 1.0 remains unchanged.
+
+## [0.2.0-alpha.2] - 2026-09-07
+
+### Fixed
+
+- The Markdown security test now separates stripped block HTML from subsequent valid Markdown, matching CommonMark parsing rules.
+- Exceptions from trusted dynamic-block providers are isolated so one failed block cannot return a site-wide 500 response.
+- Dynamic-block failure logs redact credential-like values and identify the block type and ID.
+- Poll and Statistics block templates tolerate incomplete values in Twig strict mode.
+
+### Changed
+
+- Polls 1.1.0 and Statistics 1.2.0 add idempotent migrations that restore deleted default blocks as disabled.
+- Existing dynamic blocks are neither duplicated nor overwritten during module updates.
+
+### Compatibility
+
+- No core database migration or theme update is required.
+- Polls and Statistics require controlled updates from the Modules panel.
+- Module API 1.0 remains unchanged.
+
 ## [0.2.0-alpha.1] - 2026-09-04
 
 ### Added

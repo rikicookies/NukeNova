@@ -21,7 +21,7 @@ final class MarkdownRendererTest extends TestCase
     public function testItRejectsEmbeddedHtmlAndUnsafeLinks(): void
     {
         $html = (new MarkdownRenderer(new HtmlSanitizer()))->render(
-            '<script>alert(1)</script> [unsafe](javascript:alert(1)) [safe](https://example.com)',
+            "<script>alert(1)</script>\n\n[unsafe](javascript:alert(1)) [safe](https://example.com)",
         );
 
         self::assertStringNotContainsString('<script', $html);

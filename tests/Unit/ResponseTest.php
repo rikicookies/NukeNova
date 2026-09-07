@@ -52,6 +52,7 @@ final class ResponseTest extends TestCase
             self::assertSame('application/octet-stream', $response->header('Content-Type'));
             self::assertStringContainsString('bad_name.zip', (string) $response->header('Content-Disposition'));
             self::assertSame('4', $response->header('Content-Length'));
+            self::assertSame('text/plain', Response::download($path, 'safe.txt', 'text/plain')->header('Content-Type'));
         } finally { @unlink($path); }
     }
 

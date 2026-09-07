@@ -51,6 +51,8 @@ use NovaNuke\Core\Blocks\BlockManager;
 use NovaNuke\Core\Blocks\BlockRepository;
 use NovaNuke\Core\Blocks\BlockVisibility;
 use NovaNuke\Core\Blocks\MarkdownRenderer;
+use NovaNuke\Core\Blocks\DynamicBlockRenderer;
+use NovaNuke\Core\Logging\SensitiveDataRedactor;
 use NovaNuke\Core\Security\HtmlSanitizer;
 use NovaNuke\Core\Menus\MenuManager;
 use NovaNuke\Core\Menus\MenuRepository;
@@ -74,6 +76,7 @@ use PDO;
 final class Application
 {
     public const VERSION = Version::CURRENT;
+    private bool $booted = false;
 
     private function __construct(
         private readonly string $rootPath,
@@ -216,10 +219,10 @@ final class Application
             new BlockRepository($c->get(PDO::class)),
             new HtmlSanitizer(),
             new MarkdownRenderer(new HtmlSanitizer()),
+            new DynamicBlockRenderer($c->get(EventDispatcher::class), new SensitiveDataRedactor()),
             new BlockVisibility(),
             $c->get(AuthManager::class),
             $c->get(ViewRenderer::class),
-            $c->get(EventDispatcher::class),
         ));
         $container->bind(MenuManager::class, static fn (Container $c) => new MenuManager(
             $c->get(PDO::class),
@@ -295,9 +298,14 @@ final class Application
         $container->get(ViewRenderer::class)->addGlobal('cms_version', self::VERSION);
         $container->get(ViewRenderer::class)->addGlobal('cms_locales', $container->get(LocaleRegistry::class)->all());
 
-        $app->loadRoutes();
-
         return $app;
+    }
+
+    public function boot(): void
+    {
+        if ($this->booted) return;
+        $this->booted = true;
+        $this->loadRoutes();
     }
 
     public function container(): Container
@@ -359,7 +367,7 @@ final class Application
         $views->addGlobal('current_user', $authenticatedUser);
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
-        $this->container->get(BlockManager::class)->boot();
         $this->container->get(MenuManager::class)->boot();
+        $this->container->get(BlockManager::class)->boot();
     }
 }

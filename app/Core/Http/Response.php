@@ -61,7 +61,7 @@ final class Response
     public static function download(string $path, string $filename, string $mimeType): self
     {
         if (! is_file($path) || ! is_readable($path)) throw new \RuntimeException('Download file is unavailable.');
-        if (! preg_match('#^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$#i', $mimeType)) $mimeType = 'application/octet-stream';
+        if (! preg_match('~^[a-z0-9][a-z0-9!#$&^_.+-]*/[a-z0-9][a-z0-9!#$&^_.+-]*$~i', $mimeType)) $mimeType = 'application/octet-stream';
         $safeName = preg_replace('/[^a-zA-Z0-9._ -]/', '_', basename($filename)) ?: 'download';
         $disposition = "attachment; filename=\"{$safeName}\"; filename*=UTF-8''" . rawurlencode($safeName);
         return new self(static function () use ($path): void { readfile($path); }, 200, [

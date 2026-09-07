@@ -91,3 +91,15 @@ No migration, module update or theme update is required. General settings, accou
 ## Updating to 0.2.0-alpha.1
 
 No database migration, module update or theme update is required. This release adds `league/commonmark`; installations preserving an older `composer.lock` must run `composer update league/commonmark` once, followed by `composer install`. Clear caches, then test creating, editing and switching HTML/Markdown blocks. Existing HTML blocks retain their type and content. Module API 1.0 is unchanged.
+
+## Updating to 0.2.0-alpha.2
+
+Update Polls to 1.1.0 and Statistics to 1.2.0 from `/admin/modules`. Their idempotent migrations restore deleted default blocks in a disabled state and leave existing blocks unchanged. Clear caches, enable one restored block at a time and verify the public site. A dynamic provider exception is now redacted and logged while only the affected block is omitted. No core database migration or theme update is required; module API 1.0 is unchanged.
+
+## Updating to 0.2.0-alpha.3
+
+Update both bundled themes to 1.8.0 from `/admin/themes` so their layouts and published CSS render active sidebars on every public module route. Clear caches and restart PHP/Apache. This release also moves application boot inside the HTTP error boundary and fixes MIME validation warnings. No database or module migration is added; module API 1.0 remains unchanged.
+
+## Updating to 0.2.0-alpha.4
+
+No database, module or theme update is required from alpha.3. Menus and the mutable block-region global are now registered before any dynamic provider renders Twig, preventing the `Unable to add global blocks` LogicException. Replace application files, clear caches and restart PHP/Apache before enabling Polls or Statistics blocks. Module API 1.0 remains unchanged.
