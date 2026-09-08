@@ -60,6 +60,9 @@ final class AuthController
             if ($user !== null) {
                 $this->throttle->clear($key);
                 $this->csrf->rotate();
+                if ((bool) ($user['must_change_password'] ?? false)) {
+                    return Response::redirect('/account/profile?password_required=1');
+                }
                 return Response::redirect(
                     $this->authorization->allows((int) $user['id'], 'admin.access') ? '/admin' : '/'
                 );

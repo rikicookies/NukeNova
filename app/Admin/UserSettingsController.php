@@ -46,6 +46,7 @@ final class UserSettingsController
         }
 
         $this->settings->setBoolean('users.registration_open', $request->input('registration_open') === '1', 'users');
+        $this->settings->setBoolean('users.private_site', $request->input('private_site') === '1', 'users');
         $this->settings->setBoolean(
             'users.email_verification_required',
             $request->input('email_verification_required') === '1',
@@ -59,6 +60,7 @@ final class UserSettingsController
             'users',
             [
                 'registration_open' => $request->input('registration_open') === '1',
+                'private_site' => $request->input('private_site') === '1',
                 'verification_required' => $request->input('email_verification_required') === '1',
             ],
             $request->ip(),
@@ -84,6 +86,7 @@ final class UserSettingsController
         return Response::html($this->views->render('admin/user-settings.twig', [
             'csrf_token' => $this->csrf->token(),
             'registration_open' => $this->settings->boolean('users.registration_open', false),
+            'private_site' => $this->settings->boolean('users.private_site', false),
             'verification_required' => $this->settings->boolean('users.email_verification_required', true),
             'saved' => $saved,
         ]));

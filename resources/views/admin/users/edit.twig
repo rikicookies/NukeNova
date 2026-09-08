@@ -6,6 +6,7 @@
     <h1>{{ edited_user.username }}</h1>
     <p>{{ edited_user.email }}</p>
     {% if saved %}<div class="success-message">User authorization saved.</div>{% endif %}
+    {% if password_reset %}<div class="success-message">Temporary password saved. Existing sessions were closed and the user must change it after signing in.</div>{% endif %}
     {% if edited_user.id == current_user_id %}<div class="notice-message">Your own roles and status cannot be changed from this screen.</div>{% endif %}
     <form method="post" action="/admin/users/{{ edited_user.id }}">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
@@ -26,6 +27,16 @@
         </div>
         {% if edited_user.id != current_user_id %}<button class="install-button" type="submit">Save user</button>{% endif %}
     </form>
+    {% if edited_user.id != current_user_id %}
+    <h2>Temporary password</h2>
+    {% if password_error %}<div class="alert alert-error">{{ password_error }}</div>{% endif %}
+    <form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/password">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>New temporary password<input type="password" name="password" minlength="12" maxlength="255" required autocomplete="new-password"></label>
+        <label>Confirm temporary password<input type="password" name="password_confirmation" minlength="12" maxlength="255" required autocomplete="new-password"></label>
+        <button type="submit">Reset password</button>
+    </form>
+    {% endif %}
     <p><a class="auth-link" href="/admin/users">Return to users</a></p>
 </section>
 {% endblock %}

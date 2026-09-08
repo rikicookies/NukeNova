@@ -87,7 +87,7 @@ final class PasswordResetService
         $this->database->beginTransaction();
         try {
             $update = $this->database->prepare(
-                'UPDATE users SET password_hash = :password_hash, auth_version = auth_version + 1, '
+                'UPDATE users SET password_hash = :password_hash, must_change_password = 0, auth_version = auth_version + 1, '
                 . 'updated_at = UTC_TIMESTAMP() WHERE id = :id'
             );
             $update->execute([

@@ -24,7 +24,7 @@ final class AuthManager
     public function attempt(string $login, string $password, string $ip, string $userAgent): ?array
     {
         $statement = $this->database->prepare(
-            'SELECT id, username, email, password_hash, auth_version, status FROM users '
+            'SELECT id, username, email, password_hash, must_change_password, auth_version, status FROM users '
             . 'WHERE deleted_at IS NULL AND (email = :email OR username = :username) LIMIT 1'
         );
         $statement->execute(['email' => strtolower($login), 'username' => $login]);
@@ -63,7 +63,7 @@ final class AuthManager
         }
 
         $statement = $this->database->prepare(
-            'SELECT id, username, email, status, auth_version FROM users WHERE id = :id AND deleted_at IS NULL LIMIT 1'
+            'SELECT id, username, email, status, must_change_password, auth_version FROM users WHERE id = :id AND deleted_at IS NULL LIMIT 1'
         );
         $statement->execute(['id' => (int) $id]);
         $user = $statement->fetch();

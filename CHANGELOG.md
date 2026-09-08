@@ -2,6 +2,26 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.19] - 2026-09-08
+
+### Added
+
+- Optional private-site mode that requires authentication for site content while preserving login, registration policy, recovery, verification, health and installer access.
+- Super Administrator account creation with validated credentials, one assigned role and an optional mandatory initial-password change.
+- Super Administrator temporary-password reset for existing accounts.
+
+### Security
+
+- Private-site access is enforced by the HTTP Kernel rather than navigation visibility.
+- Mandatory password changes cannot be bypassed by manually entering another application URL.
+- Administrative password resets revoke active sessions and invalidate outstanding password-reset and email-change tokens.
+- Account creation and password resets require server-side authorization, CSRF protection and Activity Log entries; plaintext passwords are never logged.
+
+### Compatibility
+
+- Run the core migration to add `users.must_change_password`; existing accounts receive the safe default `0`.
+- No module or theme update is required. VIP, plans, payments and expiring memberships are not part of this release.
+
 ## [0.2.0-alpha.18] - 2026-09-08
 
 ### Added

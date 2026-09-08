@@ -4,10 +4,14 @@
 <section class="dashboard-card">
     <p class="eyebrow">Administration</p>
     <h1>User settings.</h1>
-    <p>Control public registration and email verification.</p>
+    <p>Control private-site access, public registration and email verification.</p>
     {% if saved %}<div class="success-message">Settings saved.</div>{% endif %}
     <form class="settings-form" method="post" action="/admin/settings/users">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label class="toggle-row">
+            <input type="checkbox" name="private_site" value="1" {% if private_site %}checked{% endif %}>
+            <span><strong>Private site</strong><small>Require an account to view site content. Login and account-recovery routes remain public.</small></span>
+        </label>
         <label class="toggle-row">
             <input type="checkbox" name="registration_open" value="1" {% if registration_open %}checked{% endif %}>
             <span><strong>Open public registration</strong><small>Allow visitors to create Member accounts.</small></span>

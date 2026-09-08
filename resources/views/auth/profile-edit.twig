@@ -4,6 +4,7 @@
 <section class="dashboard-card account-profile">
     <p class="eyebrow">{{ trans('account.settings') }}</p>
     <h1>{{ trans('account.profile.title') }}</h1>
+    {% if current_user.must_change_password|default(false) %}<div class="alert alert-warning">You must change your initial password before continuing.</div>{% endif %}
     {% include "auth/_social-nav.twig" %}
     {% if message|default(null) %}<div class="alert alert-success">{{ message }}</div>{% endif %}
     {% if profile.username|default('') %}<p><a href="/users/{{ profile.username|default('') }}">{{ trans('account.profile.public') }}</a></p>{% endif %}

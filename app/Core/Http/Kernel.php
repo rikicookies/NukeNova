@@ -12,6 +12,9 @@ use NovaNuke\Core\Security\AdminAccessGate;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\SecurityHeaders;
 use NovaNuke\Core\System\MaintenanceMode;
+use NovaNuke\Core\System\PrivateSiteAccessPolicy;
+use NovaNuke\Core\System\PasswordChangeAccessPolicy;
+use NovaNuke\Core\Settings\SettingsRepository;
 use Throwable;
 
 final class Kernel
@@ -23,6 +26,8 @@ final class Kernel
         private readonly SecurityHeaders $securityHeaders,
         private readonly MaintenanceMode $maintenance,
         private readonly AdminAccessGate $adminAccess,
+        private readonly PrivateSiteAccessPolicy $privateSite = new PrivateSiteAccessPolicy(),
+        private readonly PasswordChangeAccessPolicy $passwordChange = new PasswordChangeAccessPolicy(),
     ) {
         $this->errors->register();
     }
@@ -38,10 +43,22 @@ final class Kernel
                     503,
                 )->withHeader('Retry-After', '900')->withHeader('Cache-Control', 'no-store'));
             }
+            $auth = $this->container->get(AuthManager::class);
+            $authenticatedUser = $auth->user();
+            if ($this->privateSite->blocks(
+                $request->path(),
+                $this->container->get(SettingsRepository::class)->boolean('users.private_site', false),
+                $authenticatedUser !== null,
+            )) {
+                return $this->securityHeaders->apply(Response::redirect('/login?private=1'));
+            }
+            if ($authenticatedUser !== null && $this->passwordChange->blocks($request->path(), (bool) ($authenticatedUser['must_change_password'] ?? false))) {
+                return $this->securityHeaders->apply(Response::redirect('/account/profile?password_required=1'));
+            }
             $user = null;
             $allowed = false;
             if ($this->adminAccess->protects($request)) {
-                $user = $this->container->get(AuthManager::class)->user();
+                $user = $authenticatedUser;
                 $allowed = $user !== null && $this->container->get(AuthorizationService::class)
                     ->allows((int) $user['id'], 'admin.access');
             }

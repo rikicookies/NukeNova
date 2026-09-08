@@ -32,6 +32,8 @@ use NovaNuke\Core\System\SystemInspector;
 use NovaNuke\Core\Admin\AdminDashboardService;
 use NovaNuke\Core\Settings\GeneralSettingsInput;
 use NovaNuke\Core\I18n\LocaleRegistry;
+use NovaNuke\Auth\RegistrationValidator;
+use NovaNuke\Auth\PasswordPolicy;
 
 $dashboardController = static fn (Container $container): AdminDashboardController => new AdminDashboardController(
     $container->get(AuthManager::class),
@@ -104,15 +106,26 @@ $usersController = static fn (Container $container): UsersController => new User
     $container->get(ActivityLogger::class),
     $container->get(CsrfTokenManager::class),
     $container->get(ViewRenderer::class),
+    new RegistrationValidator(new PasswordPolicy()),
+    new PasswordPolicy(),
 );
 $router->get('/admin/users', static fn (Request $request, Container $container): Response =>
     $usersController($container)->index()
+);
+$router->get('/admin/users/create', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->create()
+);
+$router->post('/admin/users', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->store($request)
 );
 $router->get('/admin/users/{id}', static fn (Request $request, Container $container): Response =>
     $usersController($container)->edit($request)
 );
 $router->post('/admin/users/{id}', static fn (Request $request, Container $container): Response =>
     $usersController($container)->update($request)
+);
+$router->post('/admin/users/{id}/password', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->resetPassword($request)
 );
 
 $logsController = static fn (Container $container): ActivityLogsController => new ActivityLogsController(

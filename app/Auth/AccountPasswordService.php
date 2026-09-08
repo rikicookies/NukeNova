@@ -27,7 +27,7 @@ final class AccountPasswordService
 
         $this->database->beginTransaction();
         try {
-            $update = $this->database->prepare('UPDATE users SET password_hash=:hash,auth_version=auth_version+1,updated_at=UTC_TIMESTAMP() WHERE id=:id');
+            $update = $this->database->prepare('UPDATE users SET password_hash=:hash,must_change_password=0,auth_version=auth_version+1,updated_at=UTC_TIMESTAMP() WHERE id=:id');
             $update->execute(['hash' => password_hash((string) $password, PASSWORD_DEFAULT), 'id' => $userId]);
             $this->database->prepare('DELETE FROM password_reset_tokens WHERE user_id=:id')->execute(['id' => $userId]);
             $this->database->prepare('DELETE FROM email_change_tokens WHERE user_id=:id')->execute(['id' => $userId]);
