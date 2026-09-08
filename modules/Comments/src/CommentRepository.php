@@ -16,7 +16,7 @@ final class CommentRepository
     public function approved(string $type, int $contentId): array
     {
         $statement = $this->database->prepare(
-            "SELECT c.id,c.parent_id,c.user_id,c.guest_name,c.body,c.edited_at,c.created_at,u.username "
+            "SELECT c.id,c.parent_id,c.user_id,c.guest_name,c.body,c.body_format,c.edited_at,c.created_at,u.username "
             . "FROM comments c LEFT JOIN users u ON u.id=c.user_id WHERE c.content_type=:type AND c.content_id=:content AND c.status='approved' ORDER BY c.created_at,c.id"
         );
         $statement->execute(['type' => $type, 'content' => $contentId]);
@@ -33,8 +33,8 @@ final class CommentRepository
             if ($this->depth((int) $parent['id']) >= 5) throw new RuntimeException('Maximum reply depth reached.');
         }
         $statement = $this->database->prepare(
-            'INSERT INTO comments (content_type,content_id,parent_id,user_id,guest_name,body,status,ip_hash,created_at,updated_at) '
-            . 'VALUES (:content_type,:content_id,:parent_id,:user_id,:guest_name,:body,:status,:ip_hash,UTC_TIMESTAMP(),UTC_TIMESTAMP())'
+            'INSERT INTO comments (content_type,content_id,parent_id,user_id,guest_name,body,body_format,status,ip_hash,created_at,updated_at) '
+            . 'VALUES (:content_type,:content_id,:parent_id,:user_id,:guest_name,:body,:body_format,:status,:ip_hash,UTC_TIMESTAMP(),UTC_TIMESTAMP())'
         );
         $statement->execute($data);
         return (int) $this->database->lastInsertId();
@@ -57,13 +57,13 @@ final class CommentRepository
         }
     }
 
-    public function edit(int $id, int $userId, string $body): void
+    public function edit(int $id, int $userId, string $body, string $bodyFormat): void
     {
         $statement = $this->database->prepare(
-            "UPDATE comments SET body=:body,edited_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() WHERE id=:id AND user_id=:user "
+            "UPDATE comments SET body=:body,body_format=:body_format,edited_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() WHERE id=:id AND user_id=:user "
             . "AND status IN ('pending','approved') AND created_at>=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 15 MINUTE)"
         );
-        $statement->execute(['body' => $body, 'id' => $id, 'user' => $userId]);
+        $statement->execute(['body' => $body, 'body_format' => $bodyFormat, 'id' => $id, 'user' => $userId]);
         if ($statement->rowCount() !== 1) throw new RuntimeException('This comment can no longer be edited.');
     }
 

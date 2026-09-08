@@ -16,7 +16,7 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
-use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use NovaNuke\Core\View\ViewRenderer;
 
 final class PagesModule implements ModuleInterface
@@ -25,7 +25,7 @@ final class PagesModule implements ModuleInterface
     {
         $context->container->get(ViewRenderer::class)->addNamespace('pages', $context->basePath . '/views');
         $context->container->bind(PageRepository::class, static fn (Container $c) => new PageRepository($c->get(\PDO::class)));
-        $context->container->bind(PageInput::class, static fn () => new PageInput(new HtmlSanitizer()));
+        $context->container->bind(PageInput::class, static fn () => new PageInput());
     }
 
     public function boot(ModuleContext $context): void
@@ -55,8 +55,10 @@ final class PagesModule implements ModuleInterface
             $c->get(PageRepository::class), $c->get(\NovaNuke\Auth\AuthManager::class),
             $c->get(\NovaNuke\Core\Security\SessionManager::class), $c->get(ViewRenderer::class),
             $c->get(\NovaNuke\Core\Events\EventDispatcher::class),
+            $c->get(ContentRendererInterface::class),
             $c->has(CommentService::class) ? $c->get(CommentService::class) : null,
-            $c->has(CommentService::class) ? $c->get(\NovaNuke\Core\Security\CsrfTokenManager::class) : null,
+            $c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),
+            $c->get(\NovaNuke\Core\Security\AuthorizationService::class),
         );
         $admin = static fn (Container $c) => new AdminPagesController(
             $c->get(PageRepository::class), $c->get(PageInput::class), $c->get(\NovaNuke\Auth\AuthManager::class),

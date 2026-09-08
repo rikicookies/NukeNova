@@ -23,13 +23,13 @@ final class PrivateMessageRepository
         $s->execute(['left1'=>$left,'right1'=>$right,'right2'=>$right,'left2'=>$left]); return (int)$s->fetchColumn()>0;
     }
 
-    public function create(int $sender, int $recipient, string $subject, string $body): int
+    public function create(int $sender, int $recipient, string $subject, string $body, string $bodyFormat = 'markdown'): int
     {
-        return $this->createWithMessage($sender, $recipient, $subject, $body)['conversation_id'];
+        return $this->createWithMessage($sender, $recipient, $subject, $body, $bodyFormat)['conversation_id'];
     }
 
     /** @return array{conversation_id:int,message_id:int} */
-    public function createWithMessage(int $sender, int $recipient, string $subject, string $body): array
+    public function createWithMessage(int $sender, int $recipient, string $subject, string $body, string $bodyFormat = 'markdown'): array
     {
         $this->database->beginTransaction();
         try {
@@ -37,18 +37,18 @@ final class PrivateMessageRepository
             $id=(int)$this->database->lastInsertId();
             $participant=$this->database->prepare('INSERT INTO private_conversation_participants (conversation_id,user_id) VALUES (:conversation,:user)');
             $participant->execute(['conversation'=>$id,'user'=>$sender]); $participant->execute(['conversation'=>$id,'user'=>$recipient]);
-            $message=$this->insertMessage($id,$sender,$body);
+            $message=$this->insertMessage($id,$sender,$body,$bodyFormat);
             $this->database->prepare('UPDATE private_conversation_participants SET last_read_message_id=:message WHERE conversation_id=:conversation AND user_id=:user')->execute(['message'=>$message,'conversation'=>$id,'user'=>$sender]);
             $this->database->commit(); return ['conversation_id'=>$id,'message_id'=>$message];
         } catch (\Throwable $e) { if($this->database->inTransaction())$this->database->rollBack(); throw $e; }
     }
 
-    public function reply(int $conversation, int $sender, string $body): int
+    public function reply(int $conversation, int $sender, string $body, string $bodyFormat = 'markdown'): int
     {
         $other=$this->otherParticipant($conversation,$sender); if($other===null)throw new RuntimeException('Conversation not found.');
         $this->database->beginTransaction();
         try {
-            $message=$this->insertMessage($conversation,$sender,$body);
+            $message=$this->insertMessage($conversation,$sender,$body,$bodyFormat);
             $this->database->prepare('UPDATE private_conversations SET last_message_at=UTC_TIMESTAMP() WHERE id=:id')->execute(['id'=>$conversation]);
             $this->database->prepare('UPDATE private_conversation_participants SET deleted_at=NULL WHERE conversation_id=:id')->execute(['id'=>$conversation]);
             $this->database->prepare('UPDATE private_conversation_participants SET last_read_message_id=:message WHERE conversation_id=:conversation AND user_id=:user')->execute(['message'=>$message,'conversation'=>$conversation,'user'=>$sender]);
@@ -64,14 +64,14 @@ final class PrivateMessageRepository
 
     public function sent(int $user): array
     {
-        $s=$this->database->prepare('SELECT m.id,m.body,m.created_at,c.id AS conversation_id,c.subject,u.username AS recipient FROM private_messages m INNER JOIN private_conversations c ON c.id=m.conversation_id INNER JOIN private_conversation_participants mine ON mine.conversation_id=c.id AND mine.user_id=m.sender_id INNER JOIN private_conversation_participants p ON p.conversation_id=c.id AND p.user_id<>m.sender_id INNER JOIN users u ON u.id=p.user_id WHERE m.sender_id=:user AND mine.deleted_at IS NULL ORDER BY m.created_at DESC,m.id DESC LIMIT 100');
+        $s=$this->database->prepare('SELECT m.id,m.body,m.body_format,m.created_at,c.id AS conversation_id,c.subject,u.username AS recipient FROM private_messages m INNER JOIN private_conversations c ON c.id=m.conversation_id INNER JOIN private_conversation_participants mine ON mine.conversation_id=c.id AND mine.user_id=m.sender_id INNER JOIN private_conversation_participants p ON p.conversation_id=c.id AND p.user_id<>m.sender_id INNER JOIN users u ON u.id=p.user_id WHERE m.sender_id=:user AND mine.deleted_at IS NULL ORDER BY m.created_at DESC,m.id DESC LIMIT 100');
         $s->execute(compact('user')); return $s->fetchAll();
     }
 
     public function conversation(int $id,int $user): ?array
     {
         $other=$this->otherParticipant($id,$user); if($other===null)return null;
-        $s=$this->database->prepare('SELECT m.id,m.sender_id,m.body,m.created_at,u.username FROM private_messages m INNER JOIN users u ON u.id=m.sender_id WHERE m.conversation_id=:id ORDER BY m.id'); $s->execute(compact('id'));
+        $s=$this->database->prepare('SELECT m.id,m.sender_id,m.body,m.body_format,m.created_at,u.username FROM private_messages m INNER JOIN users u ON u.id=m.sender_id WHERE m.conversation_id=:id ORDER BY m.id'); $s->execute(compact('id'));
         $messages=$s->fetchAll(); $last=$messages===[]?null:(int)end($messages)['id'];
         if($last!==null)$this->database->prepare('UPDATE private_conversation_participants SET last_read_message_id=:last WHERE conversation_id=:id AND user_id=:user')->execute(compact('last','id','user'));
         $c=$this->database->prepare('SELECT subject FROM private_conversations WHERE id=:id');$c->execute(compact('id'));
@@ -105,6 +105,6 @@ final class PrivateMessageRepository
     public function reports(): array { return $this->database->query("SELECT r.id,r.reason,r.created_at,m.body,s.username AS sender,u.username AS reporter FROM private_message_reports r INNER JOIN private_messages m ON m.id=r.message_id INNER JOIN users s ON s.id=m.sender_id INNER JOIN users u ON u.id=r.reporter_user_id WHERE r.status='open' ORDER BY r.created_at DESC")->fetchAll(); }
     public function resolve(int $id): void { $s=$this->database->prepare("UPDATE private_message_reports SET status='resolved',resolved_at=UTC_TIMESTAMP() WHERE id=:id AND status='open'");$s->execute(compact('id'));if($s->rowCount()!==1)throw new RuntimeException('Open report not found.'); }
 
-    private function insertMessage(int $conversation,int $sender,string $body): int { $this->database->prepare('INSERT INTO private_messages (conversation_id,sender_id,body,created_at) VALUES (:conversation,:sender,:body,UTC_TIMESTAMP())')->execute(compact('conversation','sender','body'));return (int)$this->database->lastInsertId(); }
+    private function insertMessage(int $conversation,int $sender,string $body,string $bodyFormat): int { $this->database->prepare('INSERT INTO private_messages (conversation_id,sender_id,body,body_format,created_at) VALUES (:conversation,:sender,:body,:body_format,UTC_TIMESTAMP())')->execute(['conversation'=>$conversation,'sender'=>$sender,'body'=>$body,'body_format'=>$bodyFormat]);return (int)$this->database->lastInsertId(); }
     private function otherParticipant(int $conversation,int $user): ?array { $s=$this->database->prepare('SELECT u.id,u.username FROM private_conversation_participants mine INNER JOIN private_conversation_participants other ON other.conversation_id=mine.conversation_id AND other.user_id<>mine.user_id INNER JOIN users u ON u.id=other.user_id WHERE mine.conversation_id=:conversation AND mine.user_id=:user AND mine.deleted_at IS NULL LIMIT 1');$s->execute(compact('conversation','user'));$other=$s->fetch();return is_array($other)?$other:null; }
 }

@@ -10,8 +10,12 @@ use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Content\ContentFormat;
+use NovaNuke\Core\Content\ContentProfile;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use Twig\Markup;
 
 final class PublicPagesController
@@ -19,8 +23,9 @@ final class PublicPagesController
     public function __construct(
         private readonly PageRepository $pages, private readonly AuthManager $auth,
         private readonly SessionManager $session, private readonly ViewRenderer $views,
-        private readonly EventDispatcher $events, private readonly ?CommentService $comments = null,
-        private readonly ?CsrfTokenManager $csrf = null,
+        private readonly EventDispatcher $events, private readonly ContentRendererInterface $contentRenderer,
+        private readonly ?CommentService $comments = null,
+        private readonly ?CsrfTokenManager $csrf = null, private readonly ?AuthorizationService $authorization = null,
     ) {
     }
 
@@ -45,12 +50,26 @@ final class PublicPagesController
         ], $user ? (int) $user['id'] : null))) {
             $page['parent_title'] = null; $page['parent_slug'] = null;
         }
-        $page['content_html'] = new Markup((string) $page['content'], 'UTF-8');
+        $page['content_html'] = new Markup($this->contentRenderer->render(
+            (string) $page['content'],
+            ContentFormat::fromInput($page['content_format'] ?? null),
+            ContentProfile::FullContent,
+        ), 'UTF-8');
         $rendering = new PageRendering($page);
         $this->events->dispatch('page.rendering', $rendering);
         $page = $rendering->page;
         $template = in_array($page['template'] ?? null, ['default', 'landing'], true) ? (string) $page['template'] : 'default';
-        $data = ['page' => $page, 'comments_available' => false];
+        $editUrl = $user !== null && $this->authorization?->allows((int) $user['id'], 'pages.edit')
+            ? '/admin/pages/' . (int) $page['id'] . '/edit'
+            : null;
+        $data = [
+            'page' => $page,
+            'comments_available' => false,
+            'edit_url' => $editUrl,
+            'delete_url' => $editUrl !== null ? '/admin/pages/' . (int) $page['id'] . '/delete' : null,
+            'content_csrf_token' => $editUrl !== null ? $this->csrf?->token() : null,
+            'delete_return_to' => '/pages',
+        ];
         if ($this->comments !== null && $this->csrf !== null && (int) $page['comments_enabled'] === 1) {
             $data += [
                 'comments_available' => true, 'comments' => $this->comments->for('pages', (int) $page['id']),

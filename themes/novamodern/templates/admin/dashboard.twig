@@ -1,0 +1,60 @@
+{% extends "layouts/default.twig" %}
+{% import 'partials/icon.twig' as icons %}
+{% block title %}Dashboard — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="nova-dashboard">
+    <header class="nova-dashboard-heading">
+        <div><p class="eyebrow">Administration</p><h1>Hello, {{ user.username }}.</h1><p>Here is what is happening across {{ cms_name|default('NovaNuke') }}.</p></div>
+        <span class="badge">NovaNuke {{ cms_version }}</span>
+    </header>
+
+    {% if system_warnings %}
+        <div class="alert alert-error"><strong>Configuration warnings</strong><ul>{% for warning in system_warnings %}<li>{{ warning }}</li>{% endfor %}</ul><a href="/admin/system">Review system information</a></div>
+    {% endif %}
+
+    {% set create_routes = {'/admin/news':'/admin/news/new','/admin/pages':'/admin/pages/new','/admin/downloads':'/admin/downloads/new','/admin/web-links':'/admin/web-links/new'} %}
+    <nav class="nova-quick-actions" aria-label="Quick actions">
+        {% for group in admin_navigation %}
+            {% for item in group.items %}
+                {% if create_routes[item.url]|default(null) %}
+                    <a href="{{ create_routes[item.url] }}">{{ icons.render(item.icon, theme.asset_base) }}<span>Create {{ item.label }}</span></a>
+                {% endif %}
+            {% endfor %}
+        {% endfor %}
+    </nav>
+
+    <div class="dashboard-grid dashboard-metrics">
+        {% for card in dashboard.cards %}
+            <article><strong>{{ card.value }}</strong><span>{{ card.label }}</span><a href="{{ card.url }}">Manage</a></article>
+        {% else %}
+            <article><strong>{{ cms_version }}</strong><span>Core release</span></article>
+        {% endfor %}
+        {% if dashboard.module_status %}
+            <article><strong>{{ dashboard.module_status.enabled }} / {{ dashboard.module_status.detected }}</strong><span>Enabled modules</span>{% if dashboard.module_status.issues %}<small>{{ dashboard.module_status.issues }} issue(s)</small>{% endif %}<a href="/admin/modules">Review</a></article>
+        {% endif %}
+    </div>
+
+    <div class="dashboard-sections">
+        {% if dashboard.recent_content %}
+            <section><h2>Recent content</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Type</th><th>Title</th><th>Status</th><th>Created</th></tr></thead><tbody>{% for item in dashboard.recent_content %}<tr><td>{{ item.type }}</td><td><a href="{{ item.admin_url }}">{{ item.title }}</a></td><td>{{ item.status }}</td><td>{{ item.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div></section>
+        {% endif %}
+        {% if dashboard.recent_users %}
+            <section><h2>Recent users</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>User</th><th>Status</th><th>Registered</th></tr></thead><tbody>{% for account in dashboard.recent_users %}<tr><td><a href="/admin/users/{{ account.id }}">{{ account.username }}</a></td><td>{{ account.status }}</td><td>{{ account.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div></section>
+        {% endif %}
+        {% if dashboard.recent_activity %}
+            <section><h2>Recent activity</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Actor</th><th>Action</th><th>Subject</th><th>Date</th></tr></thead><tbody>{% for event in dashboard.recent_activity %}<tr><td>{{ event.actor_username|default('System') }}</td><td>{{ event.action }}</td><td>{{ event.subject_type|default('—') }}</td><td>{{ event.created_at|date(cms_date_format, cms_timezone) }}</td></tr>{% endfor %}</tbody></table></div><p><a href="/admin/logs">View activity logs</a></p></section>
+        {% endif %}
+    </div>
+
+    <section class="nova-dashboard-navigation">
+        <h2>Administration</h2>
+        <div class="nova-dashboard-groups">
+        {% for group in admin_navigation %}
+            <section><h3>{{ group.label }}</h3><nav>{% for item in group.items %}<a href="{{ item.url }}">{{ icons.render(item.icon, theme.asset_base) }}<span>{{ item.label }}</span></a>{% endfor %}</nav></section>
+        {% endfor %}
+        </div>
+    </section>
+    <form method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button" type="submit">Sign out</button></form>
+</section>
+{% endblock %}
+

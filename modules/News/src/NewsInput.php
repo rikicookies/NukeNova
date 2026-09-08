@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\News\src;
 
-use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Content\ContentFormat;
 use RuntimeException;
 
 final class NewsInput
 {
-    public function __construct(private readonly HtmlSanitizer $sanitizer)
-    {
-    }
 
     /** @param array<string,mixed> $input @return array<string,mixed> */
     public function article(array $input, bool $canPublish): array
@@ -41,15 +38,20 @@ final class NewsInput
         if ($status === 'published' && $publishedAt > gmdate('Y-m-d H:i:s')) {
             throw new RuntimeException('Use scheduled status for a future publication date.');
         }
-        $content = $this->sanitizer->sanitize((string) ($input['content'] ?? ''));
-        if ($content === '') {
+        $content = (string) ($input['content'] ?? '');
+        if (trim($content) === '') {
             throw new RuntimeException('Article content is required.');
         }
+        if (mb_strlen($content) > 1000000) throw new RuntimeException('Article content must not exceed 1,000,000 characters.');
+        $contentFormat = ContentFormat::fromInput($input['content_format'] ?? null);
+        $summaryFormat = ContentFormat::fromInput($input['summary_format'] ?? null);
         return [
             'title' => $title,
             'slug' => $slug,
             'summary' => $this->limited($input['summary'] ?? null, 1000),
+            'summary_format' => $summaryFormat->value,
             'content' => $content,
+            'content_format' => $contentFormat->value,
             'featured_image' => $this->image($input['featured_image'] ?? null),
             'status' => $status,
             'is_featured' => ($input['is_featured'] ?? null) === '1' ? 1 : 0,

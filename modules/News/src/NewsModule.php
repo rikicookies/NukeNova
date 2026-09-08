@@ -10,9 +10,9 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
-use NovaNuke\Core\Security\HtmlSanitizer;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use Modules\Comments\src\CommentService;
 use Modules\Comments\src\CommentTargetChecking;
 use Modules\Search\src\SearchProvidersRegistering;
@@ -29,7 +29,7 @@ final class NewsModule implements ModuleInterface
             $container->get(\PDO::class),
             $container->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
         ));
-        $context->container->bind(NewsInput::class, static fn () => new NewsInput(new HtmlSanitizer()));
+        $context->container->bind(NewsInput::class, static fn () => new NewsInput());
         $context->container->get(ViewRenderer::class)->addGlobal('news_rss_url', '/news/rss.xml');
     }
 
@@ -59,9 +59,11 @@ final class NewsModule implements ModuleInterface
         });
         $public = static fn (Container $container): PublicNewsController => new PublicNewsController(
             $container->get(NewsRepository::class), $container->get(SessionManager::class), $container->get(ViewRenderer::class),
+            $container->get(ContentRendererInterface::class),
             $container->has(CommentService::class) ? $container->get(CommentService::class) : null,
-            $container->has(CommentService::class) ? $container->get(\NovaNuke\Core\Security\CsrfTokenManager::class) : null,
-            $container->has(CommentService::class) ? $container->get(\NovaNuke\Auth\AuthManager::class) : null,
+            $container->get(\NovaNuke\Core\Security\CsrfTokenManager::class),
+            $container->get(\NovaNuke\Auth\AuthManager::class),
+            $container->get(\NovaNuke\Core\Security\AuthorizationService::class),
         );
         $admin = static fn (Container $container): AdminNewsController => new AdminNewsController(
             $container->get(NewsRepository::class), $container->get(NewsInput::class),
@@ -75,6 +77,7 @@ final class NewsModule implements ModuleInterface
             $container->get(NewsRepository::class), new RssFeedBuilder(),
             $container->get(\NovaNuke\Core\Settings\SettingsRepository::class),
             $container->get(\NovaNuke\Core\Config\ConfigRepository::class),
+            $container->get(ContentRendererInterface::class),
         );
         $context->router->get('/news', static fn (Request $request, Container $container): Response => $public($container)->index($request), 'news.index');
         $context->router->get('/news/category/{slug}', static fn (Request $request, Container $container): Response => $public($container)->index($request, (string) $request->attribute('slug')), 'news.category');

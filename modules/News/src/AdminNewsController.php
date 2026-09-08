@@ -9,6 +9,7 @@ use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
+use NovaNuke\Core\Http\SafeReturnPath;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\CsrfTokenManager;
@@ -91,7 +92,7 @@ final class AdminNewsController
             $actor = $this->auth->user();
             $this->activity->log((int) $actor['id'], 'news.article.deleted', 'news', $id, [], $request->ip());
             $this->session->put('news.message', 'News article moved to deleted state.');
-            return Response::redirect('/admin/news', 303);
+            return Response::redirect(SafeReturnPath::choose($request->input('return_to'), ['/news'], '/admin/news'), 303);
         } catch (RuntimeException $error) {
             return Response::html(htmlspecialchars($error->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 422);
         }

@@ -11,14 +11,20 @@ use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
 use Modules\Comments\src\CommentService;
 use NovaNuke\Auth\AuthManager;
+use NovaNuke\Core\Security\AuthorizationService;
+use NovaNuke\Core\Content\ContentFormat;
+use NovaNuke\Core\Content\ContentProfile;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use Twig\Markup;
 
 final class PublicNewsController
 {
     public function __construct(
         private readonly NewsRepository $news, private readonly SessionManager $session,
-        private readonly ViewRenderer $views, private readonly ?CommentService $comments = null,
+        private readonly ViewRenderer $views, private readonly ContentRendererInterface $contentRenderer,
+        private readonly ?CommentService $comments = null,
         private readonly ?CsrfTokenManager $csrf = null, private readonly ?AuthManager $auth = null,
+        private readonly ?AuthorizationService $authorization = null,
     )
     {
     }
@@ -26,8 +32,15 @@ final class PublicNewsController
     public function index(Request $request, ?string $category = null): Response
     {
         $page = filter_var($request->query('page', 1), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
+        $result = $this->news->publicArticles((int) $page, $category);
+        foreach ($result['items'] as &$article) {
+            $article['summary_html'] = new Markup($this->contentRenderer->render(
+                (string) ($article['summary'] ?? ''), ContentFormat::fromInput($article['summary_format'] ?? null), ContentProfile::Description,
+            ), 'UTF-8');
+        }
+        unset($article);
         return Response::html($this->views->render('@news/index.twig', [
-            'result' => $this->news->publicArticles((int) $page, $category),
+            'result' => $result,
             'categories' => $this->news->categories(), 'selected_category' => $category,
         ]));
     }
@@ -45,7 +58,13 @@ final class PublicNewsController
             $this->session->put('news.viewed', array_slice(array_unique($viewed), -100));
             $article['view_count'] = (int) $article['view_count'] + 1;
         }
-        $article['content_html'] = new Markup((string) $article['content'], 'UTF-8');
+        $article['summary_html'] = new Markup($this->contentRenderer->render(
+            (string) ($article['summary'] ?? ''), ContentFormat::fromInput($article['summary_format'] ?? null), ContentProfile::Description,
+        ), 'UTF-8');
+        $article['summary_text'] = trim(strip_tags((string) $article['summary_html']));
+        $article['content_html'] = new Markup($this->contentRenderer->render(
+            (string) $article['content'], ContentFormat::fromInput($article['content_format'] ?? null), ContentProfile::FullContent,
+        ), 'UTF-8');
         $commentData = ['comments_available' => false];
         if ($this->comments !== null && $this->csrf !== null && (int) $article['comments_enabled'] === 1) {
             $commentData = [
@@ -59,6 +78,21 @@ final class PublicNewsController
                 'comments_user' => $this->auth?->user(),
             ];
         }
-        return Response::html($this->views->render('@news/show.twig', ['article' => $article] + $commentData));
+        $editUrl = $this->editUrl('news.edit', (int) $article['id'], '/admin/news/%d/edit');
+        return Response::html($this->views->render('@news/show.twig', [
+            'article' => $article,
+            'edit_url' => $editUrl,
+            'delete_url' => $editUrl !== null ? '/admin/news/' . (int) $article['id'] . '/delete' : null,
+            'content_csrf_token' => $editUrl !== null ? $this->csrf?->token() : null,
+            'delete_return_to' => '/news',
+        ] + $commentData));
+    }
+
+    private function editUrl(string $permission, int $id, string $pattern): ?string
+    {
+        $user = $this->auth?->user();
+        return $user !== null && $this->authorization?->allows((int) $user['id'], $permission)
+            ? sprintf($pattern, $id)
+            : null;
     }
 }

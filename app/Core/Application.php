@@ -68,9 +68,12 @@ use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
 use NovaNuke\Core\System\ProductionReadiness;
 use NovaNuke\Core\Admin\AdminDashboardService;
+use NovaNuke\Core\Admin\AdminNavigationManager;
 use NovaNuke\Core\I18n\Translator;
 use NovaNuke\Core\I18n\LocaleRegistry;
 use NovaNuke\Core\Maintenance\DataPruner;
+use NovaNuke\Core\Content\ContentRenderer;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use PDO;
 
 final class Application
@@ -184,6 +187,10 @@ final class Application
         $container->bind(AuthorizationService::class, static fn (Container $c) => new AuthorizationService(
             $c->get(PDO::class),
         ));
+        $container->bind(ContentRendererInterface::class, static fn () => new ContentRenderer(
+            new HtmlSanitizer(),
+            new MarkdownRenderer(new HtmlSanitizer()),
+        ));
         $container->bind(ActivityLogger::class, static fn (Container $c) => new ActivityLogger(
             $c->get(PDO::class),
         ));
@@ -281,6 +288,12 @@ final class Application
             $c->get(PDO::class),
             $c->get(ModuleManager::class),
         ));
+        $container->bind(AdminNavigationManager::class, static fn (Container $c) => new AdminNavigationManager(
+            $c->get(AuthManager::class),
+            $c->get(AuthorizationService::class),
+            $c->get(EventDispatcher::class),
+            $c->get(ViewRenderer::class),
+        ));
         $container->bind(MaintenanceMode::class, static fn (Container $c) => new MaintenanceMode(
             $c->get(SettingsRepository::class),
             $c->get(AuthManager::class),
@@ -367,6 +380,7 @@ final class Application
         $views->addGlobal('current_user', $authenticatedUser);
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
+        $this->container->get(AdminNavigationManager::class)->boot();
         $this->container->get(MenuManager::class)->boot();
         $this->container->get(BlockManager::class)->boot();
     }

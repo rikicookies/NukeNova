@@ -13,11 +13,13 @@ final class ProfileInputTest extends TestCase
     {
         $result = (new ProfileInput())->validate([
             'display_name' => ' Riki ', 'bio' => ' <b>Pool builder</b> ',
+            'bio_format' => 'html',
             'locale' => 'es', 'timezone' => 'America/Los_Angeles', 'profile_visibility' => 'members',
         ]);
         self::assertSame([], $result['errors']);
         self::assertSame('Riki', $result['data']['display_name']);
-        self::assertSame('Pool builder', $result['data']['bio']);
+        self::assertSame('<b>Pool builder</b>', $result['data']['bio']);
+        self::assertSame('html', $result['data']['bio_format']);
         self::assertSame(['profile_visibility' => 'members'], $result['data']['preferences']);
     }
 
@@ -30,5 +32,16 @@ final class ProfileInputTest extends TestCase
         foreach (['display_name', 'bio', 'locale', 'timezone', 'profile_visibility'] as $field) {
             self::assertArrayHasKey($field, $result['errors']);
         }
+    }
+
+    public function testBiographyUsesMarkdownByDefaultAndRejectsUnknownFormats(): void
+    {
+        $valid = ['display_name' => 'Riki', 'bio' => '**Builder**', 'locale' => 'en', 'timezone' => 'UTC', 'profile_visibility' => 'public'];
+        $result = (new ProfileInput())->validate($valid);
+        self::assertSame('markdown', $result['data']['bio_format']);
+        self::assertSame([], $result['errors']);
+
+        $invalid = (new ProfileInput())->validate($valid + ['bio_format' => 'php']);
+        self::assertArrayHasKey('bio_format', $invalid['errors']);
     }
 }

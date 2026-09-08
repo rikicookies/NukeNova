@@ -21,6 +21,14 @@ NovaNuke resolves enabled dependencies, then calls `register()` for every viable
 
 Use `register()` for service and Twig namespace bindings. Use `boot()` for routes, listeners, menus and blocks. A failed registration prevents that module and its dependents from booting; failures are recorded without exposing stack traces publicly.
 
+Administrative menu listeners may keep the original API:
+
+```php
+$menu->add('Example', '/admin/example', 'example.manage');
+```
+
+NovaNuke 0.2.0-alpha.6 adds two optional trailing arguments for a safe icon identifier and navigation group. Omitting them remains API 1.0 compatible.
+
 ## Compatibility policy
 
 Changing the module API major version will require an explicit future NovaNuke release and migration guide. Module authors should test against the lowest declared `cms_min_version`, PHP 8.3 and the current stable release. `PublicModuleApiTest` protects the frozen core shapes, while manifest and lifecycle tests cover compatibility enforcement.

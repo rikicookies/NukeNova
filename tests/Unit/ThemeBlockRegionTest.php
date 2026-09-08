@@ -16,7 +16,7 @@ final class ThemeBlockRegionTest extends TestCase
     public function testDefaultLayoutsRenderSidebarsAroundEveryChildPage(): void
     {
         $root = dirname(__DIR__, 2);
-        foreach (['default', 'classic'] as $theme) {
+        foreach (['default', 'classic', 'novamodern'] as $theme) {
             $loader = new ChainLoader([
                 new ArrayLoader(['test-page.twig' => '{% extends "layouts/default.twig" %}{% block content %}<article id="route-content">Route content</article>{% endblock %}']),
                 new FilesystemLoader([$root . '/themes/' . $theme, $root . '/resources/views']),

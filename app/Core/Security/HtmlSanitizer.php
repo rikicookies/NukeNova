@@ -16,7 +16,8 @@ final class HtmlSanitizer
     ];
     private const ATTRIBUTES = ['class', 'title'];
 
-    public function sanitize(string $html): string
+    /** @param list<string>|null $allowedTags */
+    public function sanitize(string $html, ?array $allowedTags = null): string
     {
         if (trim($html) === '') {
             return '';
@@ -36,7 +37,7 @@ final class HtmlSanitizer
         if (! $root instanceof DOMElement) {
             return '';
         }
-        $this->cleanChildren($root);
+        $this->cleanChildren($root, $allowedTags ?? self::TAGS);
         $output = '';
         foreach ($root->childNodes as $child) {
             $output .= $document->saveHTML($child);
@@ -45,18 +46,20 @@ final class HtmlSanitizer
         return trim($output);
     }
 
-    private function cleanChildren(DOMNode $parent): void
+    /** @param list<string> $allowedTags */
+    private function cleanChildren(DOMNode $parent, array $allowedTags): void
     {
         foreach (iterator_to_array($parent->childNodes) as $node) {
             if (! $node instanceof DOMElement) {
                 continue;
             }
             $tag = strtolower($node->tagName);
-            if (! in_array($tag, self::TAGS, true)) {
+            if (! in_array($tag, $allowedTags, true)) {
                 if (in_array($tag, ['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math'], true)) {
                     $parent->removeChild($node);
                     continue;
                 }
+                $this->cleanChildren($node, $allowedTags);
                 while ($node->firstChild !== null) {
                     $parent->insertBefore($node->firstChild, $node);
                 }
@@ -84,7 +87,7 @@ final class HtmlSanitizer
                     $node->removeAttribute('rel');
                 }
             }
-            $this->cleanChildren($node);
+            $this->cleanChildren($node, $allowedTags);
         }
     }
 

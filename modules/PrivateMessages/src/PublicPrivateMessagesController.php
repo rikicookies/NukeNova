@@ -17,18 +17,18 @@ final class PublicPrivateMessagesController
     public function __construct(private readonly PrivateMessageRepository $repository,private readonly PrivateMessageService $service,private readonly AuthManager $auth,private readonly CsrfTokenManager $csrf,private readonly SessionManager $session,private readonly ViewRenderer $views) {}
 
     public function inbox(): Response { if(!$user=$this->user())return Response::redirect('/login');return $this->view('@private-messages/inbox.twig',['conversations'=>$this->repository->inbox((int)$user['id'])]); }
-    public function sent(): Response { if(!$user=$this->user())return Response::redirect('/login');return $this->view('@private-messages/sent.twig',['messages'=>$this->repository->sent((int)$user['id'])]); }
+    public function sent(): Response { if(!$user=$this->user())return Response::redirect('/login');return $this->view('@private-messages/sent.twig',['messages'=>$this->service->renderMessages($this->repository->sent((int)$user['id']))]); }
     public function compose(Request $request): Response { if(!$this->user())return Response::redirect('/login');return $this->view('@private-messages/compose.twig',['recipient'=>(string)$request->query('to','')]); }
-    public function show(Request $request): Response { if(!$user=$this->user())return Response::redirect('/login');try{$id=$this->id($request->attribute('id'));}catch(RuntimeException){return Response::html('Conversation not found.',404);}$thread=$this->repository->conversation($id,(int)$user['id']);return $thread===null?Response::html('Conversation not found.',404):$this->view('@private-messages/show.twig',['thread'=>$thread]); }
+    public function show(Request $request): Response { if(!$user=$this->user())return Response::redirect('/login');try{$id=$this->id($request->attribute('id'));}catch(RuntimeException){return Response::html('Conversation not found.',404);}$thread=$this->repository->conversation($id,(int)$user['id']);if($thread===null)return Response::html('Conversation not found.',404);$thread['messages']=$this->service->renderMessages($thread['messages']);return $this->view('@private-messages/show.twig',['thread'=>$thread]); }
 
     public function store(Request $request): Response
     {
         if(!$user=$this->user())return Response::redirect('/login');if(!$this->csrf->validate($request->input('_token')))return Response::html('Invalid or expired CSRF token.',419);
-        try{$conversation=$this->service->compose((int)$user['id'],(string)$request->input('recipient'),$request->input('subject'),$request->input('body'));$this->session->put('private-messages.message','Message sent.');return Response::redirect('/messages/'.$conversation,303);}
-        catch(RuntimeException $e){return $this->view('@private-messages/compose.twig',['recipient'=>$request->input('recipient'),'subject'=>$request->input('subject'),'body'=>$request->input('body'),'error'=>$e->getMessage()],422);}
+        try{$conversation=$this->service->compose((int)$user['id'],(string)$request->input('recipient'),$request->input('subject'),$request->input('body'),$request->input('body_format'));$this->session->put('private-messages.message','Message sent.');return Response::redirect('/messages/'.$conversation,303);}
+        catch(RuntimeException $e){return $this->view('@private-messages/compose.twig',['recipient'=>$request->input('recipient'),'subject'=>$request->input('subject'),'body'=>$request->input('body'),'body_format'=>$request->input('body_format'),'error'=>$e->getMessage()],422);}
     }
 
-    public function reply(Request $request): Response { return $this->action($request,fn(int $user,int $id)=>$this->service->reply($id,$user,$request->input('body')),'Reply sent.'); }
+    public function reply(Request $request): Response { return $this->action($request,fn(int $user,int $id)=>$this->service->reply($id,$user,$request->input('body'),$request->input('body_format')),'Reply sent.'); }
     public function delete(Request $request): Response { return $this->action($request,fn(int $user,int $id)=>$this->repository->deleteFor($id,$user),'Conversation removed from your inbox.','/messages'); }
     public function report(Request $request): Response { return $this->action($request,fn(int $user,int $id)=>$this->service->report($id,$user,$request->input('reason')),'Report submitted.'); }
     public function block(Request $request): Response { return $this->action($request,fn(int $user,int $id)=>$this->repository->block($user,$id),'User blocked.','/messages/blocks'); }

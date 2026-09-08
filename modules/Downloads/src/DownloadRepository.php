@@ -46,11 +46,11 @@ final class DownloadRepository
         $this->database->beginTransaction();
         try {
             if ($id === null) {
-                $sql = 'INSERT INTO downloads (category_id,created_by,name,slug,description,version,author_name,source_type,stored_name,original_name,external_url,file_size,mime_type,image_path,requirements,license_name,status,access_type,is_featured,published_at,created_at,updated_at) VALUES (:category_id,:created_by,:name,:slug,:description,:version,:author_name,:source_type,:stored_name,:original_name,:external_url,:file_size,:mime_type,:image_path,:requirements,:license_name,:status,:access_type,:is_featured,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
+                $sql = 'INSERT INTO downloads (category_id,created_by,name,slug,description,description_format,version,author_name,source_type,stored_name,original_name,external_url,file_size,mime_type,image_path,requirements,requirements_format,license_name,status,access_type,is_featured,published_at,created_at,updated_at) VALUES (:category_id,:created_by,:name,:slug,:description,:description_format,:version,:author_name,:source_type,:stored_name,:original_name,:external_url,:file_size,:mime_type,:image_path,:requirements,:requirements_format,:license_name,:status,:access_type,:is_featured,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
                 $data['created_by'] = $actorId;
             } else {
                 if ($this->download($id) === null) throw new RuntimeException('Download not found.');
-                $sql = 'UPDATE downloads SET category_id=:category_id,name=:name,slug=:slug,description=:description,version=:version,author_name=:author_name,source_type=:source_type,stored_name=:stored_name,original_name=:original_name,external_url=:external_url,file_size=:file_size,mime_type=:mime_type,image_path=:image_path,requirements=:requirements,license_name=:license_name,status=:status,access_type=:access_type,is_featured=:is_featured,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
+                $sql = 'UPDATE downloads SET category_id=:category_id,name=:name,slug=:slug,description=:description,description_format=:description_format,version=:version,author_name=:author_name,source_type=:source_type,stored_name=:stored_name,original_name=:original_name,external_url=:external_url,file_size=:file_size,mime_type=:mime_type,image_path=:image_path,requirements=:requirements,requirements_format=:requirements_format,license_name=:license_name,status=:status,access_type=:access_type,is_featured=:is_featured,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
                 $data['id'] = $id;
             }
             $statement = $this->database->prepare($sql); $statement->execute($data);
@@ -102,7 +102,7 @@ final class DownloadRepository
         $count = $this->database->prepare("SELECT COUNT(*) FROM downloads d LEFT JOIN download_categories c ON c.id=d.category_id WHERE {$where}"); $count->execute($parameters);
         $total = (int) $count->fetchColumn(); $perPage = $this->perPage; $pages = max(1, (int) ceil($total / $perPage)); $page = min(max(1, $page), $pages);
         $orders = ['new' => 'd.published_at DESC,d.id DESC', 'popular' => 'd.download_count DESC,d.published_at DESC', 'name' => 'd.name,d.id'];
-        $sql = "SELECT d.id,d.name,d.slug,d.description,d.version,d.author_name,d.image_path,d.is_featured,d.download_count,d.published_at,d.access_type,c.name AS category_name,c.slug AS category_slug FROM downloads d LEFT JOIN download_categories c ON c.id=d.category_id WHERE {$where} ORDER BY " . ($orders[$order] ?? $orders['new']) . ' LIMIT :limit OFFSET :offset';
+        $sql = "SELECT d.id,d.name,d.slug,d.description,d.description_format,d.version,d.author_name,d.image_path,d.is_featured,d.download_count,d.published_at,d.access_type,c.name AS category_name,c.slug AS category_slug FROM downloads d LEFT JOIN download_categories c ON c.id=d.category_id WHERE {$where} ORDER BY " . ($orders[$order] ?? $orders['new']) . ' LIMIT :limit OFFSET :offset';
         $statement = $this->database->prepare($sql);
         foreach ($parameters as $key => $value) $statement->bindValue(':' . $key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
         $statement->bindValue(':limit', $perPage, PDO::PARAM_INT); $statement->bindValue(':offset', ($page - 1) * $perPage, PDO::PARAM_INT); $statement->execute();

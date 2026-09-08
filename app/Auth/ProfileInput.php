@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Auth;
 
 use NovaNuke\Core\I18n\LocaleRegistry;
+use NovaNuke\Core\Content\ContentFormat;
 
 final class ProfileInput
 {
@@ -13,7 +14,8 @@ final class ProfileInput
     public function validate(array $input): array
     {
         $displayName = trim($this->text($input['display_name'] ?? ''));
-        $bio = trim(strip_tags($this->text($input['bio'] ?? '')));
+        $bio = trim($this->text($input['bio'] ?? ''));
+        $bioFormat = null;
         $locale = $this->text($input['locale'] ?? '');
         $timezone = $this->text($input['timezone'] ?? '');
         $visibility = $this->text($input['profile_visibility'] ?? 'public');
@@ -25,6 +27,8 @@ final class ProfileInput
         if (mb_strlen($bio) > 2000 || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $bio)) {
             $errors['bio'] = 'Biography cannot exceed 2,000 characters.';
         }
+        try { $bioFormat = ContentFormat::fromInput($input['bio_format'] ?? null, ContentFormat::Markdown); }
+        catch (\RuntimeException) { $errors['bio_format'] = 'Select a valid biography format.'; }
         if (! ($this->locales?->supports($locale) ?? in_array($locale, ['en', 'es'], true))) $errors['locale'] = 'Select an available language.';
         if (! in_array($timezone, timezone_identifiers_list(), true)) $errors['timezone'] = 'Select a valid timezone.';
         if (! in_array($visibility, ['public', 'members'], true)) $errors['profile_visibility'] = 'Select a valid profile visibility.';
@@ -32,6 +36,7 @@ final class ProfileInput
         return ['data' => [
             'display_name' => $displayName,
             'bio' => $bio,
+            'bio_format' => ($bioFormat ?? ContentFormat::Markdown)->value,
             'locale' => $locale,
             'timezone' => $timezone,
             'profile_visibility' => $visibility,

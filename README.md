@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.4**. It fixes Twig global initialization for dynamic blocks while retaining universal public sidebars and isolated provider failures. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.2.0-alpha.16**. Private messages now support Markdown or sanitized HTML through the restricted shared message profile. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
 ## Included in 0.1.0
 
@@ -106,6 +106,8 @@ For production SMTP and Bluehost guidance, see [docs/MAIL.md](docs/MAIL.md).
 - [Recovery](docs/RECOVERY.md)
 - [Release verification](docs/RELEASE.md)
 - [Unit and integration testing](docs/TESTING.md)
+- [Known issues and technical debt](docs/KNOWN_ISSUES.md)
+- [NovaModern theme](docs/NOVAMODERN.md)
 - [In-site notifications](docs/NOTIFICATIONS.md)
 - [SEO and sitemap](docs/SEO.md)
 

@@ -26,10 +26,12 @@ use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\I18n\LocaleRegistry;
+use NovaNuke\Core\Content\ContentRendererInterface;
 
 $publicProfileController = static fn (Container $container): PublicProfileController => new PublicProfileController(
     $container->get(ProfileRepository::class), $container->get(AvatarStorage::class),
     $container->get(AuthManager::class), $container->get(ViewRenderer::class),
+    $container->get(ContentRendererInterface::class),
 );
 $router->get('/users/{username}', static fn (Request $request, Container $container): Response =>
     $publicProfileController($container)->show($request)

@@ -9,8 +9,12 @@ use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\CsrfTokenManager;
+use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Content\ContentFormat;
+use NovaNuke\Core\Content\ContentProfile;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use RuntimeException;
 use Twig\Markup;
 
@@ -20,7 +24,8 @@ final class PublicDownloadsController
         private readonly DownloadRepository $downloads, private readonly DownloadManager $manager,
         private readonly AuthManager $auth, private readonly EventDispatcher $events,
         private readonly CsrfTokenManager $csrf, private readonly SessionManager $session,
-        private readonly ViewRenderer $views,
+        private readonly ViewRenderer $views, private readonly AuthorizationService $authorization,
+        private readonly ContentRendererInterface $contentRenderer,
     ) {
     }
 
@@ -31,8 +36,15 @@ final class PublicDownloadsController
         $search = trim((string) $request->query('q', '')); if (mb_strlen($search) > 100) $search = mb_substr($search, 0, 100);
         $order = (string) $request->query('order', 'new'); if (! in_array($order, ['new', 'popular', 'name'], true)) $order = 'new';
         $user = $this->auth->user();
+        $result = $this->downloads->catalog((int) $page, $category, $search, $order, $user ? (int) $user['id'] : null);
+        foreach ($result['items'] as &$item) {
+            $item['description_text'] = trim(strip_tags($this->contentRenderer->render(
+                (string) $item['description'], ContentFormat::fromInput($item['description_format'] ?? null), ContentProfile::Description,
+            )));
+        }
+        unset($item);
         return Response::html($this->views->render('@downloads/index.twig', [
-            'result' => $this->downloads->catalog((int) $page, $category, $search, $order, $user ? (int) $user['id'] : null),
+            'result' => $result,
             'categories' => $this->downloads->categories(), 'selected_category' => $category, 'search' => $search, 'order' => $order,
         ]));
     }
@@ -41,10 +53,22 @@ final class PublicDownloadsController
     {
         $slug = $this->slug($request->attribute('slug')); $download = $this->downloads->publicDownload($slug); if ($download === null) return Response::html('Download not found.', 404);
         $user = $this->auth->user(); if (! $this->downloads->canView($download, $user ? (int) $user['id'] : null)) return $user === null ? Response::redirect('/login') : Response::html('Forbidden', 403);
-        $download['description_html'] = new Markup((string) $download['description'], 'UTF-8');
+        $download['description_html'] = new Markup($this->contentRenderer->render(
+            (string) $download['description'], ContentFormat::fromInput($download['description_format'] ?? null), ContentProfile::Description,
+        ), 'UTF-8');
+        $download['requirements_html'] = new Markup($this->contentRenderer->render(
+            (string) ($download['requirements'] ?? ''), ContentFormat::fromInput($download['requirements_format'] ?? null), ContentProfile::Description,
+        ), 'UTF-8');
+        $editUrl = $user !== null && $this->authorization->allows((int) $user['id'], 'downloads.manage')
+            ? '/admin/downloads/' . (int) $download['id'] . '/edit'
+            : null;
         return Response::html($this->views->render('@downloads/show.twig', [
             'download' => $download, 'csrf_token' => $this->csrf->token(),
             'message' => $this->session->pull('downloads.message'), 'error' => $this->session->pull('downloads.error'),
+            'edit_url' => $editUrl,
+            'delete_url' => $editUrl !== null ? '/admin/downloads/' . (int) $download['id'] . '/delete' : null,
+            'content_csrf_token' => $editUrl !== null ? $this->csrf->token() : null,
+            'delete_return_to' => '/downloads',
         ]));
     }
 

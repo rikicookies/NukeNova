@@ -9,6 +9,7 @@ use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
+use NovaNuke\Core\Http\SafeReturnPath;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\CsrfTokenManager;
@@ -79,7 +80,7 @@ final class AdminPagesController
             $actor = $this->auth->user();
             $this->activity->log((int) $actor['id'], 'page.deleted', 'page', $id, [], $request->ip());
             $this->session->put('pages.message', 'Page moved to deleted state.');
-            return Response::redirect('/admin/pages', 303);
+            return Response::redirect(SafeReturnPath::choose($request->input('return_to'), ['/pages'], '/admin/pages'), 303);
         } catch (RuntimeException $error) {
             return Response::html(htmlspecialchars($error->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 422);
         }

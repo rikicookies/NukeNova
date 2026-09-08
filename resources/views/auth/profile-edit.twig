@@ -11,7 +11,8 @@
     <form method="post" action="/account/profile" class="settings-form">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
         <label>{{ trans('account.profile.display_name') }}<input name="display_name" value="{{ profile.display_name|default('') }}" minlength="2" maxlength="100" required>{% if errors.display_name|default(null) %}<small class="field-error">{{ errors.display_name }}</small>{% endif %}</label>
-        <label>{{ trans('account.profile.bio') }}<textarea name="bio" rows="6" maxlength="2000">{{ profile.bio|default('') }}</textarea>{% if errors.bio|default(null) %}<small class="field-error">{{ errors.bio }}</small>{% endif %}</label>
+        <label>Biography format<select name="bio_format"><option value="markdown" {{ profile.bio_format|default('markdown') == 'markdown' ? 'selected' : '' }}>Markdown</option><option value="html" {{ profile.bio_format|default('markdown') == 'html' ? 'selected' : '' }}>Sanitized HTML</option></select>{% if errors.bio_format|default(null) %}<small class="field-error">{{ errors.bio_format }}</small>{% endif %}</label>
+        <label>{{ trans('account.profile.bio') }}<textarea name="bio" rows="6" maxlength="2000">{{ profile.bio|default('') }}</textarea><small>Both formats use the restricted public-profile sanitizer.</small>{% if errors.bio|default(null) %}<small class="field-error">{{ errors.bio }}</small>{% endif %}</label>
         <div class="form-grid">
             <label>{{ trans('account.profile.language') }}<select name="locale">{% for code, label in cms_locales %}<option value="{{ code }}"{% if profile.locale|default('en') == code %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
             <label>{{ trans('account.profile.timezone') }}<select name="timezone">{% for timezone in timezones %}<option value="{{ timezone }}"{% if profile.timezone|default('UTC') == timezone %} selected{% endif %}>{{ timezone }}</option>{% endfor %}</select></label>

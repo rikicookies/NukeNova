@@ -13,6 +13,7 @@ use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Content\ContentRendererInterface;
 
 final class CommentsModule implements ModuleInterface
 {
@@ -25,6 +26,7 @@ final class CommentsModule implements ModuleInterface
             $c->get(\NovaNuke\Core\Settings\SettingsRepository::class), $c->get(\NovaNuke\Core\Events\EventDispatcher::class),
             new DatabaseRateLimiter($c->get(\PDO::class), 5, 600, 'comments'),
             (string) $c->get(ConfigRepository::class)->get('app.key', ''),
+            $c->get(ContentRendererInterface::class),
         ));
     }
 

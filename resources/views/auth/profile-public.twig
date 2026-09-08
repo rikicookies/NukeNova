@@ -6,6 +6,6 @@
     <p class="eyebrow">@{{ profile.username }}</p>
     <h1>{{ profile.display_name }}</h1>
     <p>{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</p>
-    {% if profile.bio %}<div class="profile-bio">{{ profile.bio|nl2br }}</div>{% endif %}
+    {% if profile.bio %}<div class="profile-bio">{{ profile.bio_html }}</div>{% endif %}
 </article>
 {% endblock %}

@@ -1,7 +1,7 @@
 {
     "name": "Web Links",
     "slug": "web-links",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "api_version": "1.0",
     "description": "Curated external links with categories, submissions, protected visit counts and reports.",
     "author": "NovaNuke Project",

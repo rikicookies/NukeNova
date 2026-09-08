@@ -17,7 +17,7 @@ final class ProfileRepository
     public function byUserId(int $userId): ?array
     {
         $statement = $this->database->prepare(
-            'SELECT u.id,u.username,u.email,u.created_at,p.display_name,p.avatar_path,p.bio,p.locale,p.timezone,p.preferences '
+            'SELECT u.id,u.username,u.email,u.created_at,p.display_name,p.avatar_path,p.bio,p.bio_format,p.locale,p.timezone,p.preferences '
             . 'FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id WHERE u.id=:id AND u.deleted_at IS NULL LIMIT 1'
         );
         $statement->execute(['id' => $userId]);
@@ -28,7 +28,7 @@ final class ProfileRepository
     public function byUsername(string $username): ?array
     {
         $statement = $this->database->prepare(
-            "SELECT u.id,u.username,u.created_at,p.display_name,p.avatar_path,p.bio,p.locale,p.timezone,p.preferences "
+            "SELECT u.id,u.username,u.created_at,p.display_name,p.avatar_path,p.bio,p.bio_format,p.locale,p.timezone,p.preferences "
             . "FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id WHERE u.username=:username AND u.status='active' AND u.deleted_at IS NULL LIMIT 1"
         );
         $statement->execute(['username' => $username]);
@@ -39,14 +39,15 @@ final class ProfileRepository
     public function update(int $userId, array $data): void
     {
         $statement = $this->database->prepare(
-            'INSERT INTO user_profiles (user_id,display_name,bio,locale,timezone,preferences,created_at,updated_at) '
-            . 'SELECT id,:display_name,:bio,:locale,:timezone,:preferences,UTC_TIMESTAMP(),UTC_TIMESTAMP() FROM users '
+            'INSERT INTO user_profiles (user_id,display_name,bio,bio_format,locale,timezone,preferences,created_at,updated_at) '
+            . 'SELECT id,:display_name,:bio,:bio_format,:locale,:timezone,:preferences,UTC_TIMESTAMP(),UTC_TIMESTAMP() FROM users '
             . 'WHERE id=:user_id AND deleted_at IS NULL ON DUPLICATE KEY UPDATE '
-            . 'display_name=VALUES(display_name),bio=VALUES(bio),locale=VALUES(locale),timezone=VALUES(timezone),'
+            . 'display_name=VALUES(display_name),bio=VALUES(bio),bio_format=VALUES(bio_format),locale=VALUES(locale),timezone=VALUES(timezone),'
             . 'preferences=VALUES(preferences),updated_at=UTC_TIMESTAMP()'
         );
         $statement->execute([
             'display_name' => $data['display_name'], 'bio' => $data['bio'] === '' ? null : $data['bio'],
+            'bio_format' => $data['bio_format'],
             'locale' => $data['locale'], 'timezone' => $data['timezone'],
             'preferences' => json_encode($data['preferences'], JSON_THROW_ON_ERROR), 'user_id' => $userId,
         ]);
@@ -71,6 +72,7 @@ final class ProfileRepository
             ? $record['display_name'] : (string) ($record['username'] ?? 'Member');
         $record['avatar_path'] = is_string($record['avatar_path'] ?? null) ? $record['avatar_path'] : null;
         $record['bio'] = is_string($record['bio'] ?? null) ? $record['bio'] : null;
+        $record['bio_format'] = in_array($record['bio_format'] ?? null, ['html', 'markdown'], true) ? $record['bio_format'] : 'markdown';
         $record['locale'] = is_string($record['locale'] ?? null) && $record['locale'] !== '' ? $record['locale'] : 'en';
         $record['timezone'] = is_string($record['timezone'] ?? null) && $record['timezone'] !== '' ? $record['timezone'] : 'UTC';
         $preferences = json_decode((string) ($record['preferences'] ?? ''), true);

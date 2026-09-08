@@ -12,7 +12,7 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
-use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Content\ContentRendererInterface;
 use NovaNuke\Core\View\ViewRenderer;
 use Modules\Search\src\SearchProvidersRegistering;
 
@@ -25,7 +25,7 @@ final class DownloadsModule implements ModuleInterface
             $c->get(\PDO::class),
             $c->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
         ));
-        $context->container->bind(DownloadInput::class, static fn () => new DownloadInput(new HtmlSanitizer()));
+        $context->container->bind(DownloadInput::class, static fn () => new DownloadInput());
         $context->container->bind(DownloadStorage::class, static fn () => new DownloadStorage(NOVANUKE_ROOT . '/storage/private/downloads'));
         $context->container->bind(DownloadOrphanCleaner::class, static fn (Container $c) => new DownloadOrphanCleaner(
             NOVANUKE_ROOT . '/storage/private/downloads',
@@ -48,6 +48,8 @@ final class DownloadsModule implements ModuleInterface
             $c->get(DownloadRepository::class), $c->get(DownloadManager::class), $c->get(\NovaNuke\Auth\AuthManager::class),
             $c->get(\NovaNuke\Core\Events\EventDispatcher::class), $c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),
             $c->get(\NovaNuke\Core\Security\SessionManager::class), $c->get(ViewRenderer::class),
+            $c->get(\NovaNuke\Core\Security\AuthorizationService::class),
+            $c->get(ContentRendererInterface::class),
         );
         $admin = static fn (Container $c) => new AdminDownloadsController(
             $c->get(DownloadRepository::class), $c->get(DownloadManager::class), $c->get(DownloadInput::class),

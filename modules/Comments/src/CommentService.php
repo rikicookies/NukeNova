@@ -9,6 +9,10 @@ use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\Settings\SettingsRepository;
+use NovaNuke\Core\Content\ContentFormat;
+use NovaNuke\Core\Content\ContentProfile;
+use NovaNuke\Core\Content\ContentRendererInterface;
+use Twig\Markup;
 use RuntimeException;
 
 final class CommentService
@@ -21,10 +25,21 @@ final class CommentService
         private readonly EventDispatcher $events,
         private readonly DatabaseRateLimiter $limiter,
         private readonly string $appKey,
+        private readonly ContentRendererInterface $contentRenderer,
     ) {
     }
 
-    public function for(string $type, int $id): array { return $this->trees->build($this->repository->approved($type, $id)); }
+    public function for(string $type, int $id): array
+    {
+        $comments = $this->repository->approved($type, $id);
+        foreach ($comments as &$comment) {
+            $comment['body_html'] = new Markup($this->contentRenderer->render(
+                (string) $comment['body'], ContentFormat::fromInput($comment['body_format'] ?? null, ContentFormat::Markdown), ContentProfile::Comment,
+            ), 'UTF-8');
+        }
+        unset($comment);
+        return $this->trees->build($comments);
+    }
     public function guestsAllowed(): bool { return $this->settings->boolean('comments.guests_allowed', false); }
     public function moderationRequired(): bool { return $this->settings->boolean('comments.moderation_required', true); }
 
@@ -38,7 +53,7 @@ final class CommentService
         if ($user === null && ! $this->guestsAllowed()) throw new RuntimeException('Sign in to comment.');
         $key = ($user ? 'user:' . $user['id'] : 'ip:' . $request->ip()) . '|' . $type . ':' . $contentId;
         if ($this->limiter->tooManyAttempts($key)) throw new RuntimeException('Too many comments. Please wait before trying again.');
-        $body = $this->body($request->input('body'));
+        [$body, $bodyFormat] = $this->body($request->input('body'), $request->input('body_format'));
         $guestName = null;
         if ($user === null) {
             $guestName = trim((string) $request->input('guest_name'));
@@ -48,7 +63,7 @@ final class CommentService
         $status = $this->moderationRequired() ? 'pending' : 'approved';
         $id = $this->repository->create([
             'content_type' => $type, 'content_id' => $contentId, 'parent_id' => $parent ? (int) $parent : null,
-            'user_id' => $user ? (int) $user['id'] : null, 'guest_name' => $guestName, 'body' => $body,
+            'user_id' => $user ? (int) $user['id'] : null, 'guest_name' => $guestName, 'body' => $body, 'body_format' => $bodyFormat,
             'status' => $status, 'ip_hash' => $this->hash($request->ip()),
         ]);
         $this->limiter->hit($key);
@@ -60,7 +75,8 @@ final class CommentService
     {
         $user = $this->auth->user();
         if ($user === null) throw new RuntimeException('Sign in to edit comments.');
-        $this->repository->edit($id, (int) $user['id'], $this->body($request->input('body')));
+        [$body, $bodyFormat] = $this->body($request->input('body'), $request->input('body_format'));
+        $this->repository->edit($id, (int) $user['id'], $body, $bodyFormat);
     }
 
     public function report(Request $request, int $id): int
@@ -76,11 +92,15 @@ final class CommentService
         return $report;
     }
 
-    private function body(mixed $value): string
+    /** @return array{string,string} */
+    private function body(mixed $value, mixed $formatValue): array
     {
-        $body = trim(strip_tags((string) $value));
+        $body = trim((string) $value);
         if (mb_strlen($body) < 2 || mb_strlen($body) > 5000) throw new RuntimeException('Comment must contain 2-5000 characters.');
-        return $body;
+        $format = ContentFormat::fromInput($formatValue, ContentFormat::Markdown);
+        $rendered = trim(strip_tags($this->contentRenderer->render($body, $format, ContentProfile::Comment)));
+        if ($rendered === '') throw new RuntimeException('Comment must contain visible text.');
+        return [$body, $format->value];
     }
 
     private function hash(string $value): string

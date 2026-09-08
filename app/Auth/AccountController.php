@@ -112,6 +112,7 @@ final class AccountController
             'display_name' => $username,
             'avatar_path' => null,
             'bio' => null,
+            'bio_format' => 'markdown',
             'locale' => 'en',
             'timezone' => 'UTC',
             'preferences' => [],

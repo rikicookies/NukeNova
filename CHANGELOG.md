@@ -2,6 +2,179 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.16] - 2026-09-08
+
+### Added
+
+- Private Messages 1.2.0 supports Markdown by default or explicitly selected sanitized HTML for new messages and replies.
+- Conversation bodies and sent-message excerpts are derived from the restricted shared message renderer.
+
+### Security
+
+- Stored message source is never trusted as output; unsafe HTML, protocols and unsupported elements are removed before Twig receives trusted markup.
+
+### Compatibility
+
+- Update Private Messages from Admin → Modules; existing messages are assigned `markdown`.
+
+## [0.2.0-alpha.15] - 2026-09-07
+
+### Added
+
+- User biographies support Markdown by default or explicitly selected sanitized HTML.
+- Public profiles render biographies through the restricted shared profile rather than trusting stored source.
+
+### Compatibility
+
+- Run the core migration; existing biographies are assigned `markdown`.
+
+## [0.2.0-alpha.14] - 2026-09-07
+
+### Added
+
+- Comments 1.1.0 uses Markdown by default and permits explicitly selected sanitized HTML for comments, replies and limited-time edits.
+- Content profiles now enforce narrower tag sets for descriptions, comments, profiles and messages.
+
+### Security
+
+- Comment source is validated for visible rendered text and never exposed as trusted markup before the restricted shared rendering pipeline.
+
+### Compatibility
+
+- Update Comments from Admin → Modules; existing plain-text comments are assigned `markdown`.
+
+## [0.2.0-alpha.13] - 2026-09-07
+
+### Added
+
+- Web Links 1.1.0 supports sanitized HTML or Markdown descriptions in administration and moderated user submissions.
+- Public catalogue excerpts and detail views consume safely rendered descriptions.
+
+### Compatibility
+
+- Update Web Links from Admin → Modules; existing descriptions retain the `html` format.
+
+## [0.2.0-alpha.12] - 2026-09-07
+
+### Added
+
+- Downloads 1.3.0 supports independent sanitized HTML or Markdown formats for descriptions and requirements.
+- Download catalog excerpts are derived from safely rendered content; detail views render both enriched fields through the shared content service.
+
+### Compatibility
+
+- Update Downloads from Admin → Modules; existing descriptions and requirements retain the `html` format.
+
+## [0.2.0-alpha.11] - 2026-09-07
+
+### Added
+
+- News 1.6.0 supports independent sanitized HTML or Markdown formats for summaries and full article content.
+- News lists, detail metadata and RSS consume safely rendered content without exposing stored source as trusted markup.
+
+### Compatibility
+
+- Update News from Admin → Modules; existing summaries and articles retain the `html` format.
+
+## [0.2.0-alpha.10] - 2026-09-07
+
+### Added
+
+- Shared `ContentRendererInterface`, explicit HTML/Markdown formats and reusable content profiles for current and future modules.
+- Pages 1.4.0 stores editable source with an explicit format and renders it through the safe shared pipeline.
+
+### Security
+
+- HTML is sanitized at output time; Markdown strips embedded HTML, rejects unsafe links and is sanitized after conversion.
+
+### Compatibility
+
+- Update Pages from Admin → Modules to add `content_format`; existing pages remain sanitized HTML.
+
+## [0.2.0-alpha.9] - 2026-09-07
+
+### Added
+
+- Discreet frontend Delete controls for authorized News, Pages, Downloads and Web Links editors.
+- Shared confirmation UI and strict allowlisted post-delete return paths.
+
+### Security
+
+- Deletes reuse the existing POST routes, CSRF validation, server-side authorization and activity logging; hidden controls never replace permission checks.
+
+### Compatibility
+
+- No migration, module lifecycle action or theme update is required from alpha.8.
+
+## [0.2.0-alpha.8] - 2026-09-07
+
+### Changed
+
+- Recommended Web Links open in a new tab with `noopener`, `noreferrer` and `nofollow` protections.
+- External Downloads open in a new tab; locally stored downloads retain normal browser download behavior.
+
+### Compatibility
+
+- No migration, module lifecycle action or theme update is required from alpha.7.
+
+## [0.2.0-alpha.7] - 2026-09-07
+
+### Fixed
+
+- NovaModern content cards, comments, forms, tables, module cards and status messages no longer inherit mismatched dark-theme foreground/background colors from the shared stylesheet.
+- Public detail views use the available center-column width instead of leaving misleading empty space beside block columns.
+- Desktop content and block column gaps are narrower and block stacks use consistent spacing.
+
+### Changed
+
+- NovaModern is updated to 1.1.0 with named light-palette tokens and explicit contrast states.
+- Responsive block order is documented as deferred technical debt; provider and placement logic remain untouched.
+
+### Compatibility
+
+- No database migration or module update is required from alpha.6.
+- Existing NovaModern installations must use Update in Admin → Themes to publish the 1.1.0 stylesheet.
+
+## [0.2.0-alpha.6] - 2026-09-07
+
+### Added
+
+- NovaModern 1.0.0 as an optional third theme for both the public site and administration panel.
+- Responsive left navigation that collapses to icons on desktop, behaves as a mobile drawer and remembers its desktop state locally.
+- A bundled same-origin SVG icon sprite with no remote font or JavaScript dependency.
+- Permission-filtered administrative navigation available on every Admin screen and grouped into Overview, Content, Resources, Community, Appearance and System.
+- Optional backward-compatible `icon` and `group` metadata for `admin.menu.building` entries.
+- Focused tests for the NovaModern Admin layout, navigation behavior, icon metadata and public block columns.
+
+### Changed
+
+- NovaModern visually organizes existing dashboard metrics, recent activity, tables and administrative links without changing their data or permissions.
+- Default and Classic remain installed and unchanged.
+
+### Compatibility
+
+- No database migration or module update is required from alpha.5.
+- NovaModern must be installed and activated manually from Themes after copying the release files.
+
+## [0.2.0-alpha.5] - 2026-09-07
+
+### Added
+
+- Discreet, permission-aware Edit shortcuts on public News, Pages, Downloads and Web Links detail pages.
+- A shared Twig component for contextual content actions, compatible with Default and Classic.
+- Unit coverage for action visibility and the permission-to-editor route contracts.
+- A dedicated Known Issues and Technical Debt document.
+
+### Security
+
+- Frontend shortcuts are calculated through `AuthorizationService`; existing Admin controllers continue to enforce the same permissions server-side.
+- This checkpoint adds no frontend mutation route and makes no changes to Delete behavior.
+
+### Compatibility
+
+- No database migration or module/theme update is required from alpha.4.
+- Blocks are explicitly postponed and do not block subsequent feature checkpoints.
+
 ## [0.2.0-alpha.4] - 2026-09-07
 
 ### Fixed

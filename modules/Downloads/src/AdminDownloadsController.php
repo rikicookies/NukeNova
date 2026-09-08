@@ -7,6 +7,7 @@ namespace Modules\Downloads\src;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
+use NovaNuke\Core\Http\SafeReturnPath;
 use NovaNuke\Core\Logging\ActivityLogger;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\CsrfTokenManager;
@@ -69,7 +70,7 @@ final class AdminDownloadsController
     {
         if ($guard = $this->guard()) return $guard; if ($csrf = $this->csrf($request)) return $csrf;
         if ($request->input('confirm_delete') !== '1') return $this->redirect(null, 'Confirm deletion.');
-        try { $id = $this->id($request->attribute('id')); $this->downloads->delete($id); $actor = $this->auth->user(); $this->activity->log((int) $actor['id'], 'download.deleted', 'download', $id, [], $request->ip()); return $this->redirect('Download moved to deleted state.'); }
+        try { $id = $this->id($request->attribute('id')); $this->downloads->delete($id); $actor = $this->auth->user(); $this->activity->log((int) $actor['id'], 'download.deleted', 'download', $id, [], $request->ip()); $this->session->put('downloads.admin.message', 'Download moved to deleted state.'); return Response::redirect(SafeReturnPath::choose($request->input('return_to'), ['/downloads'], '/admin/downloads'), 303); }
         catch (RuntimeException $error) { return $this->redirect(null, $error->getMessage()); }
     }
 

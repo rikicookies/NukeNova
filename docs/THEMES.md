@@ -123,4 +123,4 @@ Themes declare which layouts and block positions they support. Phase 4C connects
 
 The active theme cannot be uninstalled. Activate a different installed theme first. Uninstalling removes its database record and published public assets, but leaves the manually copied source directory untouched.
 
-Nova Default and Classic Portal are bundled reference themes.
+Nova Default and Classic Portal are bundled reference themes. NovaModern is the optional responsive public/Admin workspace theme introduced in 0.2.0-alpha.6; see `docs/NOVAMODERN.md`.

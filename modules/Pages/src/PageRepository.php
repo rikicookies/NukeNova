@@ -48,11 +48,11 @@ final class PageRepository
         $this->database->beginTransaction();
         try {
             if ($id === null) {
-                $sql = 'INSERT INTO pages (parent_id,author_id,title,slug,content,image_path,status,template,access_type,comments_enabled,show_in_directory,menu_title,seo_title,seo_description,published_at,created_at,updated_at) VALUES (:parent_id,:author_id,:title,:slug,:content,:image_path,:status,:template,:access_type,:comments_enabled,:show_in_directory,:menu_title,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
+                $sql = 'INSERT INTO pages (parent_id,author_id,title,slug,content,content_format,image_path,status,template,access_type,comments_enabled,show_in_directory,menu_title,seo_title,seo_description,published_at,created_at,updated_at) VALUES (:parent_id,:author_id,:title,:slug,:content,:content_format,:image_path,:status,:template,:access_type,:comments_enabled,:show_in_directory,:menu_title,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
                 $data['author_id'] = $authorId;
             } else {
                 if ($this->page($id) === null) throw new RuntimeException('Page not found.');
-                $sql = 'UPDATE pages SET parent_id=:parent_id,title=:title,slug=:slug,content=:content,image_path=:image_path,status=:status,template=:template,access_type=:access_type,comments_enabled=:comments_enabled,show_in_directory=:show_in_directory,menu_title=:menu_title,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
+                $sql = 'UPDATE pages SET parent_id=:parent_id,title=:title,slug=:slug,content=:content,content_format=:content_format,image_path=:image_path,status=:status,template=:template,access_type=:access_type,comments_enabled=:comments_enabled,show_in_directory=:show_in_directory,menu_title=:menu_title,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
                 $data['id'] = $id;
             }
             $statement = $this->database->prepare($sql); $statement->execute($data);

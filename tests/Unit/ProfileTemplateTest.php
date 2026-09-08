@@ -38,6 +38,7 @@ final class ProfileTemplateTest extends TestCase
         ]);
 
         self::assertStringContainsString('name="display_name" value=""', $html);
+        self::assertStringContainsString('name="bio_format"', $html);
         self::assertStringContainsString('value="test-token"', $html);
     }
 

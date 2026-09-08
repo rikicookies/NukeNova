@@ -6,14 +6,11 @@ namespace Modules\Pages\src;
 
 use DateTimeImmutable;
 use DateTimeZone;
-use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Content\ContentFormat;
 use RuntimeException;
 
 final class PageInput
 {
-    public function __construct(private readonly HtmlSanitizer $sanitizer)
-    {
-    }
 
     /** @param array<string,mixed> $input @return array<string,mixed> */
     public function page(array $input, bool $canPublish): array
@@ -29,8 +26,10 @@ final class PageInput
         if ($status === 'scheduled' && ($publishedAt === null || $publishedAt <= gmdate('Y-m-d H:i:s'))) throw new RuntimeException('Scheduled pages require a future publication date.');
         if ($status === 'published' && $publishedAt === null) $publishedAt = gmdate('Y-m-d H:i:s');
         if ($status === 'published' && $publishedAt > gmdate('Y-m-d H:i:s')) throw new RuntimeException('Use scheduled status for a future publication date.');
-        $content = $this->sanitizer->sanitize((string) ($input['content'] ?? ''));
-        if ($content === '') throw new RuntimeException('Page content is required.');
+        $content = (string) ($input['content'] ?? '');
+        if (trim($content) === '') throw new RuntimeException('Page content is required.');
+        if (mb_strlen($content) > 1000000) throw new RuntimeException('Page content must not exceed 1,000,000 characters.');
+        $contentFormat = ContentFormat::fromInput($input['content_format'] ?? null);
         $template = (string) ($input['template'] ?? 'default');
         if (! in_array($template, ['default', 'landing'], true)) throw new RuntimeException('Invalid page template.');
         $access = (string) ($input['access_type'] ?? 'public');
@@ -38,7 +37,7 @@ final class PageInput
         $roles = array_values(array_unique(array_filter(array_map('intval', (array) ($input['role_ids'] ?? [])), static fn (int $id): bool => $id > 0)));
         if ($access === 'roles' && $roles === []) throw new RuntimeException('Select at least one role for role-restricted pages.');
         return [
-            'title' => $title, 'slug' => $slug, 'content' => $content,
+            'title' => $title, 'slug' => $slug, 'content' => $content, 'content_format' => $contentFormat->value,
             'image_path' => $this->image($input['image_path'] ?? null), 'status' => $status,
             'template' => $template, 'access_type' => $access,
             'comments_enabled' => ($input['comments_enabled'] ?? null) === '1' ? 1 : 0,

@@ -103,3 +103,67 @@ Update both bundled themes to 1.8.0 from `/admin/themes` so their layouts and pu
 ## Updating to 0.2.0-alpha.4
 
 No database, module or theme update is required from alpha.3. Menus and the mutable block-region global are now registered before any dynamic provider renders Twig, preventing the `Unable to add global blocks` LogicException. Replace application files, clear caches and restart PHP/Apache before enabling Polls or Statistics blocks. Module API 1.0 remains unchanged.
+
+## Updating to 0.2.0-alpha.5
+
+No database migration or module/theme update is required from alpha.4. Replace the application files, clear the Twig/application cache and restart PHP/Apache. Authorized users will then see Edit shortcuts on the four supported public detail pages; the destination Admin editors retain their existing server-side permission checks.
+
+## Updating to 0.2.0-alpha.6
+
+No database migration or module update is required from alpha.5. Replace the application files, clear caches and restart PHP/Apache. NovaModern is a new optional theme: install and activate version 1.0.0 from `/admin/themes`. Default and Classic remain unchanged. If the new assets are not visible, use the theme Update action once and perform a hard browser refresh.
+
+## Updating to 0.2.0-alpha.7
+
+No database migration or module update is required from alpha.6. After replacing files, open `/admin/themes` and run **Update** for NovaModern 1.1.0 so its corrected stylesheet is republished. Then clear application caches and perform a hard browser refresh. Responsive block order remains deferred and does not block this contrast/spacing release.
+
+## Updating to 0.2.0-alpha.16
+
+- Replace the application files, then update **Private Messages** to 1.2.0 in Admin → Modules.
+- Existing messages are assigned `markdown`. New messages and replies offer Markdown by default or sanitized HTML.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.15
+
+- Replace the application files and run `php bin/cms migrate`.
+- Existing biographies are assigned `markdown`; users may select Markdown or sanitized HTML from account settings.
+- No module lifecycle action or theme asset update is required.
+
+## Updating to 0.2.0-alpha.14
+
+- Replace the application files, then update **Comments** to 1.1.0 in Admin → Modules.
+- Existing comments are assigned `markdown`. New comments, replies and edits offer Markdown by default or sanitized HTML.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.13
+
+- Replace the application files, then update **Web Links** to 1.1.0 in Admin → Modules.
+- Existing descriptions are assigned `html`. Administrators and submitting users may select sanitized HTML or Markdown.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.12
+
+- Replace the application files, then update **Downloads** to 1.3.0 in Admin → Modules.
+- Existing descriptions and requirements are assigned `html`. Editors may independently select HTML or Markdown for both fields.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.11
+
+- Replace the application files, then update **News** to 1.6.0 in Admin → Modules.
+- Existing summaries and article bodies are assigned `html`. Editors may independently choose HTML or Markdown for each field.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.10
+
+- Replace the application files, then update **Pages** to 1.4.0 in Admin → Modules.
+- Existing pages are assigned `html`, preserving their current appearance. New and edited pages can explicitly select sanitized HTML or Markdown.
+- No core migration or theme asset update is required.
+
+## Updating to 0.2.0-alpha.9
+
+- Replace the application files and run `composer install --no-dev --optimize-autoloader` in production.
+- No database migration, module update or theme asset publication is required.
+- Authorized editors now get a confirmed Delete action on public News, Pages, Downloads and Web Links detail pages.
+
+## Updating to 0.2.0-alpha.8
+
+No migration, module lifecycle action or theme update is required from alpha.7. Replace files and clear caches. Recommended links and external downloads now open in a separate tab; local downloads are unchanged.

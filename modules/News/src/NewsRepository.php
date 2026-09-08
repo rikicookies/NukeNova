@@ -48,12 +48,12 @@ final class NewsRepository
         $this->database->beginTransaction();
         try {
             if ($id === null) {
-                $sql = 'INSERT INTO news_articles (author_id,category_id,topic_id,title,slug,summary,content,featured_image,status,is_featured,comments_enabled,seo_title,seo_description,published_at,created_at,updated_at) '
-                    . 'VALUES (:author_id,:category_id,:topic_id,:title,:slug,:summary,:content,:featured_image,:status,:is_featured,:comments_enabled,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
+                $sql = 'INSERT INTO news_articles (author_id,category_id,topic_id,title,slug,summary,summary_format,content,content_format,featured_image,status,is_featured,comments_enabled,seo_title,seo_description,published_at,created_at,updated_at) '
+                    . 'VALUES (:author_id,:category_id,:topic_id,:title,:slug,:summary,:summary_format,:content,:content_format,:featured_image,:status,:is_featured,:comments_enabled,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
                 $data['author_id'] = $authorId;
             } else {
                 if ($this->article($id) === null) throw new RuntimeException('News article not found.');
-                $sql = 'UPDATE news_articles SET category_id=:category_id,topic_id=:topic_id,title=:title,slug=:slug,summary=:summary,content=:content,featured_image=:featured_image,status=:status,is_featured=:is_featured,comments_enabled=:comments_enabled,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
+                $sql = 'UPDATE news_articles SET category_id=:category_id,topic_id=:topic_id,title=:title,slug=:slug,summary=:summary,summary_format=:summary_format,content=:content,content_format=:content_format,featured_image=:featured_image,status=:status,is_featured=:is_featured,comments_enabled=:comments_enabled,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
                 $data['id'] = $id;
             }
             $statement = $this->database->prepare($sql);
@@ -113,7 +113,7 @@ final class NewsRepository
         $perPage = $this->perPage;
         $pages = max(1, (int) ceil($total / $perPage));
         $page = min(max(1, $page), $pages);
-        $sql = "SELECT a.id,a.title,a.slug,a.summary,a.featured_image,a.is_featured,a.published_at,a.view_count,u.username,c.name AS category_name,c.slug AS category_slug,t.name AS topic_name "
+        $sql = "SELECT a.id,a.title,a.slug,a.summary,a.summary_format,a.featured_image,a.is_featured,a.published_at,a.view_count,u.username,c.name AS category_name,c.slug AS category_slug,t.name AS topic_name "
             . "FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id LEFT JOIN news_topics t ON t.id=a.topic_id WHERE {$where} "
             . 'ORDER BY a.is_featured DESC,a.published_at DESC,a.id DESC LIMIT :limit OFFSET :offset';
         $statement = $this->database->prepare($sql);
@@ -141,7 +141,7 @@ final class NewsRepository
     public function rssArticles(): array
     {
         return $this->database->query(
-            "SELECT a.title,a.slug,a.summary,a.content,a.published_at,u.username,c.name AS category_name "
+            "SELECT a.title,a.slug,a.summary,a.summary_format,a.content,a.content_format,a.published_at,u.username,c.name AS category_name "
             . "FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id "
             . "WHERE a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') "
             . 'ORDER BY a.published_at DESC,a.id DESC LIMIT 20'
