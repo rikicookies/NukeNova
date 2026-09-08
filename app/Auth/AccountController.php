@@ -113,6 +113,8 @@ final class AccountController
             'avatar_path' => null,
             'bio' => null,
             'bio_format' => 'markdown',
+            'website' => null,
+            'location' => null,
             'locale' => 'en',
             'timezone' => 'UTC',
             'preferences' => [],

@@ -1,7 +1,7 @@
 {
     "name": "Comments",
     "slug": "comments",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "api_version": "1.0",
     "description": "Reusable threaded comments, reports and moderation for NovaNuke content.",
     "author": "NovaNuke Project",

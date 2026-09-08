@@ -6,6 +6,10 @@
     <p class="eyebrow">@{{ profile.username }}</p>
     <h1>{{ profile.display_name }}</h1>
     <p>{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</p>
+    {% if profile.location %}<p>{{ trans('profile.location', {location: profile.location}) }}</p>{% endif %}
+    {% if profile.website %}<p><a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">{{ trans('profile.website') }}</a></p>{% endif %}
     {% if profile.bio %}<div class="profile-bio">{{ profile.bio_html }}</div>{% endif %}
+    {% if profile_statistics|default([]) %}<div class="profile-statistics">{% for statistic in profile_statistics %}<div class="dashboard-card">{% if statistic.url %}<a href="{{ statistic.url }}"><strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span></a>{% else %}<strong>{{ statistic.value }}</strong><span>{{ statistic.label }}</span>{% endif %}</div>{% endfor %}</div>{% endif %}
+    {% if profile_actions|default([]) %}<div class="profile-actions">{% for action in profile_actions %}{% if action.method == 'post' %}<form method="post" action="{{ action.url }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ action.label }}</button></form>{% else %}<a class="button" href="{{ action.url }}">{{ action.label }}</a>{% endif %}{% endfor %}</div>{% endif %}
 </article>
 {% endblock %}

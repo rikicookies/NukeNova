@@ -28,10 +28,12 @@ Never accept only from the submitted type and ID. The provider must query its ow
 
 Content controllers may resolve `CommentService` only when it is registered. Call `for($type, $id)` for the approved thread, then include `@comments/thread.twig`. This keeps the content module operational when Comments is disabled.
 
+Comment bodies store an explicit Markdown or sanitized-HTML format. Comments 1.2.0 also allows one Like or Dislike per registered user. Selecting the active reaction removes it; selecting the opposite reaction replaces it. Guests can see totals but cannot react.
+
 ## Security behavior
 
-- Bodies are plain text, stripped of tags and escaped by Twig.
-- CSRF protects create, edit, report and moderation actions.
+- Bodies pass through the restricted shared comment renderer; stored source is never trusted directly by Twig.
+- CSRF protects create, edit, reaction, report and moderation actions.
 - Registered authors can edit their own comments for 15 minutes.
 - Replies are limited to five levels and must target an approved comment on the same content.
 - Comment and report submissions use the persistent database rate limiter.

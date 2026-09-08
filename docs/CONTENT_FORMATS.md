@@ -5,3 +5,5 @@ NovaNuke modules should store editable source and an explicit `content_format` v
 HTML is sanitized at render time. Markdown is converted with embedded HTML disabled and unsafe links rejected, then sanitized. Modules choose a `ContentProfile` according to the field: `FullContent`, `Description`, `Comment`, `Profile` or `Message`. Profiles establish a stable contract for progressively narrower allowlists.
 
 Module migrations own their format columns. Existing enriched content should migrate to `html` unless the module can prove another source format. Modules must preserve the original source so editors can switch or revise formats without editing generated HTML.
+
+The bundled Pages, News, Downloads, Web Links, Comments, Profiles and Private Messages flows use this contract. Short descriptions use a restricted profile; comments, biographies and messages use narrower profiles appropriate to user-authored content.

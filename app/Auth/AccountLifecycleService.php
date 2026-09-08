@@ -48,7 +48,7 @@ final class AccountLifecycleService
             if ($update->rowCount() !== 1) throw new RuntimeException('Account could not be anonymized.');
 
             $profile = $this->database->prepare(
-                "UPDATE user_profiles SET display_name='Former user',avatar_path=NULL,bio=NULL,bio_format='markdown',locale='en',timezone='UTC',"
+                "UPDATE user_profiles SET display_name='Former user',avatar_path=NULL,bio=NULL,bio_format='markdown',website=NULL,location=NULL,locale='en',timezone='UTC',"
                 . "preferences=JSON_OBJECT('profile_visibility','members'),updated_at=UTC_TIMESTAMP() WHERE user_id=:id"
             );
             $profile->execute(['id' => $userId]);

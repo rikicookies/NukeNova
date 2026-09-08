@@ -13,14 +13,32 @@ final class CommentRepository
     {
     }
 
-    public function approved(string $type, int $contentId): array
+    public function approvedCountByUser(int $userId):int{$s=$this->database->prepare("SELECT COUNT(*) FROM comments WHERE user_id=:user AND status='approved'");$s->execute(['user'=>$userId]);return(int)$s->fetchColumn();}
+
+    public function approved(string $type, int $contentId, ?int $viewerId = null): array
     {
         $statement = $this->database->prepare(
-            "SELECT c.id,c.parent_id,c.user_id,c.guest_name,c.body,c.body_format,c.edited_at,c.created_at,u.username "
+            "SELECT c.id,c.parent_id,c.user_id,c.guest_name,c.body,c.body_format,c.edited_at,c.created_at,u.username,"
+            . "(SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id=c.id AND r.reaction='like') AS like_count,"
+            . "(SELECT COUNT(*) FROM comment_reactions r WHERE r.comment_id=c.id AND r.reaction='dislike') AS dislike_count,"
+            . "(SELECT r.reaction FROM comment_reactions r WHERE r.comment_id=c.id AND r.user_id=:viewer LIMIT 1) AS viewer_reaction "
             . "FROM comments c LEFT JOIN users u ON u.id=c.user_id WHERE c.content_type=:type AND c.content_id=:content AND c.status='approved' ORDER BY c.created_at,c.id"
         );
-        $statement->execute(['type' => $type, 'content' => $contentId]);
+        $statement->execute(['viewer' => $viewerId, 'type' => $type, 'content' => $contentId]);
         return $statement->fetchAll();
+    }
+
+    public function react(int $commentId, int $userId, string $reaction): void
+    {
+        $comment = $this->find($commentId);
+        if ($comment === null || $comment['status'] !== 'approved') throw new RuntimeException('Comment not found.');
+        $current = $this->database->prepare('SELECT reaction FROM comment_reactions WHERE comment_id=:comment AND user_id=:user');
+        $current->execute(['comment' => $commentId, 'user' => $userId]);
+        if ($current->fetchColumn() === $reaction) {
+            $this->database->prepare('DELETE FROM comment_reactions WHERE comment_id=:comment AND user_id=:user')->execute(['comment' => $commentId, 'user' => $userId]);
+            return;
+        }
+        $this->database->prepare("INSERT INTO comment_reactions(comment_id,user_id,reaction,created_at,updated_at) VALUES(:comment,:user,:reaction,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE reaction=VALUES(reaction),updated_at=UTC_TIMESTAMP()")->execute(['comment' => $commentId, 'user' => $userId, 'reaction' => $reaction]);
     }
 
     public function create(array $data): int

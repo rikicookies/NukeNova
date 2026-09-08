@@ -116,6 +116,16 @@ No database migration or module update is required from alpha.5. Replace the app
 
 No database migration or module update is required from alpha.6. After replacing files, open `/admin/themes` and run **Update** for NovaModern 1.1.0 so its corrected stylesheet is republished. Then clear application caches and perform a hard browser refresh. Responsive block order remains deferred and does not block this contrast/spacing release.
 
+## Updating from 0.2.0-alpha.15 to 0.2.0-alpha.17
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Run `php bin/cms migrate` to add optional profile website and location fields.
+3. In Admin → Modules update **Private Messages** to 1.2.0, **Comments** to 1.2.0, **Notifications** to 1.1.0 and **News** to 1.7.0.
+4. Install and enable **Friends** 1.0.0.
+5. Run `php bin/cms cache:clear`, the automated tests and the smoke checks in `docs/RELEASE_NOTES_0.2.0-alpha.17.md`.
+
+Existing messages and comments receive safe default formats through their module migrations. Existing users receive null website/location values. No theme update is required.
+
 ## Updating to 0.2.0-alpha.16
 
 - Replace the application files, then update **Private Messages** to 1.2.0 in Admin → Modules.

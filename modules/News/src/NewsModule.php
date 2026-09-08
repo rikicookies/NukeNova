@@ -35,6 +35,7 @@ final class NewsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->events->listen('profile.statistics.building',static function(object$event)use($context):void{if($event instanceof \NovaNuke\Auth\ProfileStatisticsBuilding)$event->add('Published news',$context->container->get(NewsRepository::class)->publishedCountByAuthor($event->profileId));});
         $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
             if ($event instanceof SearchProvidersRegistering) $event->registry->add(new NewsSearchProvider($context->container->get(\PDO::class)));
         });

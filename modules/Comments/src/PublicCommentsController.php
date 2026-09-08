@@ -49,6 +49,15 @@ final class PublicCommentsController
         });
     }
 
+    public function react(Request $request): Response
+    {
+        return $this->perform($request, function () use ($request): array {
+            $commentId = $this->id($request->attribute('id'));
+            $this->comments->react($commentId, $request->input('reaction'));
+            return [$commentId, 'comment.reacted', 'Reaction updated.'];
+        });
+    }
+
     private function perform(Request $request, callable $operation): Response
     {
         if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);

@@ -31,7 +31,8 @@ final class CommentService
 
     public function for(string $type, int $id): array
     {
-        $comments = $this->repository->approved($type, $id);
+        $viewer = $this->auth->user();
+        $comments = $this->repository->approved($type, $id, $viewer ? (int) $viewer['id'] : null);
         foreach ($comments as &$comment) {
             $comment['body_html'] = new Markup($this->contentRenderer->render(
                 (string) $comment['body'], ContentFormat::fromInput($comment['body_format'] ?? null, ContentFormat::Markdown), ContentProfile::Comment,
@@ -77,6 +78,15 @@ final class CommentService
         if ($user === null) throw new RuntimeException('Sign in to edit comments.');
         [$body, $bodyFormat] = $this->body($request->input('body'), $request->input('body_format'));
         $this->repository->edit($id, (int) $user['id'], $body, $bodyFormat);
+    }
+
+    public function react(int $id, mixed $reaction): void
+    {
+        $user = $this->auth->user();
+        if ($user === null) throw new RuntimeException('Sign in to react to comments.');
+        $reaction = (string) $reaction;
+        if (! in_array($reaction, ['like', 'dislike'], true)) throw new RuntimeException('Invalid reaction.');
+        $this->repository->react($id, (int) $user['id'], $reaction);
     }
 
     public function report(Request $request, int $id): int

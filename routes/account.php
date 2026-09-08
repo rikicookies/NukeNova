@@ -32,6 +32,11 @@ $publicProfileController = static fn (Container $container): PublicProfileContro
     $container->get(ProfileRepository::class), $container->get(AvatarStorage::class),
     $container->get(AuthManager::class), $container->get(ViewRenderer::class),
     $container->get(ContentRendererInterface::class),
+    $container->get(\NovaNuke\Core\Events\EventDispatcher::class),
+    $container->get(CsrfTokenManager::class),
+);
+$router->get('/users', static fn (Request $request, Container $container): Response =>
+    $publicProfileController($container)->index($request)
 );
 $router->get('/users/{username}', static fn (Request $request, Container $container): Response =>
     $publicProfileController($container)->show($request)

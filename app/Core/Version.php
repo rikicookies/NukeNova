@@ -6,7 +6,7 @@ namespace NovaNuke\Core;
 
 final class Version
 {
-    public const CURRENT = '0.2.0-alpha.16';
+    public const CURRENT = '0.2.0-alpha.17';
 
     private function __construct()
     {

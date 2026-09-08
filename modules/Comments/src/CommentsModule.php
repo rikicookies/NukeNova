@@ -32,6 +32,7 @@ final class CommentsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
+        $context->events->listen('profile.statistics.building',static function(object$event)use($context):void{if($event instanceof \NovaNuke\Auth\ProfileStatisticsBuilding)$event->add('Approved comments',$context->container->get(CommentRepository::class)->approvedCountByUser($event->profileId));});
         $context->events->listen('admin.menu.building', static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Comments', '/admin/comments', 'comments.moderate');
         });
@@ -48,6 +49,7 @@ final class CommentsModule implements ModuleInterface
         );
         $context->router->post('/comments/{id}/report', static fn (Request $r, Container $c): Response => $public($c)->report($r));
         $context->router->post('/comments/{id}/edit', static fn (Request $r, Container $c): Response => $public($c)->edit($r));
+        $context->router->post('/comments/{id}/react', static fn (Request $r, Container $c): Response => $public($c)->react($r));
         $context->router->post('/comments/{type}/{id}', static fn (Request $r, Container $c): Response => $public($c)->create($r));
         $context->router->get('/admin/comments', static fn (Request $r, Container $c): Response => $admin($c)->index());
         $context->router->post('/admin/comments/{id}/moderate', static fn (Request $r, Container $c): Response => $admin($c)->moderate($r));

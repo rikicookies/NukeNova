@@ -1,15 +1,17 @@
 # Member profiles and preferences
 
-NovaNuke 0.1.0-alpha.5 gives each registered user an account editor at `/account/profile` and a friendly public URL at `/users/{username}`.
+Each registered user has an account editor at `/account/profile`, a friendly public URL at `/users/{username}` and an entry in the paginated `/users` directory when visibility permits.
 
 ## Preferences
 
-Users may edit their display name, plain-text biography, English or Spanish interface locale, PHP timezone and profile visibility. Personal locale and timezone override the site defaults only while that user is signed in. Profile visibility supports:
+Users may edit their display name, Markdown or sanitized-HTML biography, optional HTTP/HTTPS website, optional location, interface locale, PHP timezone and profile visibility. Personal locale and timezone override the site defaults only while that user is signed in. Profile visibility supports:
 
 - `public`: available to visitors and members;
 - `members`: returns 403 to guests and remains available to authenticated members.
 
 Email addresses, roles, login history and administrative status are never rendered on public profiles.
+
+Enabled modules may contribute small public statistics through `profile.statistics.building`. The bundled News, Comments and Friends modules expose only published, approved or accepted totals. Friends also uses `profile.actions.building` to add contextual relationship controls without coupling the profile controller to the module.
 
 ## Avatars
 

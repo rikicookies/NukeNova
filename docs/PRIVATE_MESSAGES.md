@@ -1,6 +1,6 @@
 # Private Messages module
 
-Private Messages 1.0.0 provides authenticated, asynchronous conversations between registered users. It is deliberately not a live chat system.
+Private Messages 1.2.0 provides authenticated, asynchronous conversations between registered users. It is deliberately not a live chat system.
 
 ## Features
 
@@ -11,7 +11,8 @@ Private Messages 1.0.0 provides authenticated, asynchronous conversations betwee
 - user blocking in both sending directions;
 - abuse reports and an administrative moderation queue;
 - 20 sends per hour and 5 reports per hour per account;
-- plain-text bodies with Twig output escaping and CSRF-protected mutations.
+- Markdown or explicitly selected sanitized-HTML bodies rendered through the restricted message profile;
+- CSRF-protected mutations and safe plain-text excerpts derived from rendered content.
 
 Install and enable the module at `/admin/modules`. Users access it at `/messages`; moderators with `private-messages.moderate` use `/admin/private-messages`. Add `/messages` to an account menu if desired.
 
@@ -23,4 +24,4 @@ Blocking prevents either participant from sending more messages while the block 
 
 ## Security limitations
 
-Message bodies are not end-to-end encrypted. Database and hosting administrators can access stored messages, so the interface must not claim otherwise. Rate limits reduce automated abuse but cannot eliminate it. A future notification hook can be added without turning this feature into real-time chat.
+Message bodies are not end-to-end encrypted. Database and hosting administrators can access stored source, so the interface must not claim otherwise. Rate limits reduce automated abuse but cannot eliminate it. Accepted Friends receive a contextual link to the existing message composer when both modules are enabled.

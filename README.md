@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.16**. Private messages now support Markdown or sanitized HTML through the restricted shared message profile. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.2.0-alpha.17**. This cumulative social foundation adds the member directory, Friends, comment reactions, friendship notifications and richer public profiles. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
 ## Included in 0.1.0
 
@@ -11,7 +11,7 @@ Current development release: **0.2.0-alpha.16**. Private messages now support Ma
 - central administration, activity logs and system diagnostics;
 - manually installed modules with manifests, migrations, dependencies and hooks;
 - Twig themes, overrides, positions, sanitized blocks and hierarchical menus;
-- News, Comments, Pages, Media, Downloads, Search, Private Messages, Notifications, Polls, Web Links, Statistics and SEO;
+- News, Comments, Pages, Media, Downloads, Search, Private Messages, Notifications, Friends, Polls, Web Links, Statistics and SEO;
 - friendly URLs, PDO prepared statements, CSRF, rate limits and output escaping;
 - encrypted SMTP or development mail logging;
 - maintenance mode, private database/file backups and safe cache commands.

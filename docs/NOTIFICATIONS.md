@@ -6,9 +6,11 @@ Notifications provides a private in-site inbox at `/notifications`. Install and 
 
 - `private-message.sent` creates a notification for the recipient without copying the private message body.
 - `comment.created` notifies active users with `comments.moderate` only when the comment is pending.
+- `friend.requested` notifies the recipient of a new friendship request.
+- `friend.accepted` notifies the original requester that the relationship was accepted.
 - `maintenance.pruning` removes notifications that have been read for more than 90 days.
 
-Update the Private Messages module to version 1.1.0 after installing this release so it emits the message event. Notifications remains optional: sending a private message still works when the module is disabled.
+Notifications remains optional: messages, comments and friendships continue working when it is disabled.
 
 ## Publishing from another module
 

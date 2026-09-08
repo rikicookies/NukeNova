@@ -18,6 +18,7 @@ final class NewsRepository
 
     public function categories(): array { return $this->database->query('SELECT * FROM news_categories ORDER BY name')->fetchAll(); }
     public function topics(): array { return $this->database->query('SELECT * FROM news_topics ORDER BY name')->fetchAll(); }
+    public function publishedCountByAuthor(int $userId):int{$s=$this->database->prepare("SELECT COUNT(*) FROM news_articles WHERE author_id=:user AND status='published' AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL");$s->execute(['user'=>$userId]);return(int)$s->fetchColumn();}
 
     public function adminArticles(): array
     {

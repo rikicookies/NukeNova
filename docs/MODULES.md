@@ -131,6 +131,8 @@ This list documents the module contract for diagnostics; listeners and dispatche
 
 Core authentication notifications include `user.registered`, `user.email_verified`, `user.logged_in`, `user.email_changed` and `user.anonymized`. They carry only the documented numeric identity and minimal state. See `docs/AUTH_EVENTS.md`.
 
+Public profiles expose `profile.actions.building` and `profile.statistics.building`. Optional modules should add only internal action URLs and privacy-safe aggregate values. Friends demonstrates both contracts without making Profiles depend on its tables.
+
 Searchable content modules can listen to `search.providers.registering` and add a provider implementing `SearchProviderInterface`. The provider is responsible for publication and viewer-access checks. See `docs/SEARCH.md` for the complete contract.
 
 ## Migrations

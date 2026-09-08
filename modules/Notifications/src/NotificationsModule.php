@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Modules\Notifications\src;
 
 use Modules\Comments\src\CommentCreated;
+use Modules\Friends\src\FriendAccepted;
+use Modules\Friends\src\FriendRequested;
 use Modules\PrivateMessages\src\PrivateMessageSent;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
@@ -60,6 +62,22 @@ final class NotificationsModule implements ModuleInterface
                     '/admin/comments',
                     'comment-pending:' . $event->id,
                 );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen('friend.requested', static function (object $event) use ($publisher): void {
+            if (! $event instanceof FriendRequested) return;
+            try {
+                $publisher->toUser($event->recipientId, 'friend.requested', 'New friend request', 'You received a friend request.', '/friends');
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen('friend.accepted', static function (object $event) use ($publisher): void {
+            if (! $event instanceof FriendAccepted) return;
+            try {
+                $publisher->toUser($event->recipientId, 'friend.accepted', 'Friend request accepted', 'Your friend request was accepted.', '/friends');
             } catch (Throwable $error) {
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }

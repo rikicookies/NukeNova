@@ -17,5 +17,7 @@ final class PublicProfileContentTest extends TestCase
         self::assertStringContainsString("profile['bio_html']", $controller);
         self::assertStringContainsString('profile.bio_html', $template);
         self::assertStringNotContainsString('profile.bio|nl2br', $template);
+        self::assertStringContainsString('rel="noopener noreferrer"', $template);
+        self::assertStringContainsString('profile.location', $template);
     }
 }

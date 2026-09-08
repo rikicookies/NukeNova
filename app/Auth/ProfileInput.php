@@ -16,6 +16,8 @@ final class ProfileInput
         $displayName = trim($this->text($input['display_name'] ?? ''));
         $bio = trim($this->text($input['bio'] ?? ''));
         $bioFormat = null;
+        $website = trim($this->text($input['website'] ?? ''));
+        $location = trim($this->text($input['location'] ?? ''));
         $locale = $this->text($input['locale'] ?? '');
         $timezone = $this->text($input['timezone'] ?? '');
         $visibility = $this->text($input['profile_visibility'] ?? 'public');
@@ -29,6 +31,11 @@ final class ProfileInput
         }
         try { $bioFormat = ContentFormat::fromInput($input['bio_format'] ?? null, ContentFormat::Markdown); }
         catch (\RuntimeException) { $errors['bio_format'] = 'Select a valid biography format.'; }
+        $websiteParts = $website === '' ? [] : parse_url($website);
+        if ($website !== '' && (mb_strlen($website) > 255 || filter_var($website, FILTER_VALIDATE_URL) === false
+            || ! is_array($websiteParts) || ! in_array(strtolower((string) ($websiteParts['scheme'] ?? '')), ['http', 'https'], true)
+            || isset($websiteParts['user']) || isset($websiteParts['pass']))) $errors['website'] = 'Enter a valid HTTP or HTTPS website URL.';
+        if (mb_strlen($location) > 120 || preg_match('/[\x00-\x1F\x7F]/', $location)) $errors['location'] = 'Location cannot exceed 120 characters.';
         if (! ($this->locales?->supports($locale) ?? in_array($locale, ['en', 'es'], true))) $errors['locale'] = 'Select an available language.';
         if (! in_array($timezone, timezone_identifiers_list(), true)) $errors['timezone'] = 'Select a valid timezone.';
         if (! in_array($visibility, ['public', 'members'], true)) $errors['profile_visibility'] = 'Select a valid profile visibility.';
@@ -37,6 +44,8 @@ final class ProfileInput
             'display_name' => $displayName,
             'bio' => $bio,
             'bio_format' => ($bioFormat ?? ContentFormat::Markdown)->value,
+            'website' => $website,
+            'location' => $location,
             'locale' => $locale,
             'timezone' => $timezone,
             'profile_visibility' => $visibility,

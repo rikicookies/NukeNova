@@ -2,6 +2,35 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.17] - 2026-09-08
+
+### Added
+
+- Public paginated member directory at `/users`, respecting account status and profile visibility without selecting email addresses.
+- Optional Friends 1.0.0 module with requests, acceptance, decline, removal and contact blocking.
+- Discreet profile actions for friendship management and composing a private message after friendship is accepted.
+- Comments 1.2.0 Like/Dislike reactions with one toggleable reaction per registered user and visible totals for guests.
+- Notifications 1.1.0 friendship-request and acceptance notifications; Friends remains independent when Notifications is disabled.
+- Optional profile website and location fields, plus modular public counts for published News, approved Comments and accepted Friends.
+- Typed `profile.actions.building` and `profile.statistics.building` extension points for optional modules.
+
+### Changed
+
+- News 1.7.0 contributes its public author count without coupling profiles to the News schema.
+- Private Messages 1.2.0 from alpha.16 is included in this cumulative package and supports Markdown or sanitized HTML bodies.
+
+### Security
+
+- Friendship and reaction mutations require authentication, POST and CSRF validation; relationship ownership is enforced in SQL.
+- Blocking removes an existing friendship or pending request and prevents new friendship operations in either direction.
+- Profile websites accept only absolute HTTP/HTTPS URLs without embedded credentials and open with `noopener noreferrer`.
+- Account anonymization removes website and location values.
+
+### Compatibility
+
+- Run the core migration, update Private Messages to 1.2.0, Comments to 1.2.0, Notifications to 1.1.0 and News to 1.7.0, then install and enable Friends 1.0.0.
+- No theme update is required.
+
 ## [0.2.0-alpha.16] - 2026-09-08
 
 ### Added

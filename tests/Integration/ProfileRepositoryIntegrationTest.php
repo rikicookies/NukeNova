@@ -33,6 +33,9 @@ final class ProfileRepositoryIntegrationTest extends MySqlIntegrationTestCase
         $profiles->update($userId, [
             'display_name' => 'Recovered Member',
             'bio' => '',
+            'bio_format' => 'markdown',
+            'website' => 'https://example.test/profile-recovery',
+            'location' => 'Los Angeles, CA',
             'locale' => 'es',
             'timezone' => 'America/Los_Angeles',
             'preferences' => ['profile_visibility' => 'members'],
@@ -44,5 +47,7 @@ final class ProfileRepositoryIntegrationTest extends MySqlIntegrationTestCase
         $recovered = $profiles->byUsername('profile-recovery');
         self::assertSame('Recovered Member', $recovered['display_name']);
         self::assertSame('members', $recovered['profile_visibility']);
+        self::assertSame('https://example.test/profile-recovery', $recovered['website']);
+        self::assertSame('Los Angeles, CA', $recovered['location']);
     }
 }
