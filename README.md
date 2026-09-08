@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.17**. This cumulative social foundation adds the member directory, Friends, comment reactions, friendship notifications and richer public profiles. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.2.0-alpha.18**. This cumulative social polish release adds consistent navigation between members, profiles, Friends, Private Messages and Notifications on top of the alpha.17 social foundation. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
 ## Included in 0.1.0
 

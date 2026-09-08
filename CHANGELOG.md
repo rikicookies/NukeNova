@@ -2,6 +2,18 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.18] - 2026-09-08
+
+### Added
+
+- Reusable social navigation shared by the member directory, public and editable profiles, Friends, Private Messages and Notifications.
+- Optional social destinations appear only while their modules are active; guests only receive the public member-directory link.
+
+### Compatibility
+
+- No database migration, module update or theme update is required from 0.2.0-alpha.17.
+- Blocks remain postponed technical debt and are unchanged by this release.
+
 ## [0.2.0-alpha.17] - 2026-09-08
 
 ### Added

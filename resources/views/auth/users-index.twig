@@ -4,6 +4,7 @@
 <section class="users-directory">
     <p class="eyebrow">{{ trans('users.directory.eyebrow') }}</p>
     <h1>{{ trans('users.directory.title') }}</h1>
+    {% include "auth/_social-nav.twig" %}
     <p>{{ trans('users.directory.count', {count: result.total}) }}</p>
     <div class="user-grid">
         {% for profile in result.items %}

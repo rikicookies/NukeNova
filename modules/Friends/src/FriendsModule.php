@@ -8,7 +8,7 @@ use NovaNuke\Auth\ProfileActionsBuilding;use NovaNuke\Core\Container\Container;u
 
 final class FriendsModule implements ModuleInterface
 {
-    public function register(ModuleContext$c):void{$c->container->get(ViewRenderer::class)->addNamespace('friends',$c->basePath.'/views');$c->container->bind(FriendRepository::class,static fn(Container$x)=>new FriendRepository($x->get(\PDO::class)));$c->container->bind(FriendService::class,static fn(Container$x)=>new FriendService($x->get(FriendRepository::class),$x->get(\NovaNuke\Core\Events\EventDispatcher::class)));}
+    public function register(ModuleContext$c):void{$views=$c->container->get(ViewRenderer::class);$views->addNamespace('friends',$c->basePath.'/views');$views->addGlobal('friends_available',true);$c->container->bind(FriendRepository::class,static fn(Container$x)=>new FriendRepository($x->get(\PDO::class)));$c->container->bind(FriendService::class,static fn(Container$x)=>new FriendService($x->get(FriendRepository::class),$x->get(\NovaNuke\Core\Events\EventDispatcher::class)));}
     public function boot(ModuleContext$c):void
     {
         $c->events->listen('profile.statistics.building',static function(object$event)use($c):void{if($event instanceof \NovaNuke\Auth\ProfileStatisticsBuilding)$event->add('Friends',$c->container->get(FriendRepository::class)->acceptedCount($event->profileId));});

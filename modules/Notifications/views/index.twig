@@ -2,6 +2,7 @@
 {% block title %}{{ trans('notifications::title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
 {% block content %}
 <section class="notifications-page">
+    {% include "auth/_social-nav.twig" %}
     <div class="notifications-heading">
         <div><p class="eyebrow">{{ trans('notifications::account') }}</p><h1>{{ trans('notifications::title') }}</h1></div>
         {% if notification_unread_count > 0 %}

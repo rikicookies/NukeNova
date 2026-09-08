@@ -2,6 +2,7 @@
 {% block title %}{{ profile.display_name }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
 {% block content %}
 <article class="dashboard-card public-profile">
+    {% include "auth/_social-nav.twig" %}
     {% if profile.avatar_path %}<img class="profile-avatar" src="{{ profile.avatar_path }}" alt="">{% endif %}
     <p class="eyebrow">@{{ profile.username }}</p>
     <h1>{{ profile.display_name }}</h1>

@@ -10,7 +10,7 @@ final class PrivateMessagesModule implements ModuleInterface
 {
     public function register(ModuleContext $context):void
     {
-        $context->container->get(ViewRenderer::class)->addNamespace('private-messages',$context->basePath.'/views');
+        $views=$context->container->get(ViewRenderer::class);$views->addNamespace('private-messages',$context->basePath.'/views');$views->addGlobal('private_messages_available',true);
         $context->container->bind(PrivateMessageRepository::class,static fn(Container $c)=>new PrivateMessageRepository($c->get(\PDO::class)));
         $context->container->bind(PrivateMessageService::class,static fn(Container $c)=>new PrivateMessageService($c->get(PrivateMessageRepository::class),new PrivateMessageInput(),new DatabaseRateLimiter($c->get(\PDO::class),20,3600,'private-messages-send'),new DatabaseRateLimiter($c->get(\PDO::class),5,3600,'private-messages-report'),$c->get(\NovaNuke\Core\Events\EventDispatcher::class),$c->get(\NovaNuke\Core\Content\ContentRendererInterface::class)));
     }
