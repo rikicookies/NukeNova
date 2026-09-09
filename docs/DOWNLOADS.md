@@ -28,7 +28,7 @@ The default is a non-destructive dry run. Files still referenced by any download
 
 ## Publication and access
 
-`downloads.manage` permits catalog management and drafts. `downloads.publish` is required to publish immediately or schedule a future release. Downloads may be public, available to any member, or restricted to selected roles. Access is enforced again at the delivery route.
+`downloads.manage` permits catalog management and drafts. `downloads.publish` is required to publish immediately or schedule a future release. Downloads may be public, available to any member, limited to active VIP members, or restricted to selected roles. Access is enforced again at the detail, report and delivery routes.
 
 External sources accept only HTTP and HTTPS URLs without embedded credentials or control characters. NovaNuke redirects the visitor and sends a `no-referrer` policy; it does not fetch the remote file on the server.
 

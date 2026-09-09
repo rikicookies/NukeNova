@@ -21,7 +21,9 @@ Themes render positions through `blocks/region.twig`. The bundled Default and Cl
 
 ## Visibility
 
-Blocks can be enabled or disabled, scheduled in UTC, limited to selected roles, restricted to module slugs and filtered by page patterns. A pattern can be an exact path such as `/welcome` or a subtree such as `/news/*`.
+Blocks can be enabled or disabled, scheduled in UTC, assigned an audience, limited to selected roles, restricted to module slugs and filtered by page patterns. A pattern can be an exact path such as `/welcome` or a subtree such as `/news/*`.
+
+Audience values are public, guests only, registered members or active VIP members. Audience checks occur before role and page filters. VIP expiration therefore removes the block automatically without changing the account or block configuration.
 
 No selected role means all visitors. Guests use the `guest` role. Administrative pages intentionally never render public blocks.
 

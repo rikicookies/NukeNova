@@ -116,6 +116,136 @@ No database migration or module update is required from alpha.5. Replace the app
 
 No database migration or module update is required from alpha.6. After replacing files, open `/admin/themes` and run **Update** for NovaModern 1.1.0 so its corrected stylesheet is republished. Then clear application caches and perform a hard browser refresh. Responsive block order remains deferred and does not block this contrast/spacing release.
 
+## Updating from 0.2.0-alpha.32 to 0.2.0-alpha.33
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and all of `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.9.0 to 2.0.0.
+3. Enable PHP's optional ZIP extension if complete Wiki archive export is required.
+4. Run `php bin/cms cache:clear`.
+5. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.33.md`.
+
+No database migration, core migration, theme update or new Composer dependency is required. Folder imports create unpublished drafts and skip existing paths.
+
+## Updating from 0.2.0-alpha.31 to 0.2.0-alpha.32
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and all of `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.8.0 to 1.9.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.32.md`.
+
+No database migration, core migration, theme update or new dependency is required. Existing image attachments receive Markdown snippets automatically.
+
+## Updating from 0.2.0-alpha.30 to 0.2.0-alpha.31
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and all of `storage/private/`, then replace the application files.
+2. Back up the database, then open Admin → Modules and update **Wiki** from 1.7.0 to 1.8.0. Its module migration creates the attachment metadata table.
+3. Confirm PHP can write `storage/private/wiki/`.
+4. Run `php bin/cms cache:clear`.
+5. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.31.md`.
+
+No core migration, theme update or update to another module is required.
+
+## Updating from 0.2.0-alpha.29 to 0.2.0-alpha.30
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.6.0 to 1.7.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.30.md`.
+
+No database migration, core migration, theme update or update to another module is required. Existing colon-separated paths appear automatically in the hierarchical directory.
+
+## Updating from 0.2.0-alpha.28 to 0.2.0-alpha.29
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Back up the database, then open Admin → Modules and update **Wiki** from 1.5.0 to 1.6.0. Its module migration adds the comments setting to Wiki pages and revision snapshots.
+3. Keep **Comments 1.2.0** active only on sites that need Wiki discussions.
+4. Run `php bin/cms cache:clear`.
+5. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.29.md`.
+
+No core migration, theme update, Comments update or update to other modules is required. Existing Wiki pages and revisions default to comments disabled.
+
+## Updating from 0.2.0-alpha.27 to 0.2.0-alpha.28
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.4.0 to 1.5.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.28.md`.
+
+No migration, core migration, theme update or update to other modules is required. Imported files are deliberately opened as unsaved drafts.
+
+## Updating from 0.2.0-alpha.26 to 0.2.0-alpha.27
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.3.0 to 1.4.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.27.md`.
+
+No migration, core migration, theme update or update to other modules is required. Existing Wiki revision history is immediately available for comparison.
+
+## Updating from 0.2.0-alpha.25 to 0.2.0-alpha.26
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.2.0 to 1.3.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.26.md`.
+
+No migration, reindex, core migration, theme update or update to other modules is required. When Search is active, Wiki appears automatically as a content type.
+
+## Updating from 0.2.0-alpha.24 to 0.2.0-alpha.25
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.1.0 to 1.2.0.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.25.md`.
+
+No migration, reindex, core migration, theme update or update to other modules is required. Existing internal Markdown links are discovered immediately.
+
+## Updating from 0.2.0-alpha.23 to 0.2.0-alpha.24
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and update **Wiki** from 1.0.0 to 1.1.0. This creates its revision table and records the current state of every existing Wiki page as revision 1.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.24.md`.
+
+No core migration, theme update or update to other modules is required. Back up the database before the Wiki module migration.
+
+## Updating from 0.2.0-alpha.22 to 0.2.0-alpha.23
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Open Admin → Modules and install/enable **Wiki 1.0.0** only on sites that need it.
+3. Assign `wiki.edit` and `wiki.publish` to the desired non-super-administrator roles under Admin → Roles.
+4. Run `php bin/cms cache:clear`.
+5. Run the focused tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.23.md`.
+
+Wiki owns and runs its migration during installation. Existing core and module tables require no migration, and no theme update is required.
+
+## Updating from 0.2.0-alpha.21 to 0.2.0-alpha.22
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Run `php bin/cms cache:clear`.
+3. Run the focused tests and smoke checks in `docs/RELEASE_NOTES_0.2.0-alpha.22.md`.
+
+No database migration, module update or theme update is required. Existing VIP grants appear automatically in the enhanced Admin → Users list.
+
+## Updating from 0.2.0-alpha.20 to 0.2.0-alpha.21
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. In Admin → Modules update **Pages** to 1.5.1, **News** to 1.8.1, **Downloads** to 1.4.1 and **Web Links** to 1.2.1.
+3. Run `php bin/cms cache:clear`.
+4. Run the focused tests and smoke checks in `docs/RELEASE_NOTES_0.2.0-alpha.21.md`.
+
+No database migration or theme update is required. Public profiles reveal only active VIP status; exact expiration remains visible only in the account page and user administration.
+
+## Updating from 0.2.0-alpha.19 to 0.2.0-alpha.20
+
+1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.
+2. Run `php bin/cms migrate` to create VIP entitlements and add module/block audiences.
+3. In Admin → Modules update **Pages** to 1.5.0, **News** to 1.8.0, **Downloads** to 1.4.0 and **Web Links** to 1.2.0.
+4. Run `php bin/cms cache:clear`.
+5. Run the tests and acceptance checks in `docs/RELEASE_NOTES_0.2.0-alpha.20.md`.
+
+Existing modules, blocks and content remain public. No theme update is required. Create a backup before applying module migrations.
+
 ## Updating from 0.2.0-alpha.18 to 0.2.0-alpha.19
 
 1. Preserve `.env`, `composer.lock`, `storage/installed.lock`, uploads and `storage/private/`, then replace the application files.

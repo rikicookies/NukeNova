@@ -4,6 +4,8 @@
 
 Use PHP 8.3+, Composer 2 and MySQL/MariaDB. The web document root must be NovaNuke's `public/` directory. Internal source, `.env`, logs and private files must never be directly served.
 
+Enable PHP's ZIP extension when the site needs Wiki's complete Markdown archive export. The CMS and individual Wiki page export continue to work without it.
+
 ## Laragon
 
 1. Extract NovaNuke to a dedicated directory such as `C:\\dev\\www\\novanuke`.

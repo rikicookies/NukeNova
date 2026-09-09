@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
+use NovaNuke\Core\Access\EntitlementService;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\View\ViewRenderer;
@@ -25,6 +26,7 @@ final class PublicProfileController
         private readonly ContentRendererInterface $contentRenderer,
         private readonly EventDispatcher $events,
         private readonly CsrfTokenManager $csrf,
+        private readonly EntitlementService $entitlements,
     ) {
     }
 
@@ -55,7 +57,7 @@ final class PublicProfileController
             $this->events->dispatch('profile.actions.building', $event);
             $actions = $event->actions();
         }
-        return Response::html($this->views->render('auth/profile-public.twig', ['profile' => $profile, 'viewer' => $viewer, 'profile_actions' => $actions, 'profile_statistics' => $statisticsEvent->statistics(), 'csrf_token' => $this->csrf->token()]));
+        return Response::html($this->views->render('auth/profile-public.twig', ['profile' => $profile, 'viewer' => $viewer, 'profile_actions' => $actions, 'profile_statistics' => $statisticsEvent->statistics(), 'csrf_token' => $this->csrf->token(), 'vip_active' => $this->entitlements->has((int) $profile['id'], EntitlementService::VIP)]));
     }
 
     public function avatar(Request $request): Response

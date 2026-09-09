@@ -1,0 +1,33 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Wiki administration — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Content</p><h1>Wiki</h1><p>Manage Markdown documentation organized with colon-separated namespaces.</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if import_error %}<div class="form-errors"><ul><li>{{ import_error }}</li></ul></div>{% endif %}
+    <nav class="context-actions"><a class="install-button" href="/admin/wiki/new">Create wiki page</a><a class="content-action" href="/admin/wiki/export-all">Export all .md</a></nav>
+    <form class="settings-form" method="post" action="/admin/wiki/import" enctype="multipart/form-data">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>Import Markdown draft<input type="file" name="markdown_file" accept=".md,text/markdown,text/plain" required><small>Maximum 1 MB. The file opens in the editor and is not saved or published automatically.</small></label>
+        <button type="submit">Open .md in editor</button>
+    </form>
+    <form class="settings-form" method="post" action="/admin/wiki/import-folder" enctype="multipart/form-data" data-wiki-folder-form>
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <input type="hidden" name="markdown_expected_count" value="0" data-wiki-folder-count>
+        <h2>Import Markdown folder</h2>
+        <div class="dashboard-card" tabindex="0" data-wiki-folder-drop>Drag a folder here or choose one below.</div>
+        <label>Markdown folder<input type="file" name="markdown_files[]" accept=".md,text/markdown,text/plain" webkitdirectory directory multiple required data-wiki-folder-input><small>Folders become colon-separated namespaces. Up to 100 files and 20 MB total; your PHP upload limits may be lower.</small></label>
+        <div data-wiki-folder-paths></div>
+        <ol data-wiki-folder-preview><li>No folder selected.</li></ol>
+        <label><input type="checkbox" name="confirm_import" value="1" required> Import these files as unpublished public drafts; existing paths will be skipped.</label>
+        <button type="submit">Import folder</button>
+    </form>
+    {% set audience_labels = {'public':'Public','member':'Registered members','vip':'Active VIP members'} %}
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>Page</th><th>Status</th><th>Audience</th><th>Updated</th><th></th></tr></thead><tbody>
+        {% for page in pages %}<tr><td><strong>{{ page.title }}</strong><small>/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }} · {{ page.username }}</small></td><td><span class="badge {{ page.status == 'published' ? 'badge-active' : '' }}">{{ page.status }}</span></td><td>{{ audience_labels[page.audience]|default(page.audience) }}</td><td>{{ page.updated_at }}</td><td><a href="/admin/wiki/{{ page.id }}/edit">Edit</a> · <a href="/admin/wiki/{{ page.id }}/history">History</a></td></tr>{% else %}<tr><td colspan="5">No wiki pages.</td></tr>{% endfor %}
+    </tbody></table></div>
+    <h2>Missing wiki links</h2><p>These valid Wiki destinations are referenced by Markdown pages but do not exist yet.</p>
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>Missing path</th><th>References</th><th></th></tr></thead><tbody>{% for link in missing_links %}<tr><td><code>{{ link.target_path }}</code></td><td>{{ link.references }}</td><td><a href="/admin/wiki/new?path={{ link.target_path|url_encode }}">Create page</a></td></tr>{% else %}<tr><td colspan="3">No missing Wiki links detected.</td></tr>{% endfor %}</tbody></table></div>
+</section>
+<script src="/assets/js/wiki-folder-import.js" defer></script>
+{% endblock %}

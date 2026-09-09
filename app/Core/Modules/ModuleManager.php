@@ -41,6 +41,7 @@ final class ModuleManager
                 'manifest' => $manifest,
                 'installed' => $record !== null,
                 'enabled' => (bool) ($record['enabled'] ?? false),
+                'audience' => (string) ($record['audience'] ?? 'public'),
                 'installed_version' => $record['installed_version'] ?? null,
                 'update_available' => $record !== null
                     && version_compare($manifest->version, (string) $record['installed_version'], '>'),
@@ -59,6 +60,7 @@ final class ModuleManager
                 'manifest' => null,
                 'installed' => true,
                 'enabled' => (bool) $record['enabled'],
+                'audience' => (string) ($record['audience'] ?? 'public'),
                 'installed_version' => $record['installed_version'],
                 'update_available' => false,
                 'compatible' => false,
@@ -145,6 +147,14 @@ final class ModuleManager
         $this->repository->setEnabled($slug, false);
     }
 
+    public function setAudience(string $slug, string $audience): void
+    {
+        $this->manifest($slug);
+        if (! in_array($audience, \NovaNuke\Core\Access\AccessAudience::VALUES, true)) throw new RuntimeException('Invalid module audience.');
+        if (! isset($this->repository->all()[$slug])) throw new RuntimeException('Install the module before setting its audience.');
+        $this->repository->setAudience($slug, $audience);
+    }
+
     public function uninstall(string $slug, bool $deleteData): void
     {
         $manifest = $this->manifest($slug);
@@ -193,7 +203,7 @@ final class ModuleManager
                 break;
             }
         }
-        foreach($lifecycles as$slug=>$lifecycle){try{$lifecycle['provider']->boot($lifecycle['context']);}catch(Throwable$error){$this->repository->setError($slug,$error->getMessage());error_log("Module {$slug} failed to boot: {$error->getMessage()}");}}
+        foreach($lifecycles as$slug=>$lifecycle){$this->router->beginOwner($slug);try{$lifecycle['provider']->boot($lifecycle['context']);}catch(Throwable$error){$this->repository->setError($slug,$error->getMessage());error_log("Module {$slug} failed to boot: {$error->getMessage()}");}finally{$this->router->endOwner();}}
     }
 
     /** @return array{provider:ModuleInterface,context:ModuleContext}|null */
@@ -213,7 +223,8 @@ final class ModuleManager
                 $this->events,
                 $manifest->path,
             );
-            $provider->register($context);
+            $this->router->beginOwner($slug);
+            try {$provider->register($context);} finally {$this->router->endOwner();}
             return ['provider'=>$provider,'context'=>$context];
         } catch (Throwable $error) {
             $this->repository->setError($slug, $error->getMessage());

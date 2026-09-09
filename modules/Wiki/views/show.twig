@@ -1,0 +1,27 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ page.title }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block meta %}<link rel="canonical" href="{{ cms_url }}/wiki/{{ page.path }}">{% if page.audience != 'public' %}<meta name="robots" content="noindex,nofollow">{% endif %}{% endblock %}
+{% block content %}
+<nav class="content-breadcrumbs" aria-label="Breadcrumb"><ol>{% for item in breadcrumbs %}<li>{% if item.url %}<a href="{{ item.url }}">{{ item.label }}</a>{% else %}<span aria-current="page">{{ item.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>
+<article class="content-page wiki-page">
+    <header>
+        {% if edit_url %}<nav class="content-actions"><a class="content-action" href="{{ edit_url }}">{{ trans('wiki::action.edit') }}</a></nav>{% endif %}
+        <p class="eyebrow">{{ page.path }}</p>
+        <h1>{{ page.title }}</h1>
+        <small>{{ trans('wiki::page.updated', {date: page.updated_at|date(cms_date_format, cms_timezone), author: page.username}) }}</small>
+    </header>
+    <div class="article-content">{{ page.content_html }}</div>
+</article>
+{% if attachments %}<aside class="dashboard-card wiki-attachments"><h2>{{ trans('wiki::attachments.title') }}</h2><ul>{% for attachment in attachments %}<li><a href="/wiki/attachments/{{ attachment.id }}">{{ attachment.original_name }}</a> <small>{{ attachment.file_size }} bytes</small></li>{% endfor %}</ul></aside>{% endif %}
+{% if backlinks %}<aside class="dashboard-card"><h2>{{ trans('wiki::backlinks.title') }}</h2><ul>{% for backlink in backlinks %}<li><a href="/wiki/{{ backlink.path }}">{{ backlink.title }}</a> <small>{{ backlink.path }}</small></li>{% endfor %}</ul></aside>{% endif %}
+{% if comments_available %}
+    {% include '@comments/thread.twig' with {
+        content_type: 'wiki', content_id: page.id, comments: comments,
+        guests_allowed: comments_guests_allowed, csrf_token: comments_csrf_token,
+        return_to: comments_return_to, message: comments_message, error: comments_error,
+        current_user: comments_user
+    } only %}
+{% elseif page.comments_enabled|default(0) %}
+    <p class="comments-unavailable">Comments are temporarily unavailable.</p>
+{% endif %}
+{% endblock %}

@@ -5,15 +5,22 @@
     <p class="eyebrow">Accounts</p>
     <h1>Users</h1>
     <p><a class="button" href="/admin/users/create">Create account</a></p>
+    <nav class="context-actions" aria-label="Filter users by VIP access">
+        <a href="/admin/users"{% if vip_filter == 'all' %} aria-current="page"{% endif %}>All</a>
+        <a href="/admin/users?vip=active"{% if vip_filter == 'active' %} aria-current="page"{% endif %}>Active VIP</a>
+        <a href="/admin/users?vip=inactive"{% if vip_filter == 'inactive' %} aria-current="page"{% endif %}>Expired/revoked</a>
+        <a href="/admin/users?vip=none"{% if vip_filter == 'none' %} aria-current="page"{% endif %}>Never VIP</a>
+    </nav>
     <div class="table-wrap"><table class="admin-table">
-        <thead><tr><th>User</th><th>Status</th><th>Roles</th><th>Last login</th><th></th></tr></thead>
+        <thead><tr><th>User</th><th>Status</th><th>VIP access</th><th>Roles</th><th>Last login</th><th></th></tr></thead>
         <tbody>{% for item in users %}<tr>
             <td><strong>{{ item.username }}</strong><small>{{ item.email }}</small></td>
             <td><span class="badge badge-{{ item.status }}">{{ item.status }}</span></td>
+            <td>{% if item.vip_status == 'active' %}<span class="badge badge-active">Active VIP</span><small>Expires {{ item.vip_expires_at }} UTC{% if item.vip_expiring_soon %} · within 7 days{% endif %}</small>{% elseif item.vip_status == 'inactive' %}<span class="badge">Expired/revoked</span><small>Latest expiration {{ item.vip_expires_at }} UTC</small>{% else %}<span class="badge">Never VIP</span>{% endif %}</td>
             <td>{{ item.roles ?: 'No role' }}</td>
             <td>{{ item.last_login_at ?: 'Never' }}</td>
             <td><a href="/admin/users/{{ item.id }}">Manage</a></td>
-        </tr>{% endfor %}</tbody>
+        </tr>{% else %}<tr><td colspan="6">No users match this VIP filter.</td></tr>{% endfor %}</tbody>
     </table></div>
     <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
 </section>

@@ -84,6 +84,7 @@ final class FileBackup
             'public/uploads' => $this->rootPath . '/public/uploads',
             'storage/private/avatars' => $this->rootPath . '/storage/private/avatars',
             'storage/private/downloads' => $this->rootPath . '/storage/private/downloads',
+            'storage/private/wiki' => $this->rootPath . '/storage/private/wiki',
         ];
         $files = [];
         foreach ($sources as $archiveRoot => $sourceRoot) {

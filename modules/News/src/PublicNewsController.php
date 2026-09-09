@@ -32,7 +32,8 @@ final class PublicNewsController
     public function index(Request $request, ?string $category = null): Response
     {
         $page = filter_var($request->query('page', 1), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
-        $result = $this->news->publicArticles((int) $page, $category);
+        $user = $this->auth?->user();
+        $result = $this->news->publicArticles((int) $page, $category, $user ? (int) $user['id'] : null);
         foreach ($result['items'] as &$article) {
             $article['summary_html'] = new Markup($this->contentRenderer->render(
                 (string) ($article['summary'] ?? ''), ContentFormat::fromInput($article['summary_format'] ?? null), ContentProfile::Description,
@@ -51,6 +52,10 @@ final class PublicNewsController
         if (! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) return Response::html('News article not found.', 404);
         $article = $this->news->publicArticle($slug);
         if ($article === null) return Response::html('News article not found.', 404);
+        $user = $this->auth?->user();
+        if (! $this->news->canView($article, $user ? (int) $user['id'] : null)) {
+            return $user === null ? Response::redirect('/login') : Response::html('This article is not available for your account.', 403);
+        }
         $viewed = array_map('intval', (array) $this->session->get('news.viewed', []));
         if (! in_array((int) $article['id'], $viewed, true)) {
             $this->news->incrementViews((int) $article['id']);

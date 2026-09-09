@@ -62,6 +62,8 @@ use NovaNuke\Core\System\SystemInspector;
 use NovaNuke\Core\Backup\DatabaseBackup;
 use NovaNuke\Core\Backup\FileBackup;
 use NovaNuke\Core\System\MaintenanceMode;
+use NovaNuke\Core\System\PrivateSiteAccessPolicy;
+use NovaNuke\Core\System\PasswordChangeAccessPolicy;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Security\AdminAccessGate;
 use NovaNuke\Core\Cache\CacheManager;
@@ -74,6 +76,9 @@ use NovaNuke\Core\I18n\LocaleRegistry;
 use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Content\ContentRenderer;
 use NovaNuke\Core\Content\ContentRendererInterface;
+use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Access\AccessAudience;
+use NovaNuke\Core\Modules\ModuleRouteAccess;
 use PDO;
 
 final class Application
@@ -187,6 +192,9 @@ final class Application
         $container->bind(AuthorizationService::class, static fn (Container $c) => new AuthorizationService(
             $c->get(PDO::class),
         ));
+        $container->bind(EntitlementService::class, static fn (Container $c) => new EntitlementService($c->get(PDO::class)));
+        $container->bind(AccessAudience::class, static fn (Container $c) => new AccessAudience($c->get(EntitlementService::class)));
+        $container->bind(ModuleRouteAccess::class, static fn (Container $c) => new ModuleRouteAccess(new ModuleRepository($c->get(PDO::class)), $c->get(AccessAudience::class), $c->get(AuthManager::class)));
         $container->bind(ContentRendererInterface::class, static fn () => new ContentRenderer(
             new HtmlSanitizer(),
             new MarkdownRenderer(new HtmlSanitizer()),
@@ -229,6 +237,7 @@ final class Application
             new DynamicBlockRenderer($c->get(EventDispatcher::class), new SensitiveDataRedactor()),
             new BlockVisibility(),
             $c->get(AuthManager::class),
+            $c->get(AccessAudience::class),
             $c->get(ViewRenderer::class),
         ));
         $container->bind(MenuManager::class, static fn (Container $c) => new MenuManager(
@@ -237,6 +246,7 @@ final class Application
             new MenuUrlResolver(),
             new MenuTreeBuilder(),
             $c->get(AuthManager::class),
+            $c->get(ModuleRouteAccess::class),
             $c->get(ViewRenderer::class),
         ));
         $container->bind(ViewRenderer::class, static fn (Container $c) => new ViewRenderer(
@@ -306,6 +316,9 @@ final class Application
             $c->get(SecurityHeaders::class),
             $c->get(MaintenanceMode::class),
             $c->get(AdminAccessGate::class),
+            new PrivateSiteAccessPolicy(),
+            new PasswordChangeAccessPolicy(),
+            $c->get(ModuleRouteAccess::class),
         ));
 
         $container->get(ViewRenderer::class)->addGlobal('cms_version', self::VERSION);

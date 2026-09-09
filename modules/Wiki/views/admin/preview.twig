@@ -1,0 +1,11 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Preview: {{ page.title }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="content-page wiki-preview">
+    <div class="notice-message">Preview only — nothing has been saved.</div>
+    <p class="eyebrow">Wiki · {{ page.path }}</p>
+    <h1>{{ page.title }}</h1>
+    <article class="prose-content">{{ page.content_html }}</article>
+    <p><small>Return to the editor tab to continue editing.</small></p>
+</section>
+{% endblock %}

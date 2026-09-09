@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
+use NovaNuke\Core\Access\EntitlementService;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Logging\ActivityLogger;
@@ -27,6 +28,7 @@ final class AccountController
         private readonly CsrfTokenManager $csrf,
         private readonly SessionManager $session,
         private readonly ViewRenderer $views,
+        private readonly EntitlementService $entitlements,
     ) {
     }
 
@@ -125,6 +127,7 @@ final class AccountController
             'message' => is_string($message) ? $message : null, 'password_error' => $passwordError,
             'csrf_token' => $this->csrf->token(),
             'timezones' => timezone_identifiers_list(),
+            'vip' => $user === [] ? null : $this->entitlements->status((int) $user['id'], EntitlementService::VIP),
         ]), $status);
     }
 }

@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Modules\Pages\src;
 
+use NovaNuke\Core\Access\EntitlementService;
 use PDO;
 use RuntimeException;
 
 final class PageRepository
 {
-    public function __construct(private readonly PDO $database)
+    public function __construct(
+        private readonly PDO $database,
+        private readonly EntitlementService $entitlements,
+    )
     {
     }
 
@@ -109,6 +113,7 @@ final class PageRepository
         if ($page['access_type'] === 'public') return true;
         if ($userId === null) return false;
         if ($page['access_type'] === 'members') return true;
+        if ($page['access_type'] === 'vip') return $this->entitlements->has($userId, EntitlementService::VIP);
         $statement = $this->database->prepare('SELECT COUNT(*) FROM page_role_access pra INNER JOIN user_roles ur ON ur.role_id=pra.role_id WHERE pra.page_id=:page AND ur.user_id=:user');
         $statement->execute(['page' => $page['id'], 'user' => $userId]);
         return (int) $statement->fetchColumn() > 0;

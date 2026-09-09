@@ -12,7 +12,7 @@ final class HtmlSanitizer
 {
     private const TAGS = [
         'p', 'br', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
-        'h2', 'h3', 'h4', 'a', 'span', 'div', 'hr',
+        'h2', 'h3', 'h4', 'a', 'img', 'span', 'div', 'hr',
     ];
     private const ATTRIBUTES = ['class', 'title'];
 
@@ -71,6 +71,9 @@ final class HtmlSanitizer
                 if ($tag === 'a' && in_array($name, ['href', 'target', 'rel'], true)) {
                     continue;
                 }
+                if ($tag === 'img' && in_array($name, ['src', 'alt'], true)) {
+                    continue;
+                }
                 if (! in_array($name, self::ATTRIBUTES, true) || str_starts_with($name, 'on')) {
                     $node->removeAttribute($attribute->name);
                 }
@@ -87,17 +90,26 @@ final class HtmlSanitizer
                     $node->removeAttribute('rel');
                 }
             }
+            if ($tag === 'img') {
+                $src = trim($node->getAttribute('src'));
+                if (! str_starts_with($src, '/') || ! $this->safeUrl($src, false)) {
+                    $parent->removeChild($node);
+                    continue;
+                }
+                $node->setAttribute('loading', 'lazy');
+                $node->setAttribute('decoding', 'async');
+            }
             $this->cleanChildren($node, $allowedTags);
         }
     }
 
-    private function safeUrl(string $url): bool
+    private function safeUrl(string $url, bool $allowMailto = true): bool
     {
-        if ($url === '' || str_starts_with($url, '/') || str_starts_with($url, '#')) {
-            return true;
-        }
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url)) return false;
+        if (str_starts_with($url, '/')) return ! str_starts_with($url, '//') && ! str_starts_with($url, '/\\');
+        if (str_starts_with($url, '#')) return true;
         $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
 
-        return in_array($scheme, ['http', 'https', 'mailto'], true);
+        return in_array($scheme, $allowMailto ? ['http', 'https', 'mailto'] : ['http', 'https'], true);
     }
 }

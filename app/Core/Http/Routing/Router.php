@@ -11,6 +11,10 @@ final class Router
 {
     /** @var list<Route> */
     private array $routes = [];
+    private ?string $owner = null;
+
+    public function beginOwner(string $owner): void {$this->owner = $owner;}
+    public function endOwner(): void {$this->owner = null;}
 
     public function get(string $path, Closure $handler, ?string $name = null): void
     {
@@ -26,7 +30,7 @@ final class Router
     public function add(array $methods, string $path, Closure $handler, ?string $name = null): void
     {
         $normalized = '/' . trim($path, '/');
-        $this->routes[] = new Route($methods, $normalized === '/' ? '/' : $normalized, $handler, $name);
+        $this->routes[] = new Route($methods, $normalized === '/' ? '/' : $normalized, $handler, $name, $this->owner);
     }
 
     public function match(Request $request): RouteMatch

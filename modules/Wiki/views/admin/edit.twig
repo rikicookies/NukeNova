@@ -1,0 +1,43 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ page.id|default(false) ? 'Edit wiki page' : 'Create wiki page' }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Wiki</p><h1>{{ page.id|default(false) ? 'Edit page' : 'Create page' }}</h1>
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    {% if notice %}<div class="notice-message">{{ notice }}</div>{% endif %}
+    <form class="news-editor" method="post" action="/admin/wiki/save">
+        <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="id" value="{{ page.id|default('') }}">
+        <div class="form-grid"><label>Title<input name="title" required maxlength="200" value="{{ page.title|default('') }}"></label><label>Wiki path<input name="path" required maxlength="240" pattern="[a-z0-9]+(-[a-z0-9]+)*(:[a-z0-9]+(-[a-z0-9]+)*)*" value="{{ page.path|default('') }}" placeholder="guides:getting-started"><small>Use colons for namespaces.</small></label></div>
+        <section class="dashboard-card wiki-link-helper">
+            <h2>Insert Wiki link</h2>
+            <div class="form-grid"><label>Link text<input type="text" maxlength="200" placeholder="Installation guide" data-wiki-link-label></label><label>Wiki path<input type="text" maxlength="240" placeholder="guides:installation" data-wiki-link-path></label></div>
+            <button class="content-action" type="button" data-wiki-link-insert>Insert Wiki link</button>
+            <small>The destination may be new. Use lowercase words, hyphens and colons; NovaNuke adds <code>/wiki/</code> automatically.</small>
+        </section>
+        <label class="wide-field">Markdown<textarea name="content" rows="22" required data-wiki-editor>{{ page.content|default('') }}</textarea><small>Embedded HTML and unsafe links are removed when rendered.</small></label>
+        <div class="form-grid"><label>Status<select name="status"><option value="draft">Draft</option>{% if can_publish %}<option value="published" {{ page.status|default('draft') == 'published' ? 'selected' : '' }}>Published</option>{% endif %}</select></label><label>Audience<select name="audience"><option value="public">Public</option><option value="member" {{ page.audience|default('public') == 'member' ? 'selected' : '' }}>Registered members</option><option value="vip" {{ page.audience|default('public') == 'vip' ? 'selected' : '' }}>Active VIP members</option></select></label></div>
+        <label><input type="checkbox" name="comments_enabled" value="1" {{ page.comments_enabled|default(0) ? 'checked' : '' }}> Allow comments</label>
+        <div class="context-actions">
+            <button type="submit">Save wiki page</button>
+            <button class="content-action" type="submit" formaction="/admin/wiki/preview" formmethod="post" formtarget="_blank">Preview</button>
+        </div>
+    </form>
+    {% if page.id|default(false) %}
+        <section class="dashboard-card wiki-attachments-admin">
+            <h2>Attachments</h2>
+            {% if attachment_message %}<div class="notice-message">{{ attachment_message }}</div>{% endif %}
+            {% if attachment_error %}<div class="form-errors"><ul><li>{{ attachment_error }}</li></ul></div>{% endif %}
+            <form method="post" action="/admin/wiki/{{ page.id }}/attachments" enctype="multipart/form-data">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                <label>File<input type="file" name="attachment" accept=".pdf,.txt,.md,.zip,.png,.jpg,.jpeg,.webp" required></label>
+                <small>PDF, text, Markdown, ZIP, PNG, JPG or WebP; maximum 10 MB.</small>
+                <button type="submit">Upload attachment</button>
+            </form>
+            <ul>{% for attachment in attachments %}<li><a href="/wiki/attachments/{{ attachment.id }}">{{ attachment.original_name }}</a> <small>{{ attachment.file_size }} bytes</small><div><small>Markdown link:</small> <code>{{ attachment.markdown_link }}</code> <button class="content-action" type="button" data-wiki-insert="{{ attachment.markdown_link }}">Insert link</button>{% if attachment.markdown_image %}<br><small>Inline image:</small> <code>{{ attachment.markdown_image }}</code> <button class="content-action" type="button" data-wiki-insert="{{ attachment.markdown_image }}">Insert image</button>{% endif %}</div><form class="inline-form" method="post" action="/admin/wiki/{{ page.id }}/attachments/{{ attachment.id }}/delete" onsubmit="return confirm('Delete this attachment?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="confirm_delete" value="1"><button class="danger-button" type="submit">Delete</button></form></li>{% else %}<li>No attachments uploaded.</li>{% endfor %}</ul>
+        </section>
+    {% endif %}
+    {% if page.id|default(false) %}<nav class="context-actions"><a href="/wiki/{{ page.path }}">View page</a><a href="/admin/wiki/{{ page.id }}/history">Revision history</a><a href="/admin/wiki/{{ page.id }}/export">Export .md</a></nav><form class="delete-block-form" method="post" action="/admin/wiki/{{ page.id }}/delete" onsubmit="return confirm('Delete this wiki page?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><input type="checkbox" name="confirm_delete" value="1" required> Confirm deletion</label><button class="danger-button" type="submit">Delete page</button></form>{% endif %}
+    <p><a href="/admin/wiki">Return to Wiki</a></p>
+</section>
+<script src="/assets/js/wiki-editor.js" defer></script>
+{% endblock %}

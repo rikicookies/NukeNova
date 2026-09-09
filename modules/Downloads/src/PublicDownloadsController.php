@@ -52,7 +52,7 @@ final class PublicDownloadsController
     public function show(Request $request): Response
     {
         $slug = $this->slug($request->attribute('slug')); $download = $this->downloads->publicDownload($slug); if ($download === null) return Response::html('Download not found.', 404);
-        $user = $this->auth->user(); if (! $this->downloads->canView($download, $user ? (int) $user['id'] : null)) return $user === null ? Response::redirect('/login') : Response::html('Forbidden', 403);
+        $user = $this->auth->user(); if (! $this->downloads->canView($download, $user ? (int) $user['id'] : null)) return $user === null ? Response::redirect('/login') : Response::html('This download is not available for your account.', 403);
         $download['description_html'] = new Markup($this->contentRenderer->render(
             (string) $download['description'], ContentFormat::fromInput($download['description_format'] ?? null), ContentProfile::Description,
         ), 'UTF-8');

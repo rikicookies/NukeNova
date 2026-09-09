@@ -7,6 +7,7 @@
     <p>{{ edited_user.email }}</p>
     {% if saved %}<div class="success-message">User authorization saved.</div>{% endif %}
     {% if password_reset %}<div class="success-message">Temporary password saved. Existing sessions were closed and the user must change it after signing in.</div>{% endif %}
+    {% if vip_updated %}<div class="success-message">VIP access updated.</div>{% endif %}
     {% if edited_user.id == current_user_id %}<div class="notice-message">Your own roles and status cannot be changed from this screen.</div>{% endif %}
     <form method="post" action="/admin/users/{{ edited_user.id }}">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
@@ -27,6 +28,14 @@
         </div>
         {% if edited_user.id != current_user_id %}<button class="install-button" type="submit">Save user</button>{% endif %}
     </form>
+    <h2>VIP access</h2>
+    {% if vip and vip.active %}<p><span class="badge badge-active">Active</span> Expires {{ vip.expires_at }} UTC.</p>{% elseif vip %}<p><span class="badge">Inactive</span> Last expiration: {{ vip.expires_at }} UTC.</p>{% else %}<p>This user has never received VIP access.</p>{% endif %}
+    <form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/vip">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>Days to add<input type="number" name="days" min="1" max="3650" value="30" required></label>
+        <button type="submit">{{ vip and vip.active ? 'Extend VIP' : 'Grant VIP' }}</button>
+    </form>
+    {% if vip and vip.active %}<form method="post" action="/admin/users/{{ edited_user.id }}/vip/revoke" onsubmit="return confirm('Revoke VIP access now?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="secondary-button">Revoke VIP</button></form>{% endif %}
     {% if edited_user.id != current_user_id %}
     <h2>Temporary password</h2>
     {% if password_error %}<div class="alert alert-error">{{ password_error }}</div>{% endif %}

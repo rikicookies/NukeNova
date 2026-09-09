@@ -28,4 +28,20 @@ final class HtmlSanitizerTest extends TestCase
         self::assertStringNotContainsString('iframe', $html);
         self::assertStringContainsString('Safe', $html);
     }
+
+    public function testItKeepsSafeImagesAndRejectsUnsafeImageSources(): void
+    {
+        $html = (new HtmlSanitizer())->sanitize(
+            '<img src="/wiki/attachments/12?inline=1" alt="Diagram" onerror="run()">'
+            . '<img src="javascript:alert(1)"><img src="//tracker.example/pixel.png">'
+            . '<img src="https://tracker.example/pixel.png">',
+        );
+
+        self::assertStringContainsString('src="/wiki/attachments/12?inline=1"', $html);
+        self::assertStringContainsString('alt="Diagram"', $html);
+        self::assertStringContainsString('loading="lazy"', $html);
+        self::assertStringNotContainsString('onerror', $html);
+        self::assertStringNotContainsString('javascript:', $html);
+        self::assertStringNotContainsString('tracker.example', $html);
+    }
 }

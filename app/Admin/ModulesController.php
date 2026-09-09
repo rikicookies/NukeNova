@@ -76,6 +76,15 @@ final class ModulesController
         }
     }
 
+    public function audience(Request $request): Response
+    {
+        if (($guard=$this->guard())!==null)return$guard;
+        if(!$this->csrf->validate($request->input('_token')))return Response::html('Invalid or expired CSRF token.',419);
+        $slug=(string)$request->attribute('slug');
+        try{$this->modules->setAudience($slug,(string)$request->input('audience'));$actor=$this->auth->user();$this->activity->log((int)$actor['id'],'module.audience.updated','module',$slug,['audience'=>(string)$request->input('audience')],$request->ip());return$this->view('Module audience updated.');}
+        catch(RuntimeException$error){return$this->view(null,$error->getMessage(),422);}
+    }
+
     private function guard(): ?Response
     {
         $user = $this->auth->user();

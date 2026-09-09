@@ -37,6 +37,16 @@ final class WebLinkInputTest extends TestCase
         (new WebLinkInput())->link(['title' => 'Example', 'slug' => 'example', 'url' => 'https://example.com', 'description' => 'Text', 'description_format' => 'php'], true);
     }
 
+    public function testOnlyAdministratorsMayChooseRestrictedAudience(): void
+    {
+        $input = ['title' => 'VIP', 'slug' => 'vip', 'url' => 'https://example.com', 'description' => 'Private', 'audience' => 'vip'];
+        self::assertSame('vip', (new WebLinkInput())->link($input, true)['audience']);
+        self::assertSame('public', (new WebLinkInput())->link($input, false)['audience']);
+
+        $this->expectException(RuntimeException::class);
+        (new WebLinkInput())->link(array_replace($input, ['audience' => 'administrator']), true);
+    }
+
     public static function dangerousUrls(): array
     {
         return [['javascript:alert(1)'], ['file:///etc/passwd'], ['https://user:pass@example.com'], ["https://example.com\nInjected"]];

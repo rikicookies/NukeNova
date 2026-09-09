@@ -1,6 +1,6 @@
 # Web Links module
 
-Web Links 1.0.0 provides a curated external-link directory at `/links` and administration at `/admin/web-links`.
+Web Links provides a curated external-link directory at `/links` and administration at `/admin/web-links`.
 
 ## Features
 
@@ -14,6 +14,10 @@ Web Links 1.0.0 provides a curated external-link directory at `/links` and admin
 - broken-link reports and an administrative queue.
 
 Users can submit at most five links per hour. Visitors can submit at most five broken-link reports per hour. The same identity counts once per link within 24 hours, and duplicate reports for a link are rejected.
+
+## Access
+
+Administrators may mark a link as public, registered-members-only or VIP-only. Catalog results, details, visit redirects and reports enforce that audience. User submissions are always stored with the safe public audience and pending status; submitters cannot promote or restrict their own entry.
 
 ## URL security
 

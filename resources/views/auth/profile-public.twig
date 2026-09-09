@@ -6,6 +6,7 @@
     {% if profile.avatar_path %}<img class="profile-avatar" src="{{ profile.avatar_path }}" alt="">{% endif %}
     <p class="eyebrow">@{{ profile.username }}</p>
     <h1>{{ profile.display_name }}</h1>
+    {% if vip_active|default(false) %}<p><span class="badge badge-active">VIP member</span></p>{% endif %}
     <p>{{ trans('profile.member_since', {date: profile.created_at|date(cms_date_format, cms_timezone)}) }}</p>
     {% if profile.location %}<p>{{ trans('profile.location', {location: profile.location}) }}</p>{% endif %}
     {% if profile.website %}<p><a href="{{ profile.website }}" target="_blank" rel="noopener noreferrer">{{ trans('profile.website') }}</a></p>{% endif %}

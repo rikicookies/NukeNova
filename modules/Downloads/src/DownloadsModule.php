@@ -23,6 +23,7 @@ final class DownloadsModule implements ModuleInterface
         $context->container->get(ViewRenderer::class)->addNamespace('downloads', $context->basePath . '/views');
         $context->container->bind(DownloadRepository::class, static fn (Container $c) => new DownloadRepository(
             $c->get(\PDO::class),
+            $c->get(\NovaNuke\Core\Access\EntitlementService::class),
             $c->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
         ));
         $context->container->bind(DownloadInput::class, static fn () => new DownloadInput());

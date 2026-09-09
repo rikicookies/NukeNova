@@ -33,6 +33,14 @@ final class PageInputTest extends TestCase
         (new PageInput())->page(array_replace($this->valid(), ['access_type' => 'roles']), false);
     }
 
+    public function testItAcceptsVipRestrictedPagesWithoutRoleAssignments(): void
+    {
+        $page = (new PageInput())->page(array_replace($this->valid(), ['access_type' => 'vip', 'role_ids' => ['2']]), false);
+
+        self::assertSame('vip', $page['access_type']);
+        self::assertSame([], $page['role_ids']);
+    }
+
     public function testItRejectsUnsafeImagePaths(): void
     {
         $this->expectException(RuntimeException::class);

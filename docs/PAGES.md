@@ -14,6 +14,7 @@ Each page has one audience:
 
 - `public`: available to everyone;
 - `members`: requires an active signed-in account;
+- `vip`: requires a signed-in account with an active, unexpired VIP entitlement;
 - `roles`: requires at least one of the selected roles.
 
 Access is enforced by the controller and repository, not merely hidden in the template. Unauthorized guests are sent to login; signed-in users without an allowed role receive HTTP 403.

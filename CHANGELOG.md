@@ -2,6 +2,277 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.33] - 2026-09-09
+
+### Added
+
+- Wiki 2.0.0 safe unsaved Markdown preview, internal-link helper and attachment link/image insertion controls in the existing editor.
+- Visible styling for internal Wiki links whose authorized destination does not exist yet.
+- Audience-aware `/wiki/search`, `/wiki/recent` and DokuWiki-style `/wiki/map` discovery views.
+- Public published Wiki pages in NovaNuke's extensible XML sitemap.
+- Folder drag-and-drop/import that converts directories into colon-separated namespaces and creates unpublished drafts.
+- Complete Wiki source export as a ZIP whose directories mirror namespaces.
+
+### Security
+
+- Folder import requires `wiki.edit`, POST, CSRF and explicit confirmation; validates count, total size, UTF-8 Markdown and normalized relative paths; rejects traversal and duplicates; never overwrites existing or deleted paths; and records an Activity Log entry.
+- Import detects when PHP's `max_file_uploads` truncates a browser selection. Non-Markdown files are ignored and imported pages remain unpublished for manual review.
+- Preview uses the established sanitized Markdown pipeline, performs no save and returns private no-store output.
+- Public Wiki search, recent changes and map apply publication and Public/Member/VIP audience rules. The XML sitemap includes only public published pages.
+- Archive entry paths are validated, archive responses are private/no-store, temporary files are removed after delivery and exports are capped at 5,000 pages.
+
+### Compatibility
+
+- Update Wiki from 1.9.0 to 2.0.0 under Admin → Modules. No database migration, core migration, theme update or new Composer dependency is required.
+- PHP's ZIP extension is optional and required only by **Export all .md**. Browser folder picking and directory drag-and-drop are intended for current Chromium-based browsers; the existing single-file import remains available elsewhere.
+
+## [0.2.0-alpha.32] - 2026-09-09
+
+### Added
+
+- Wiki 1.9.0 ready-to-copy Markdown snippets for every attachment.
+- Safe inline display for attached PNG, JPG/JPEG and WebP images using the existing permission-aware attachment endpoint.
+- Responsive full-content image styling shared by all bundled themes.
+
+### Security
+
+- Inline mode remains behind the parent Wiki page's publication and Public/Member/VIP authorization checks.
+- Only server-inspected PNG, JPEG and WebP MIME types can render inline; all other attachment types retain forced-download behavior.
+- The HTML sanitizer now permits local image markup in full content only, removes event/style attributes, rejects executable, remote and protocol-relative sources, and adds lazy decoding hints.
+
+### Compatibility
+
+- Update Wiki from 1.8.0 to 1.9.0 under Admin → Modules. No database migration, core migration, theme update or new dependency is required.
+
+## [0.2.0-alpha.31] - 2026-09-09
+
+### Added
+
+- Wiki 1.8.0 page attachments managed from the existing Wiki editor.
+- Permission-aware attachment downloads and inclusion of private Wiki files in application backups.
+- PDF, text, Markdown, ZIP, PNG, JPG/JPEG and WebP support with a 10 MB per-file limit.
+
+### Security
+
+- Attachments are stored under `storage/private/wiki` with cryptographically generated server filenames and delivered only through a controller.
+- Upload and deletion require `wiki.edit`, POST and CSRF; deletion also requires explicit confirmation and both actions enter the Activity Log.
+- Extension, server-inspected MIME, actual size, PHP upload provenance and path containment are validated. Executable PHP and SVG are not accepted.
+- Public download authorization rechecks publication time and Public/Member/VIP access; authorized Wiki editors may inspect attachments on drafts.
+
+### Compatibility
+
+- Update Wiki from 1.7.0 to 1.8.0 under Admin → Modules to create `wiki_attachments`.
+- No core migration, theme update or new dependency is required. Preserve `storage/private/wiki/` during future updates.
+
+## [0.2.0-alpha.30] - 2026-09-09
+
+### Added
+
+- Wiki 1.7.0 hierarchical namespace directory at `/wiki?namespace=...`.
+- Immediate child namespace cards and breadcrumbs on Wiki directories and public pages.
+
+### Security
+
+- Namespace navigation is constructed only from published pages already filtered for the current visitor's Public/Member/VIP access.
+- Query namespaces use the same strict lowercase, hyphen and colon grammar as Wiki paths; malformed and inaccessible empty namespaces return 404.
+- Wiki page saves now reject namespace values longer than their database column.
+
+### Compatibility
+
+- Update Wiki from 1.6.0 to 1.7.0 under Admin → Modules. No database migration, core migration, theme update or new dependency is required.
+
+## [0.2.0-alpha.29] - 2026-09-09
+
+### Added
+
+- Wiki 1.6.0 per-page **Allow comments** setting stored in current pages and revision snapshots.
+- Optional Wiki integration with the shared threaded Comments module, including replies, moderation, reports and Like/Dislike reactions.
+- Comment availability state when a Wiki page allows discussion but Comments is disabled.
+
+### Security
+
+- Comment target acceptance verifies that the Wiki page is published, comments are enabled and the current visitor may view its Public/Member/VIP audience.
+- Wiki reuses Comments' existing POST, CSRF, sanitization, moderation and rate-limiting boundaries.
+- Restoring a Wiki revision also restores its historical comments-enabled setting.
+
+### Compatibility
+
+- Update Wiki from 1.5.0 to 1.6.0 under Admin → Modules to add `comments_enabled` to Wiki pages and revisions.
+- Comments remains optional; no core migration, theme update, Comments update or change to other modules is required.
+
+## [0.2.0-alpha.28] - 2026-09-09
+
+### Added
+
+- Wiki 1.5.0 import of a `.md` file into the existing editor as an unsaved draft.
+- Suggested title from the first Markdown heading and suggested path from the safe filename.
+- Current-page export containing the original Markdown source with a portable path-based filename.
+
+### Security
+
+- Import requires `wiki.edit`, POST and CSRF and validates upload status, `.md` extension, MIME, exact size, 1 MB limit and UTF-8 text.
+- Uploaded Markdown is never executed or published automatically; the authorized editor must review and explicitly save it.
+- Export requires `wiki.edit` and uses safe attachment, content-type, no-sniff and private no-store headers.
+
+### Compatibility
+
+- Update Wiki from 1.4.0 to 1.5.0 under Admin → Modules. No migration, core migration, theme update or new dependency is required.
+
+## [0.2.0-alpha.27] - 2026-09-09
+
+### Added
+
+- Wiki 1.4.0 comparison between any two revisions belonging to the same page.
+- Revision selector in Wiki history, metadata comparison and escaped line-by-line Markdown differences.
+- Added, removed and unchanged line markers without executing historical content.
+
+### Security
+
+- Comparison requires `wiki.edit` and resolves both revision identifiers under the requested Wiki page.
+- Diff output uses normal Twig escaping and never renders compared Markdown as executable HTML.
+- Line and changed-pair limits prevent unusually large comparisons from exhausting application memory.
+
+### Compatibility
+
+- Update Wiki from 1.3.0 to 1.4.0 under Admin → Modules. No migration, core migration, theme update or change to other modules is required.
+
+## [0.2.0-alpha.26] - 2026-09-08
+
+### Added
+
+- Wiki 1.3.0 provider for NovaNuke's extensible global Search module.
+- Wiki title and Markdown-source matching with direct links to canonical Wiki paths.
+- Wiki content-type filter in `/search` whenever both Wiki and Search are active.
+
+### Security
+
+- Search returns only published Wiki pages whose publication time has arrived.
+- Public, registered-member and active-VIP audiences are enforced before Wiki results are returned.
+- Search terms remain bound parameters and SQL LIKE metacharacters use the shared escaping helper.
+
+### Compatibility
+
+- Update Wiki from 1.2.0 to 1.3.0 under Admin → Modules. No migration, core migration, reindex or theme update is required.
+- Wiki remains independent: without the optional Search module, all Wiki routes continue to work normally.
+
+## [0.2.0-alpha.25] - 2026-09-08
+
+### Added
+
+- Wiki 1.2.0 backlinks on public pages using ordinary internal Markdown links.
+- Administrative missing-link report with reference counts and direct page-creation shortcuts.
+- Safe link extraction from the CommonMark document tree, including duplicate removal and strict Wiki path validation.
+
+### Security
+
+- Public backlinks include only published source pages the current visitor is authorized to view.
+- External URLs, images, code spans and invalid or traversal-like Wiki paths are excluded from the link graph.
+
+### Compatibility
+
+- Update Wiki from 1.1.0 to 1.2.0 under Admin → Modules. No migration, reindex, core migration or theme update is required.
+- Existing Markdown links are discovered immediately; database-backed indexing is deferred for larger installations.
+
+## [0.2.0-alpha.24] - 2026-09-08
+
+### Added
+
+- Wiki 1.1.0 transactional revision history for new and existing wiki pages.
+- Administrative history list and sanitized historical Markdown preview.
+- Non-destructive restoration that records the restored snapshot as a new current revision.
+- Revision author, number, timestamp, publication status and audience metadata.
+
+### Security
+
+- Page updates lock the current Wiki record and save its revision in the same database transaction.
+- Revision restoration requires POST, CSRF, explicit confirmation and `wiki.edit`; restoring published content also requires `wiki.publish`.
+- Historical content passes through the normal Markdown and HTML-sanitization pipeline before display.
+
+### Compatibility
+
+- Update Wiki from 1.0.0 to 1.1.0 under Admin → Modules to create and backfill its revision table.
+- No core migration, theme update or change to other modules is required.
+
+## [0.2.0-alpha.23] - 2026-09-08
+
+### Added
+
+- Optional Wiki 1.0.0 module with Markdown-only content and DokuWiki-style colon-separated namespaces.
+- Public wiki directory, friendly page routes, drafts, publication workflow and Public/Member/VIP audiences.
+- Permission-aware missing-page screen that links authorized editors directly to a prefilled editor.
+- `wiki.edit` and `wiki.publish` permissions, administrative navigation, safe deletion and Activity Log entries.
+- Basic English and Spanish Wiki interface catalogues.
+
+### Security
+
+- Wiki paths use a strict lowercase segment grammar and reject slashes, traversal and arbitrary filesystem paths.
+- Markdown passes through the existing safe renderer and HTML sanitizer; embedded PHP or administrator-provided executable code is never evaluated.
+- Every administrative write requires server-side authorization and CSRF validation.
+
+### Compatibility
+
+- Install and enable Wiki manually from Admin → Modules; its own migration creates `wiki_pages`.
+- Existing modules, themes and database tables are unchanged. File-based Markdown import/export is deferred.
+
+## [0.2.0-alpha.22] - 2026-09-08
+
+### Added
+
+- VIP status and latest expiration directly in Admin → Users.
+- Filters for all users, active VIP, expired or revoked VIP, and accounts that have never received VIP.
+- Seven-day expiration warning beside active VIP accounts.
+- Focused coverage for filter whitelisting, latest-entitlement selection and administrative status rendering.
+
+### Security
+
+- The VIP query filter is resolved through a fixed server-side allowlist and is never inserted from raw request input.
+- Existing Super Administrator authorization remains required for granting, extending or revoking VIP.
+
+### Compatibility
+
+- No database migration, module update or theme update is required from alpha.21.
+- VIP remains manual; payments, plans and automatic renewal are not included.
+
+## [0.2.0-alpha.21] - 2026-09-08
+
+### Added
+
+- Active VIP badge on public profiles without exposing the entitlement expiration date.
+- Private account status showing whether VIP is active and when its latest period expires.
+- Boundary tests for active, expired and revoked VIP entitlements.
+
+### Changed
+
+- Pages 1.5.1, News 1.8.1, Downloads 1.4.1 and Web Links 1.2.1 show descriptive audience labels in their administrative lists.
+- Signed-in users receive a clear content-specific access message instead of a bare `Forbidden` response; guests are still redirected to sign in.
+
+### Compatibility
+
+- No database migration or theme update is required from alpha.20.
+- Update the four content modules from Admin → Modules and clear application caches.
+
+## [0.2.0-alpha.20] - 2026-09-08
+
+### Added
+
+- Manual, time-limited VIP entitlements that a Super Administrator can grant, extend or revoke from user administration.
+- Audience selection for modules and blocks: public, guests, registered members or active VIP members.
+- VIP content access for Pages 1.5.0, News 1.8.0, Downloads 1.4.0 and Web Links 1.2.0.
+
+### Security
+
+- Module audiences are enforced against their public HTTP routes rather than only hidden from menus.
+- Content audiences are enforced at list, detail, search and sensitive action boundaries, including private download delivery and external-link redirects.
+- Expired or revoked VIP grants stop authorizing access immediately without changing the user's account or roles.
+- RSS and sitemap output expose only public News and Pages content; user-submitted Web Links cannot assign themselves a restricted audience.
+
+### Compatibility
+
+- Run core migrations to create `user_entitlements` and add the audience columns for modules and blocks.
+- Update Pages to 1.5.0, News to 1.8.0, Downloads to 1.4.0 and Web Links to 1.2.0 from Admin → Modules.
+- Existing modules, blocks and content receive public defaults. No theme update is required.
+- Payments, plans, recurring subscriptions and automatic purchasing remain out of scope.
+
 ## [0.2.0-alpha.19] - 2026-09-08
 
 ### Added

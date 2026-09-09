@@ -1,0 +1,22 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Compare revisions — {{ page.title }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Wiki comparison</p><h1>{{ page.title }}</h1>
+    <p>Revision <strong>#{{ from.revision_number }}</strong> to <strong>#{{ to.revision_number }}</strong></p>
+    <div class="table-wrap"><table class="admin-table"><thead><tr><th>Field</th><th>#{{ from.revision_number }}</th><th>#{{ to.revision_number }}</th></tr></thead><tbody>
+        <tr><th>Title</th><td>{{ from.title }}</td><td>{{ to.title }}</td></tr>
+        <tr><th>Path</th><td><code>{{ from.namespace ? from.namespace ~ ':' : '' }}{{ from.slug }}</code></td><td><code>{{ to.namespace ? to.namespace ~ ':' : '' }}{{ to.slug }}</code></td></tr>
+        <tr><th>Status</th><td>{{ from.status }}</td><td>{{ to.status }}</td></tr>
+        <tr><th>Audience</th><td>{{ from.audience }}</td><td>{{ to.audience }}</td></tr>
+        <tr><th>Comments</th><td>{{ from.comments_enabled|default(0) ? 'Enabled' : 'Disabled' }}</td><td>{{ to.comments_enabled|default(0) ? 'Enabled' : 'Disabled' }}</td></tr>
+        <tr><th>Author</th><td>{{ from.actor }}</td><td>{{ to.actor }}</td></tr>
+        <tr><th>Saved</th><td>{{ from.created_at }} UTC</td><td>{{ to.created_at }} UTC</td></tr>
+    </tbody></table></div>
+    <h2>Markdown changes</h2>
+    <div class="table-wrap"><table class="admin-table wiki-diff"><thead><tr><th>Old</th><th>New</th></tr></thead><tbody>
+        {% for row in diff %}<tr class="diff-{{ row.kind }}"><td><pre>{% if row.kind == 'removed' %}<del>{{ row.old }}</del>{% else %}{{ row.old ?? '' }}{% endif %}</pre></td><td><pre>{% if row.kind == 'added' %}<ins>{{ row.new }}</ins>{% else %}{{ row.new ?? '' }}{% endif %}</pre></td></tr>{% endfor %}
+    </tbody></table></div>
+    <p><a href="/admin/wiki/{{ page.id }}/history">Return to revision history</a></p>
+</section>
+{% endblock %}

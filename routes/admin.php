@@ -34,6 +34,7 @@ use NovaNuke\Core\Settings\GeneralSettingsInput;
 use NovaNuke\Core\I18n\LocaleRegistry;
 use NovaNuke\Auth\RegistrationValidator;
 use NovaNuke\Auth\PasswordPolicy;
+use NovaNuke\Core\Access\EntitlementService;
 
 $dashboardController = static fn (Container $container): AdminDashboardController => new AdminDashboardController(
     $container->get(AuthManager::class),
@@ -108,9 +109,10 @@ $usersController = static fn (Container $container): UsersController => new User
     $container->get(ViewRenderer::class),
     new RegistrationValidator(new PasswordPolicy()),
     new PasswordPolicy(),
+    $container->get(EntitlementService::class),
 );
 $router->get('/admin/users', static fn (Request $request, Container $container): Response =>
-    $usersController($container)->index()
+    $usersController($container)->index($request)
 );
 $router->get('/admin/users/create', static fn (Request $request, Container $container): Response =>
     $usersController($container)->create()
@@ -126,6 +128,12 @@ $router->post('/admin/users/{id}', static fn (Request $request, Container $conta
 );
 $router->post('/admin/users/{id}/password', static fn (Request $request, Container $container): Response =>
     $usersController($container)->resetPassword($request)
+);
+$router->post('/admin/users/{id}/vip', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->grantVip($request)
+);
+$router->post('/admin/users/{id}/vip/revoke', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->revokeVip($request)
 );
 
 $logsController = static fn (Container $container): ActivityLogsController => new ActivityLogsController(
@@ -158,6 +166,9 @@ $modulesController = static fn (Container $container): ModulesController => new 
 );
 $router->get('/admin/modules', static fn (Request $request, Container $container): Response =>
     $modulesController($container)->index()
+);
+$router->post('/admin/modules/{slug}/audience', static fn (Request $request, Container $container): Response =>
+    $modulesController($container)->audience($request)
 );
 $router->post('/admin/modules/{slug}/{action}', static fn (Request $request, Container $container): Response =>
     $modulesController($container)->action($request)

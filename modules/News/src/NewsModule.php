@@ -27,6 +27,7 @@ final class NewsModule implements ModuleInterface
         $context->container->get(ViewRenderer::class)->addNamespace('news', $context->basePath . '/views');
         $context->container->bind(NewsRepository::class, static fn (Container $container) => new NewsRepository(
             $container->get(\PDO::class),
+            $container->get(\NovaNuke\Core\Access\AccessAudience::class),
             $container->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
         ));
         $context->container->bind(NewsInput::class, static fn () => new NewsInput());
@@ -37,7 +38,10 @@ final class NewsModule implements ModuleInterface
     {
         $context->events->listen('profile.statistics.building',static function(object$event)use($context):void{if($event instanceof \NovaNuke\Auth\ProfileStatisticsBuilding)$event->add('Published news',$context->container->get(NewsRepository::class)->publishedCountByAuthor($event->profileId));});
         $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
-            if ($event instanceof SearchProvidersRegistering) $event->registry->add(new NewsSearchProvider($context->container->get(\PDO::class)));
+            if ($event instanceof SearchProvidersRegistering) $event->registry->add(new NewsSearchProvider(
+                $context->container->get(\PDO::class),
+                $context->container->get(\NovaNuke\Core\Access\AccessAudience::class),
+            ));
         });
         $context->events->listen('sitemap.collecting', static function (object $event) use ($context): void {
             if (! $event instanceof SitemapCollecting) return;
@@ -53,8 +57,9 @@ final class NewsModule implements ModuleInterface
             if ($event instanceof MediaUsageChecking) $event->add('news.featured-image', $context->container->get(NewsRepository::class)->mediaUsage($event->publicPath));
         });
         $context->events->listen('comments.content.checking', static function (object $event) use ($context): void {
+            $user = $context->container->get(\NovaNuke\Auth\AuthManager::class)->user();
             if ($event instanceof CommentTargetChecking && $event->type === 'news'
-                && $context->container->get(NewsRepository::class)->acceptsComments($event->contentId)) {
+                && $context->container->get(NewsRepository::class)->acceptsComments($event->contentId, $user ? (int) $user['id'] : null)) {
                 $event->accept();
             }
         });

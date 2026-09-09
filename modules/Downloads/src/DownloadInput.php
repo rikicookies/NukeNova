@@ -33,7 +33,7 @@ final class DownloadInput
         if ($status === 'published' && $published === null) $published = gmdate('Y-m-d H:i:s');
         if ($status === 'published' && $published > gmdate('Y-m-d H:i:s')) throw new RuntimeException('Use scheduled status for a future publication date.');
         $access = (string) ($input['access_type'] ?? 'public');
-        if (! in_array($access, ['public', 'members', 'roles'], true)) throw new RuntimeException('Invalid access type.');
+        if (! in_array($access, ['public', 'members', 'vip', 'roles'], true)) throw new RuntimeException('Invalid access type.');
         $roles = array_values(array_unique(array_filter(array_map('intval', (array) ($input['role_ids'] ?? [])), static fn (int $id): bool => $id > 0)));
         if ($access === 'roles' && $roles === []) throw new RuntimeException('Select at least one role for restricted downloads.');
         return [

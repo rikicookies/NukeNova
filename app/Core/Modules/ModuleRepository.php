@@ -29,7 +29,7 @@ final class ModuleRepository
             return [];
         }
         $rows = $this->database->query(
-            'SELECT slug, name, installed_version, enabled, manifest, installed_at, updated_at, last_error FROM modules'
+            'SELECT slug, name, installed_version, enabled, audience, manifest, installed_at, updated_at, last_error FROM modules'
         )->fetchAll();
         $result = [];
         foreach ($rows as $row) {
@@ -70,6 +70,12 @@ final class ModuleRepository
         );
         $statement->execute(['enabled' => $enabled ? 1 : 0, 'slug' => $slug]);
         $this->invalidate();
+    }
+
+    public function setAudience(string $slug, string $audience): void
+    {
+        $statement=$this->database->prepare('UPDATE modules SET audience=:audience,updated_at=UTC_TIMESTAMP() WHERE slug=:slug');
+        $statement->execute(['audience'=>$audience,'slug'=>$slug]);$this->invalidate();
     }
 
     public function setError(string $slug, string $message): void

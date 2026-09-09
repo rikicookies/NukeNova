@@ -53,4 +53,12 @@ final class ContentRendererTest extends TestCase
         self::assertStringNotContainsString('javascript:', $html);
         self::assertStringNotContainsString('<script', $html);
     }
+
+    public function testFullMarkdownAllowsSafeImagesButDescriptionDoesNot(): void
+    {
+        $source = '![Diagram](/wiki/attachments/12?inline=1)';
+
+        self::assertStringContainsString('<img', $this->renderer->render($source, ContentFormat::Markdown, ContentProfile::FullContent));
+        self::assertStringNotContainsString('<img', $this->renderer->render($source, ContentFormat::Markdown, ContentProfile::Description));
+    }
 }

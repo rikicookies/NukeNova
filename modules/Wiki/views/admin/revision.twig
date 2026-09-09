@@ -1,0 +1,16 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Revision #{{ revision.revision_number }} — {{ page.title }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">Historical snapshot</p><h1>Revision #{{ revision.revision_number }}</h1>
+    <p><strong>{{ revision.title }}</strong> · {{ revision.actor }} · {{ revision.created_at }} UTC</p>
+    <p><code>{{ revision.namespace ? revision.namespace ~ ':' : '' }}{{ revision.slug }}</code> · {{ revision.status }} · {{ revision.audience }}</p>
+    <article class="content-page"><div class="article-content">{{ revision.content_html }}</div></article>
+    {% if can_restore %}<form class="settings-form" method="post" action="/admin/wiki/{{ page.id }}/revisions/{{ revision.id }}/restore" onsubmit="return confirm('Restore this snapshot as the current page?')">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label><input type="checkbox" name="confirm_restore" value="1" required> Confirm restoration</label>
+        <button type="submit">Restore as new revision</button>
+    </form>{% else %}<div class="notice-message">Publishing permission is required to restore this revision.</div>{% endif %}
+    <p><a href="/admin/wiki/{{ page.id }}/history">Return to revision history</a></p>
+</section>
+{% endblock %}

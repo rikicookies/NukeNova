@@ -9,6 +9,7 @@
     {% if message|default(null) %}<div class="alert alert-success">{{ message }}</div>{% endif %}
     {% if profile.username|default('') %}<p><a href="/users/{{ profile.username|default('') }}">{{ trans('account.profile.public') }}</a></p>{% endif %}
     <p><a href="/account/security">{{ trans('account.security.link') }}</a></p>
+    {% if vip.active|default(false) %}<div class="alert alert-success"><strong>VIP access active.</strong> Expires {{ vip.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.</div>{% elseif vip.expires_at|default(null) %}<div class="notice-message">Your VIP access is inactive. The latest period ended {{ vip.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.</div>{% else %}<div class="notice-message">Account access: registered member.</div>{% endif %}
 
     <form method="post" action="/account/profile" class="settings-form">
         <input type="hidden" name="_token" value="{{ csrf_token }}">

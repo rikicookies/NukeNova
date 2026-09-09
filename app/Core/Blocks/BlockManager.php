@@ -7,6 +7,7 @@ namespace NovaNuke\Core\Blocks;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Security\HtmlSanitizer;
+use NovaNuke\Core\Access\AccessAudience;
 use PDO;
 use RuntimeException;
 use Twig\Markup;
@@ -23,6 +24,7 @@ final class BlockManager
         private readonly DynamicBlockRenderer $dynamic,
         private readonly BlockVisibility $visibility,
         private readonly AuthManager $auth,
+        private readonly AccessAudience $audience,
         private readonly ViewRenderer $views,
     ) {
     }
@@ -53,6 +55,7 @@ final class BlockManager
         $slug = strtolower(trim((string) ($input['slug'] ?? '')));
         $position = (string) ($input['position'] ?? '');
         $mode = (string) ($input['visibility_mode'] ?? 'all');
+        $audience = (string) ($input['audience'] ?? 'public');
         if ($title === '' || mb_strlen($title) > 150) {
             throw new RuntimeException('Block title is required and must not exceed 150 characters.');
         }
@@ -65,6 +68,7 @@ final class BlockManager
         if (! in_array($mode, ['all', 'only', 'except'], true)) {
             throw new RuntimeException('Invalid page visibility mode.');
         }
+        if (! in_array($audience, AccessAudience::VALUES, true)) throw new RuntimeException('Invalid block audience.');
         $startsAt = $this->date($input['starts_at'] ?? null, 'start');
         $endsAt = $this->date($input['ends_at'] ?? null, 'end');
         if ($startsAt !== null && $endsAt !== null && $endsAt <= $startsAt) {
@@ -99,6 +103,7 @@ final class BlockManager
             'content' => $type === 'html' ? $this->sanitizer->sanitize($content) : ($type === 'markdown' ? $content : ($existing['content'] ?? null)),
             'configuration' => json_encode($editable ? [] : ($existing['configuration'] ?? []), JSON_THROW_ON_ERROR),
             'visibility_mode' => $mode,
+            'audience' => $audience,
             'page_patterns' => json_encode($patterns, JSON_THROW_ON_ERROR),
             'module_slugs' => json_encode($modules, JSON_THROW_ON_ERROR),
             'enabled' => ($input['enabled'] ?? null) === '1' ? 1 : 0,
@@ -132,10 +137,12 @@ final class BlockManager
             return;
         }
         $roles = $this->viewerRoles();
+        $user = $this->auth->user();
         $module = explode('/', trim($path, '/'))[0] ?? '';
         $regions = new BlockRegions(self::POSITIONS);
         $this->views->addGlobal('blocks', $regions);
         foreach ($this->repository->active() as $block) {
+            if (! $this->audience->allows((string) ($block['audience'] ?? 'public'), $user)) continue;
             if (! $this->visibility->matches((string) $block['visibility_mode'], $block['page_patterns'], $path)) {
                 continue;
             }

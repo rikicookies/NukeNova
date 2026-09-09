@@ -14,6 +14,7 @@ use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Security\UserRoleSafety;
 use NovaNuke\Auth\RegistrationValidator;
 use NovaNuke\Auth\PasswordPolicy;
+use NovaNuke\Core\Access\EntitlementService;
 use PDO;
 use PDOException;
 
@@ -28,25 +29,40 @@ final class UsersController
         private readonly ViewRenderer $views,
         private readonly RegistrationValidator $validator,
         private readonly PasswordPolicy $passwordPolicy,
+        private readonly EntitlementService $entitlements,
     ) {
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $guard = $this->guard('users.view');
         if ($guard !== null) {
             return $guard;
         }
+        $vipFilter = (string) $request->query('vip', 'all');
+        if (! in_array($vipFilter, ['all', 'active', 'inactive', 'none'], true)) $vipFilter = 'all';
+        $vipWhere = match ($vipFilter) {
+            'active' => ' AND ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP()',
+            'inactive' => ' AND ue.id IS NOT NULL AND (ue.revoked_at IS NOT NULL OR ue.expires_at <= UTC_TIMESTAMP())',
+            'none' => ' AND ue.id IS NULL',
+            default => '',
+        };
         $users = $this->database->query(
             "SELECT u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, "
-            . "COALESCE(GROUP_CONCAT(r.name ORDER BY r.id SEPARATOR ', '), '') AS roles "
+            . "COALESCE(GROUP_CONCAT(r.name ORDER BY r.id SEPARATOR ', '), '') AS roles, "
+            . "ue.expires_at AS vip_expires_at, CASE WHEN ue.id IS NULL THEN 'none' "
+            . "WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP() THEN 'active' ELSE 'inactive' END AS vip_status, "
+            . "CASE WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP() "
+            . "AND ue.expires_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 DAY) THEN 1 ELSE 0 END AS vip_expiring_soon "
             . 'FROM users u LEFT JOIN user_roles ur ON ur.user_id = u.id '
-            . 'LEFT JOIN roles r ON r.id = ur.role_id WHERE u.deleted_at IS NULL '
-            . 'GROUP BY u.id, u.username, u.email, u.status, u.last_login_at, u.created_at '
+            . 'LEFT JOIN roles r ON r.id = ur.role_id '
+            . "LEFT JOIN user_entitlements ue ON ue.id = (SELECT MAX(latest.id) FROM user_entitlements latest WHERE latest.user_id = u.id AND latest.entitlement = 'vip') "
+            . 'WHERE u.deleted_at IS NULL ' . $vipWhere
+            . ' GROUP BY u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, ue.id, ue.starts_at, ue.expires_at, ue.revoked_at '
             . 'ORDER BY u.created_at DESC LIMIT 200'
         )->fetchAll();
 
-        return Response::html($this->views->render('admin/users/index.twig', ['users' => $users]));
+        return Response::html($this->views->render('admin/users/index.twig', ['users' => $users, 'vip_filter' => $vipFilter]));
     }
 
     public function edit(Request $request): Response
@@ -57,7 +73,7 @@ final class UsersController
         }
         $user = $this->user((int) $request->attribute('id'));
 
-        return $user === null ? Response::html('User not found.', 404) : $this->editView($user, false, $request->query('password_reset') === '1');
+        return $user === null ? Response::html('User not found.', 404) : $this->editView($user, false, $request->query('password_reset') === '1', null, 200, $request->query('vip_updated') === '1');
     }
 
     public function create(): Response
@@ -225,6 +241,30 @@ final class UsersController
         return Response::redirect('/admin/users/'.$target['id'].'?password_reset=1', 303);
     }
 
+    public function grantVip(Request $request): Response
+    {
+        if ($guard = $this->creationGuard()) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
+        $actor=$this->auth->user();$target=$this->user((int)$request->attribute('id'));
+        if($target===null)return Response::html('User not found.',404);
+        $days=filter_var($request->input('days'),FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>3650]]);
+        if($days===false)return Response::html('VIP duration must be between 1 and 3650 days.',422);
+        $expires=$this->entitlements->grant((int)$target['id'],EntitlementService::VIP,(int)$days,(int)$actor['id']);
+        $this->activity->log((int)$actor['id'],'user.vip.granted','user',$target['id'],['days'=>(int)$days,'expires_at'=>$expires],$request->ip());
+        return Response::redirect('/admin/users/'.$target['id'].'?vip_updated=1',303);
+    }
+
+    public function revokeVip(Request $request): Response
+    {
+        if ($guard = $this->creationGuard()) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
+        $actor=$this->auth->user();$target=$this->user((int)$request->attribute('id'));
+        if($target===null)return Response::html('User not found.',404);
+        $this->entitlements->revoke((int)$target['id'],EntitlementService::VIP);
+        $this->activity->log((int)$actor['id'],'user.vip.revoked','user',$target['id'],[],$request->ip());
+        return Response::redirect('/admin/users/'.$target['id'].'?vip_updated=1',303);
+    }
+
     private function guard(string $permission): ?Response
     {
         $user = $this->auth->user();
@@ -268,7 +308,7 @@ final class UsersController
     }
 
     /** @param array<string, mixed> $user */
-    private function editView(array $user, bool $saved = false, bool $passwordReset = false, ?string $passwordError = null, int $status = 200): Response
+    private function editView(array $user, bool $saved = false, bool $passwordReset = false, ?string $passwordError = null, int $status = 200, bool $vipUpdated = false): Response
     {
         return Response::html($this->views->render('admin/users/edit.twig', [
             'edited_user' => $user,
@@ -278,6 +318,8 @@ final class UsersController
             'saved' => $saved,
             'password_reset' => $passwordReset,
             'password_error' => $passwordError,
+            'vip' => $this->entitlements->status((int) $user['id'], EntitlementService::VIP),
+            'vip_updated' => $vipUpdated,
             'current_user_id' => (int) $this->auth->user()['id'],
         ]), $status);
     }

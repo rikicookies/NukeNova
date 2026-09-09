@@ -45,6 +45,8 @@ final class NewsInput
         if (mb_strlen($content) > 1000000) throw new RuntimeException('Article content must not exceed 1,000,000 characters.');
         $contentFormat = ContentFormat::fromInput($input['content_format'] ?? null);
         $summaryFormat = ContentFormat::fromInput($input['summary_format'] ?? null);
+        $audience = (string) ($input['audience'] ?? 'public');
+        if (! in_array($audience, ['public', 'member', 'vip'], true)) throw new RuntimeException('Invalid news audience.');
         return [
             'title' => $title,
             'slug' => $slug,
@@ -54,6 +56,7 @@ final class NewsInput
             'content_format' => $contentFormat->value,
             'featured_image' => $this->image($input['featured_image'] ?? null),
             'status' => $status,
+            'audience' => $audience,
             'is_featured' => ($input['is_featured'] ?? null) === '1' ? 1 : 0,
             'comments_enabled' => ($input['comments_enabled'] ?? null) === '1' ? 1 : 0,
             'seo_title' => $this->limited($input['seo_title'] ?? null, 200),

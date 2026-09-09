@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\News\src;
 
+use NovaNuke\Core\Access\AccessAudience;
 use PDO;
 use RuntimeException;
 
@@ -11,19 +12,23 @@ final class NewsRepository
 {
     private readonly int $perPage;
 
-    public function __construct(private readonly PDO $database, int $perPage = 10)
+    public function __construct(
+        private readonly PDO $database,
+        private readonly AccessAudience $accessAudience,
+        int $perPage = 10,
+    )
     {
         $this->perPage = max(5, min(100, $perPage));
     }
 
     public function categories(): array { return $this->database->query('SELECT * FROM news_categories ORDER BY name')->fetchAll(); }
     public function topics(): array { return $this->database->query('SELECT * FROM news_topics ORDER BY name')->fetchAll(); }
-    public function publishedCountByAuthor(int $userId):int{$s=$this->database->prepare("SELECT COUNT(*) FROM news_articles WHERE author_id=:user AND status='published' AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL");$s->execute(['user'=>$userId]);return(int)$s->fetchColumn();}
+    public function publishedCountByAuthor(int $userId):int{$s=$this->database->prepare("SELECT COUNT(*) FROM news_articles WHERE author_id=:user AND audience='public' AND status='published' AND published_at<=UTC_TIMESTAMP() AND deleted_at IS NULL");$s->execute(['user'=>$userId]);return(int)$s->fetchColumn();}
 
     public function adminArticles(): array
     {
         return $this->database->query(
-            'SELECT a.id,a.title,a.slug,a.status,a.is_featured,a.published_at,a.updated_at,u.username,c.name AS category_name '
+            'SELECT a.id,a.title,a.slug,a.status,a.audience,a.is_featured,a.published_at,a.updated_at,u.username,c.name AS category_name '
             . 'FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id '
             . 'WHERE a.deleted_at IS NULL ORDER BY a.updated_at DESC,a.id DESC'
         )->fetchAll();
@@ -49,12 +54,12 @@ final class NewsRepository
         $this->database->beginTransaction();
         try {
             if ($id === null) {
-                $sql = 'INSERT INTO news_articles (author_id,category_id,topic_id,title,slug,summary,summary_format,content,content_format,featured_image,status,is_featured,comments_enabled,seo_title,seo_description,published_at,created_at,updated_at) '
-                    . 'VALUES (:author_id,:category_id,:topic_id,:title,:slug,:summary,:summary_format,:content,:content_format,:featured_image,:status,:is_featured,:comments_enabled,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
+                $sql = 'INSERT INTO news_articles (author_id,category_id,topic_id,title,slug,summary,summary_format,content,content_format,featured_image,status,audience,is_featured,comments_enabled,seo_title,seo_description,published_at,created_at,updated_at) '
+                    . 'VALUES (:author_id,:category_id,:topic_id,:title,:slug,:summary,:summary_format,:content,:content_format,:featured_image,:status,:audience,:is_featured,:comments_enabled,:seo_title,:seo_description,:published_at,UTC_TIMESTAMP(),UTC_TIMESTAMP())';
                 $data['author_id'] = $authorId;
             } else {
                 if ($this->article($id) === null) throw new RuntimeException('News article not found.');
-                $sql = 'UPDATE news_articles SET category_id=:category_id,topic_id=:topic_id,title=:title,slug=:slug,summary=:summary,summary_format=:summary_format,content=:content,content_format=:content_format,featured_image=:featured_image,status=:status,is_featured=:is_featured,comments_enabled=:comments_enabled,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
+                $sql = 'UPDATE news_articles SET category_id=:category_id,topic_id=:topic_id,title=:title,slug=:slug,summary=:summary,summary_format=:summary_format,content=:content,content_format=:content_format,featured_image=:featured_image,status=:status,audience=:audience,is_featured=:is_featured,comments_enabled=:comments_enabled,seo_title=:seo_title,seo_description=:seo_description,published_at=:published_at,updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL';
                 $data['id'] = $id;
             }
             $statement = $this->database->prepare($sql);
@@ -100,10 +105,13 @@ final class NewsRepository
         }
     }
 
-    public function publicArticles(int $page, ?string $categorySlug = null): array
+    public function publicArticles(int $page, ?string $categorySlug = null, ?int $userId = null): array
     {
-        $where = "a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled')";
+        $audiences = $this->visibleAudiences($userId);
+        $placeholders = implode(',', array_map(static fn (int $index): string => ':audience' . $index, array_keys($audiences)));
+        $where = "a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') AND a.audience IN ({$placeholders})";
         $parameters = [];
+        foreach ($audiences as $index => $audience) $parameters['audience' . $index] = $audience;
         if ($categorySlug !== null) {
             $where .= ' AND c.slug=:category';
             $parameters['category'] = $categorySlug;
@@ -139,12 +147,20 @@ final class NewsRepository
         return $article;
     }
 
+    public function canView(array $article, ?int $userId): bool
+    {
+        return $this->accessAudience->allows(
+            (string) ($article['audience'] ?? 'public'),
+            $userId === null ? null : ['id' => $userId],
+        );
+    }
+
     public function rssArticles(): array
     {
         return $this->database->query(
             "SELECT a.title,a.slug,a.summary,a.summary_format,a.content,a.content_format,a.published_at,u.username,c.name AS category_name "
             . "FROM news_articles a INNER JOIN users u ON u.id=a.author_id LEFT JOIN news_categories c ON c.id=a.category_id "
-            . "WHERE a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') "
+            . "WHERE a.audience='public' AND a.deleted_at IS NULL AND a.published_at<=UTC_TIMESTAMP() AND a.status IN ('published','scheduled') "
             . 'ORDER BY a.published_at DESC,a.id DESC LIMIT 20'
         )->fetchAll();
     }
@@ -153,7 +169,7 @@ final class NewsRepository
     public function sitemapEntries(): array
     {
         return $this->database->query(
-            "SELECT slug,updated_at FROM news_articles WHERE deleted_at IS NULL AND published_at<=UTC_TIMESTAMP() "
+            "SELECT slug,updated_at FROM news_articles WHERE audience='public' AND deleted_at IS NULL AND published_at<=UTC_TIMESTAMP() "
             . "AND status IN ('published','scheduled') ORDER BY id"
         )->fetchAll();
     }
@@ -164,14 +180,25 @@ final class NewsRepository
         $statement->execute(['id' => $id]);
     }
 
-    public function acceptsComments(int $id): bool
+    public function acceptsComments(int $id, ?int $userId): bool
     {
         $statement = $this->database->prepare(
-            "SELECT COUNT(*) FROM news_articles WHERE id=:id AND deleted_at IS NULL AND comments_enabled=1 "
+            "SELECT id,audience FROM news_articles WHERE id=:id AND deleted_at IS NULL AND comments_enabled=1 "
             . "AND published_at<=UTC_TIMESTAMP() AND status IN ('published','scheduled')"
         );
         $statement->execute(['id' => $id]);
-        return (int) $statement->fetchColumn() === 1;
+        $article = $statement->fetch();
+        return is_array($article) && $this->canView($article, $userId);
+    }
+
+    /** @return list<string> */
+    private function visibleAudiences(?int $userId): array
+    {
+        $audiences = ['public'];
+        if ($userId === null) return $audiences;
+        $audiences[] = 'member';
+        if ($this->accessAudience->allows('vip', ['id' => $userId])) $audiences[] = 'vip';
+        return $audiences;
     }
 
     private function assertTaxonomy(?int $id, string $table): void

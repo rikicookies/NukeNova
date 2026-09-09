@@ -1,0 +1,13 @@
+{% extends "layouts/default.twig" %}
+{% block title %}{{ trans('wiki::index.title') }} — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="wiki-directory">
+    <nav class="content-breadcrumbs" aria-label="Breadcrumb"><ol>{% for item in breadcrumbs %}<li>{% if item.url %}<a href="{{ item.url }}">{{ item.label }}</a>{% else %}<span aria-current="page">{{ item.label }}</span>{% endif %}</li>{% endfor %}</ol></nav>
+    <header><p class="eyebrow">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ namespace ? namespace|replace({':': ' / ', '-': ' '})|title : trans('wiki::index.title') }}</h1><p>{{ trans('wiki::index.description') }}</p></header>
+    <nav class="content-actions"><a class="content-action" href="/wiki/map">{{ trans('wiki::action.map') }}</a><a class="content-action" href="/wiki/search">{{ trans('wiki::action.search') }}</a><a class="content-action" href="/wiki/recent">{{ trans('wiki::action.recent') }}</a>{% if can_create %}<a class="content-action" href="/admin/wiki/new">{{ trans('wiki::action.create') }}</a>{% endif %}</nav>
+    {% if namespaces %}<section class="wiki-namespaces"><h2>{{ trans('wiki::namespace.title') }}</h2><div class="page-directory-grid">{% for item in namespaces %}<article><h3><a href="/wiki?namespace={{ item.path|url_encode }}">{{ item.label }}</a></h3><small>{{ item.path }}</small></article>{% endfor %}</div></section>{% endif %}
+    <div class="page-directory-grid">
+        {% for page in pages %}<article><h2><a href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}">{{ page.title }}</a></h2><small>{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}{% if page.audience != 'public' %} · {{ page.audience == 'vip' ? 'VIP' : 'Members' }}{% endif %}</small></article>{% else %}{% if not namespaces %}<p>{{ trans('wiki::index.empty') }}</p>{% endif %}{% endfor %}
+    </div>
+</section>
+{% endblock %}

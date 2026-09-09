@@ -66,13 +66,13 @@ final class BlockRepository
                 }
             }
             if ($id === null) {
-                $sql = 'INSERT INTO blocks (title, slug, type, position, content, configuration, visibility_mode, '
+                $sql = 'INSERT INTO blocks (title, slug, type, position, content, configuration, visibility_mode, audience, '
                     . 'page_patterns, module_slugs, enabled, show_title, sort_order, starts_at, ends_at, created_by, created_at, updated_at) '
-                    . 'VALUES (:title, :slug, :type, :position, :content, :configuration, :visibility_mode, '
+                    . 'VALUES (:title, :slug, :type, :position, :content, :configuration, :visibility_mode, :audience, '
                     . ':page_patterns, :module_slugs, :enabled, :show_title, :sort_order, :starts_at, :ends_at, :created_by, UTC_TIMESTAMP(), UTC_TIMESTAMP())';
             } else {
                 $sql = 'UPDATE blocks SET title=:title, slug=:slug, type=:type, position=:position, content=:content, '
-                    . 'configuration=:configuration, visibility_mode=:visibility_mode, page_patterns=:page_patterns, '
+                    . 'configuration=:configuration, visibility_mode=:visibility_mode, audience=:audience, page_patterns=:page_patterns, '
                     . 'module_slugs=:module_slugs, enabled=:enabled, show_title=:show_title, sort_order=:sort_order, '
                     . 'starts_at=:starts_at, ends_at=:ends_at, updated_at=UTC_TIMESTAMP() WHERE id=:id';
             }

@@ -31,6 +31,15 @@ final class NewsInputTest extends TestCase
         $this->input()->article(['title' => 'News', 'slug' => 'news', 'status' => 'published', 'content' => '<p>Text</p>'], false);
     }
 
+    public function testItAcceptsVipAudienceAndRejectsUnknownAudience(): void
+    {
+        $data = $this->input()->article(['title' => 'VIP', 'slug' => 'vip', 'status' => 'draft', 'content' => 'Private', 'audience' => 'vip'], false);
+        self::assertSame('vip', $data['audience']);
+
+        $this->expectException(RuntimeException::class);
+        $this->input()->article(['title' => 'Bad', 'slug' => 'bad', 'status' => 'draft', 'content' => 'Private', 'audience' => 'admin'], false);
+    }
+
     public function testPublisherCanScheduleForTheFuture(): void
     {
         $future = (new \DateTimeImmutable('+2 hours', new \DateTimeZone('UTC')))->format('Y-m-d\TH:i');

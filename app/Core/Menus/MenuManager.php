@@ -6,6 +6,7 @@ namespace NovaNuke\Core\Menus;
 
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Modules\ModuleRouteAccess;
 use PDO;
 use RuntimeException;
 
@@ -17,6 +18,7 @@ final class MenuManager
         private readonly MenuUrlResolver $urls,
         private readonly MenuTreeBuilder $trees,
         private readonly AuthManager $auth,
+        private readonly ModuleRouteAccess $moduleAccess,
         private readonly ViewRenderer $views,
     ) {
     }
@@ -94,6 +96,7 @@ final class MenuManager
             return;
         }
         $viewerRoles = $this->viewerRoles();
+        $viewer = $this->auth->user();
         $menus = [];
         foreach ($this->repository->enabledWithItems() as $menu) {
             $available = $menu['items'];
@@ -103,8 +106,9 @@ final class MenuManager
             }
             $items = array_values(array_filter(
                 $available,
-                static fn (array $item): bool => (bool) $item['enabled']
-                    && ($item['role_slugs'] === [] || array_intersect($viewerRoles, $item['role_slugs']) !== []),
+                fn (array $item): bool => (bool) $item['enabled']
+                    && ($item['role_slugs'] === [] || array_intersect($viewerRoles, $item['role_slugs']) !== [])
+                    && ($item['link_type'] !== 'module' || $this->moduleAccess->allows((string) $item['target'], $viewer)),
             ));
             $menus[(string) $menu['slug']] = $this->trees->build($items);
         }

@@ -34,6 +34,7 @@ $publicProfileController = static fn (Container $container): PublicProfileContro
     $container->get(ContentRendererInterface::class),
     $container->get(\NovaNuke\Core\Events\EventDispatcher::class),
     $container->get(CsrfTokenManager::class),
+    $container->get(\NovaNuke\Core\Access\EntitlementService::class),
 );
 $router->get('/users', static fn (Request $request, Container $container): Response =>
     $publicProfileController($container)->index($request)
@@ -51,6 +52,7 @@ $accountController = static fn (Container $container): AccountController => new 
     new DatabaseRateLimiter($container->get(\PDO::class), 5, 900, 'account-password'),
     $container->get(ActivityLogger::class), $container->get(CsrfTokenManager::class),
     $container->get(SessionManager::class), $container->get(ViewRenderer::class),
+    $container->get(\NovaNuke\Core\Access\EntitlementService::class),
 );
 $router->get('/account/profile', static fn (Request $request, Container $container): Response => $accountController($container)->edit());
 $router->post('/account/profile', static fn (Request $request, Container $container): Response => $accountController($container)->update($request));

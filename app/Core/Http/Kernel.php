@@ -15,6 +15,7 @@ use NovaNuke\Core\System\MaintenanceMode;
 use NovaNuke\Core\System\PrivateSiteAccessPolicy;
 use NovaNuke\Core\System\PasswordChangeAccessPolicy;
 use NovaNuke\Core\Settings\SettingsRepository;
+use NovaNuke\Core\Modules\ModuleRouteAccess;
 use Throwable;
 
 final class Kernel
@@ -28,6 +29,7 @@ final class Kernel
         private readonly AdminAccessGate $adminAccess,
         private readonly PrivateSiteAccessPolicy $privateSite = new PrivateSiteAccessPolicy(),
         private readonly PasswordChangeAccessPolicy $passwordChange = new PasswordChangeAccessPolicy(),
+        private readonly ?ModuleRouteAccess $moduleAccess = null,
     ) {
         $this->errors->register();
     }
@@ -71,6 +73,9 @@ final class Kernel
                 return $this->securityHeaders->apply($adminGuard);
             }
             $match = $this->router->match($request);
+            if ($this->moduleAccess !== null && ($moduleGuard = $this->moduleAccess->guard($match->route, $request)) !== null) {
+                return $this->securityHeaders->apply($moduleGuard);
+            }
             $request = $request->withAttributes($match->parameters);
             $response = ($match->route->handler)($request, $this->container);
 

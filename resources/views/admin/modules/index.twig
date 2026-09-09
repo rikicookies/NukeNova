@@ -31,6 +31,7 @@
                 {% if not item.installed and item.manifest and item.compatible %}
                     <form method="post" action="/admin/modules/{{ slug }}/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
                 {% elseif item.installed and item.manifest %}
+                    <form method="post" action="/admin/modules/{{ slug }}/audience"><input type="hidden" name="_token" value="{{ csrf_token }}"><label>Public audience<select name="audience"><option value="public" {{ item.audience == 'public' ? 'selected' : '' }}>Everyone</option><option value="guest" {{ item.audience == 'guest' ? 'selected' : '' }}>Visitors only</option><option value="member" {{ item.audience == 'member' ? 'selected' : '' }}>Signed-in users</option><option value="vip" {{ item.audience == 'vip' ? 'selected' : '' }}>Active VIP only</option></select></label><button type="submit">Save audience</button></form>
                     {% if item.update_available and item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/update"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
                     {% if item.enabled %}
                         <form method="post" action="/admin/modules/{{ slug }}/disable"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Disable</button></form>

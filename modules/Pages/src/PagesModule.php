@@ -24,7 +24,10 @@ final class PagesModule implements ModuleInterface
     public function register(ModuleContext $context): void
     {
         $context->container->get(ViewRenderer::class)->addNamespace('pages', $context->basePath . '/views');
-        $context->container->bind(PageRepository::class, static fn (Container $c) => new PageRepository($c->get(\PDO::class)));
+        $context->container->bind(PageRepository::class, static fn (Container $c) => new PageRepository(
+            $c->get(\PDO::class),
+            $c->get(\NovaNuke\Core\Access\EntitlementService::class),
+        ));
         $context->container->bind(PageInput::class, static fn () => new PageInput());
     }
 

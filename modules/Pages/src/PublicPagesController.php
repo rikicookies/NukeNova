@@ -44,7 +44,7 @@ final class PublicPagesController
         $page = $this->pages->publicPage($slug);
         if ($page === null) return Response::html('Page not found.', 404);
         $user = $this->auth->user();
-        if (! $this->pages->canView($page, $user ? (int) $user['id'] : null)) return $user === null ? Response::redirect('/login') : Response::html('Forbidden', 403);
+        if (! $this->pages->canView($page, $user ? (int) $user['id'] : null)) return $user === null ? Response::redirect('/login') : Response::html('This page is not available for your account.', 403);
         if ($page['parent_id'] !== null && ($page['parent_title'] === null || ! $this->pages->canView([
             'id' => $page['parent_id'], 'access_type' => $page['parent_access_type'],
         ], $user ? (int) $user['id'] : null))) {

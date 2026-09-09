@@ -39,6 +39,14 @@ final class DownloadInputTest extends TestCase
         (new DownloadInput())->download(array_replace($this->valid(), ['status' => 'published']), false);
     }
 
+    public function testItAcceptsVipDownloadsWithoutRoleAssignments(): void
+    {
+        $data = (new DownloadInput())->download(array_replace($this->valid(), ['access_type' => 'vip', 'role_ids' => ['2']]), false);
+
+        self::assertSame('vip', $data['access_type']);
+        self::assertSame([], $data['role_ids']);
+    }
+
     public function testItRejectsUnknownDescriptionFormats(): void
     {
         $this->expectException(RuntimeException::class);

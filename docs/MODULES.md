@@ -103,6 +103,8 @@ $context->router->get('/example', $handler, 'example.index');
 
 Core routes are registered first. Modules must use unique URL prefixes and route names.
 
+An installed module also has an administrator-selected audience: public, guests, registered members or active VIP members. The router records which module owns each route, and the HTTP kernel enforces that audience on public module routes. Administrative routes continue to rely on their explicit permissions. A module must still authorize individual records when it supports mixed audiences inside the same module.
+
 ## Events and hooks
 
 Listeners are synchronous and ordered from highest to lowest priority:

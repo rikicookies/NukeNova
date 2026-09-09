@@ -33,7 +33,7 @@ final class PageInput
         $template = (string) ($input['template'] ?? 'default');
         if (! in_array($template, ['default', 'landing'], true)) throw new RuntimeException('Invalid page template.');
         $access = (string) ($input['access_type'] ?? 'public');
-        if (! in_array($access, ['public', 'members', 'roles'], true)) throw new RuntimeException('Invalid page access type.');
+        if (! in_array($access, ['public', 'members', 'vip', 'roles'], true)) throw new RuntimeException('Invalid page access type.');
         $roles = array_values(array_unique(array_filter(array_map('intval', (array) ($input['role_ids'] ?? [])), static fn (int $id): bool => $id > 0)));
         if ($access === 'roles' && $roles === []) throw new RuntimeException('Select at least one role for role-restricted pages.');
         return [

@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.19**. This cumulative private-site release adds authenticated-only site access, manual account creation and secure temporary-password management on top of the alpha.18 social foundation. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.2.0-alpha.33**. This release consolidates Wiki 2.0.0 with safe editing helpers and preview, visible missing links, dedicated search/recent/map views, XML sitemap integration, folder-to-namespace Markdown import and a complete Markdown ZIP export. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
 
 ## Included in 0.1.0
 
@@ -11,7 +11,7 @@ Current development release: **0.2.0-alpha.19**. This cumulative private-site re
 - central administration, activity logs and system diagnostics;
 - manually installed modules with manifests, migrations, dependencies and hooks;
 - Twig themes, overrides, positions, sanitized blocks and hierarchical menus;
-- News, Comments, Pages, Media, Downloads, Search, Private Messages, Notifications, Friends, Polls, Web Links, Statistics and SEO;
+- News, Comments, Pages, Wiki, Media, Downloads, Search, Private Messages, Notifications, Friends, Polls, Web Links, Statistics and SEO;
 - friendly URLs, PDO prepared statements, CSRF, rate limits and output escaping;
 - encrypted SMTP or development mail logging;
 - maintenance mode, private database/file backups and safe cache commands.
@@ -33,6 +33,7 @@ NovaNuke does not include a forum and never accepts executable PHP through the a
 - Composer 2;
 - MySQL 8+ or a compatible MariaDB version;
 - PDO, PDO MySQL, JSON, Mbstring, OpenSSL, Fileinfo and DOM extensions;
+- optional PHP ZIP extension for exporting every Wiki page as one archive;
 - Apache with `mod_rewrite`, or an equivalent Nginx configuration.
 
 The server document root must point to `public/`.
@@ -110,6 +111,8 @@ For production SMTP and Bluehost guidance, see [docs/MAIL.md](docs/MAIL.md).
 - [NovaModern theme](docs/NOVAMODERN.md)
 - [In-site notifications](docs/NOTIFICATIONS.md)
 - [SEO and sitemap](docs/SEO.md)
+- [Audiences and VIP access](docs/ACCESS_AUDIENCES.md)
+- [Wiki module](docs/WIKI.md)
 
 Detailed module and theme contracts are documented under `docs/`, including `MODULES.md`, `THEMES.md`, `BLOCKS.md` and `MENUS.md`.
 
