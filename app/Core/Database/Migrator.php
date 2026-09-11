@@ -6,6 +6,7 @@ namespace NovaNuke\Core\Database;
 
 use PDO;
 use RuntimeException;
+use Throwable;
 
 final class Migrator
 {
@@ -29,6 +30,13 @@ final class Migrator
     public function run(string $directory): array
     {
         $this->ensureRepository();
+        $status = $this->status($directory);
+        if ($status['missing_files'] !== []) {
+            throw new RuntimeException(
+                'Cannot run core migrations while executed migration files are missing: '
+                . implode(', ', $status['missing_files'])
+            );
+        }
         $executed = $this->executed();
         $files = glob(rtrim($directory, '/') . '/*.php') ?: [];
         sort($files, SORT_STRING);
@@ -42,20 +50,28 @@ final class Migrator
                 continue;
             }
 
-            $migration = require $file;
+            try {
+                $migration = require $file;
 
-            if (! $migration instanceof Migration) {
-                throw new RuntimeException("Migration must implement Migration: {$file}");
+                if (! $migration instanceof Migration) {
+                    throw new RuntimeException("Migration must implement Migration: {$file}");
+                }
+
+                // MySQL implicitly commits many DDL statements. A migration is marked
+                // complete only after its schema operations finish successfully.
+                $migration->up($this->database);
+                $statement = $this->database->prepare(
+                    'INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)'
+                );
+                $statement->execute(['migration' => $name, 'batch' => $batch]);
+                $completed[] = $name;
+            } catch (Throwable $error) {
+                throw new RuntimeException(
+                    "Core migration failed: {$name}. No later migration was run.",
+                    0,
+                    $error,
+                );
             }
-
-            // MySQL implicitly commits many DDL statements. A migration is marked
-            // complete only after its schema operations finish successfully.
-            $migration->up($this->database);
-            $statement = $this->database->prepare(
-                'INSERT INTO migrations (migration, batch) VALUES (:migration, :batch)'
-            );
-            $statement->execute(['migration' => $name, 'batch' => $batch]);
-            $completed[] = $name;
         }
 
         return $completed;

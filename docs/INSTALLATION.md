@@ -10,17 +10,20 @@ Enable PHP's ZIP extension when the site needs Wiki's complete Markdown archive 
 
 1. Extract NovaNuke to a dedicated directory such as `C:\\dev\\www\\novanuke`.
 2. Open a terminal in that directory and run `composer install`.
-3. Configure the Laragon virtual host document root as `C:\\dev\\www\\novanuke\\public`.
-4. Ensure Apache rewrite support is enabled.
-5. Open the generated local URL and follow `/install`.
-6. Resolve any missing extensions or unwritable storage directories.
-7. Enter the database and first Super Administrator values.
-8. Confirm `storage/installed.lock` exists and `/install` no longer loads.
-9. Run `composer test` and `php bin/cms release:check`.
+3. Run `php bin/cms install:check` and resolve every failed requirement.
+4. Create or select an empty database. The installer refuses a database containing any table.
+5. Configure the Laragon virtual host document root as `C:\\dev\\www\\novanuke\\public`.
+6. Ensure Apache rewrite support is enabled.
+7. Open the generated local URL and follow `/install`.
+8. Enter the database and first Super Administrator values.
+9. Confirm `storage/installed.lock` exists and `/install` no longer loads.
+10. Run `composer test` and `php bin/cms release:check`.
 
 Typical Laragon MySQL values are `127.0.0.1`, port `3306`, user `root`, empty password and database `novanuke`.
 
-Do not copy `.env.example` to `.env` before a fresh installer test. The installer generates a unique application key and writes credentials atomically.
+Do not copy `.env.example` to `.env` before a fresh installer test. The installer generates a unique application key and writes credentials atomically. It never replaces an existing `.env`; review and remove that file manually only when intentionally resetting a disposable installation.
+
+The CLI currently audits readiness but does not accept installation credentials. Complete account creation through the web installer so passwords do not appear in shell history or process arguments.
 
 ## Apache/shared hosting
 

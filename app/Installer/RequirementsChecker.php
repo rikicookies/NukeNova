@@ -34,8 +34,20 @@ final class RequirementsChecker
 
         $checks[] = [
             'name' => 'Writable project configuration',
-            'passed' => is_writable($rootPath) || (is_file($rootPath . '/.env') && is_writable($rootPath . '/.env')),
+            'passed' => is_writable($rootPath),
             'detail' => 'Required to create .env during installation',
+        ];
+
+        $checks[] = [
+            'name' => 'No existing environment file',
+            'passed' => ! file_exists($rootPath . '/.env') && ! is_link($rootPath . '/.env'),
+            'detail' => (file_exists($rootPath . '/.env') || is_link($rootPath . '/.env')) ? 'Review and remove the existing .env manually' : 'Ready to create .env',
+        ];
+
+        $checks[] = [
+            'name' => 'No installation lock',
+            'passed' => ! file_exists($rootPath . '/storage/installed.lock') && ! is_link($rootPath . '/storage/installed.lock'),
+            'detail' => (file_exists($rootPath . '/storage/installed.lock') || is_link($rootPath . '/storage/installed.lock')) ? 'NovaNuke is already installed' : 'Installer is unlocked',
         ];
 
         return $checks;

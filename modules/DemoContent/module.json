@@ -1,0 +1,13 @@
+{
+    "name": "Demo Content",
+    "slug": "demo-content",
+    "version": "1.0.0",
+    "api_version": "1.0",
+    "description": "Optional fictional content for development, demonstrations and manual QA.",
+    "author": "NovaNuke Project",
+    "provider": "Modules\\DemoContent\\src\\DemoContentModule",
+    "cms_min_version": "0.2.0-alpha.34",
+    "php_min_version": "8.3.0",
+    "dependencies": {},
+    "permissions": []
+}

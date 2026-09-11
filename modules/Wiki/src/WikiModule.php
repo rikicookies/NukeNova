@@ -128,6 +128,7 @@ final class WikiModule implements ModuleInterface
         $context->router->post('/admin/wiki/import', static fn (Request $request, Container $container): Response => $admin($container)->import($request));
         $context->router->post('/admin/wiki/import-folder', static fn (Request $request, Container $container): Response => $admin($container)->importFolder($request));
         $context->router->post('/admin/wiki/preview', static fn (Request $request, Container $container): Response => $admin($container)->preview($request));
+        $context->router->post('/admin/wiki/bulk', static fn (Request $request, Container $container): Response => $admin($container)->bulk($request));
         $context->router->post('/admin/wiki/save', static fn (Request $request, Container $container): Response => $admin($container)->save($request));
         $context->router->post('/admin/wiki/{id}/revisions/{revision}/restore', static fn (Request $request, Container $container): Response => $admin($container)->restore($request));
         $context->router->post('/admin/wiki/{id}/delete', static fn (Request $request, Container $container): Response => $admin($container)->delete($request));

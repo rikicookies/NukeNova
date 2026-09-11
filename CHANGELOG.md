@@ -2,6 +2,113 @@
 
 All notable NovaNuke changes will be documented here.
 
+## [0.2.0-alpha.39] - 2026-09-09
+
+### Changed
+
+- `upgrade:check` now performs full SQL, TAR and matched-pair backup verification instead of accepting merely recent non-empty files.
+- Verified database and file backups must also be regular, non-symlinked files created within the last 24 hours.
+- A mismatched, corrupted, truncated or structurally invalid backup pair is now a required preflight failure.
+
+### Compatibility
+
+- Alpha.39 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.38 as a documented source.
+
+## [0.2.0-alpha.38] - 2026-09-09
+
+### Added
+
+- Read-only `php bin/cms backup:verify` command for the latest database and file backup pair.
+- SQL backup envelope, completeness, size and SHA-256 verification.
+- Streaming TAR verification covering headers, checksums, terminator, regular entries, safe paths and every manifest-declared size/hash.
+- Matched-pair check requiring individually valid database/file backups created no more than ten minutes apart.
+
+### Security
+
+- Verification never executes SQL, extracts archive entries or accepts an administrator-supplied filesystem path.
+- Symlinked backups, traversal/absolute paths, duplicate entries, malformed manifests, content/manifest mismatches and trailing archive data are rejected.
+
+### Compatibility
+
+- Alpha.38 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.37 as a documented source.
+
+## [0.2.0-alpha.37] - 2026-09-09
+
+### Changed
+
+- Core and module migration runners now refuse to continue when files for previously executed migrations are missing.
+- A failed migration stops the current batch immediately and identifies the exact core or module migration that failed.
+- The CLI reports a restore-first recovery path instead of suggesting an unsafe automatic DDL rollback.
+
+### Safety
+
+- Failed migrations are not marked as completed and no later migration in the batch is executed.
+- Recovery documentation requires restoring the pre-upgrade database and application files as one matched checkpoint.
+- Operators are explicitly warned not to delete migration-history rows or retry partially applied DDL blindly.
+
+### Compatibility
+
+- Alpha.37 adds no database migration, module/theme update or Composer dependency.
+- The read-only upgrade preflight now accepts Alpha.36 as a documented direct source in addition to Alpha.33–Alpha.35.
+
+## [0.2.0-alpha.36] - 2026-09-09
+
+### Added
+
+- Read-only `php bin/cms upgrade:check --from=VERSION` preflight for direct upgrades from Alpha.33, Alpha.34 and Alpha.35.
+- Required checks for preserved `.env` and installation lock, recent database/file backups, supported direction and complete executed migration files.
+- Explicit warnings for pending migrations and installed module updates without executing either operation.
+
+### Security
+
+- Source versions use strict syntax and an explicit support list; undocumented direct upgrades and downgrades are blocked.
+- Backup discovery accepts only recent regular `.sql`/`.tar` files in private backup storage and ignores symlinks.
+
+### Compatibility
+
+- Existing installations need no migration, module/theme update or Composer change.
+- Releases older than Alpha.33 require their documented intermediate path or a clean installation; Alpha.36 does not pretend those direct upgrades were tested.
+
+## [0.2.0-alpha.35] - 2026-09-09
+
+### Added
+
+- `php bin/cms install:check` for checking PHP extensions, writable paths and absence of prior installation files before opening the web installer.
+- Focused tests for installer URL/host validation, `.env` preservation, requirement state and safe database ordering.
+
+### Security
+
+- Installation accepts only HTTP/HTTPS site URLs without embedded credentials, query strings, fragments or control characters.
+- Database hosts reject DSN separators and connection options.
+- The installer never overwrites an existing `.env` and refuses to migrate a database that already contains tables.
+
+### Compatibility
+
+- Existing installations need no migration, module update, theme update or Composer change.
+- `install:check` is a pre-installation diagnostic; Super Administrator credentials remain exclusive to the web installer and are not accepted as command-line arguments.
+
+## [0.2.0-alpha.34] - 2026-09-09
+
+### Added
+
+- Optional official Demo Content module with the stable `novatech-community-v1` fictional technology-community dataset.
+- Twelve fictional accounts, active and expired VIP examples, and realistic module data created only for active News, Pages, Downloads, Web Links, Comments, Polls, Friends and Private Messages modules.
+- Dataset ownership records that prevent duplicate installation and prepare a future controlled Remove/Reset lifecycle.
+- Super-Administrator installation screen under **Admin → System → Demo content**, plus dataset contract and isolated integration coverage.
+
+### Security
+
+- Demo installation requires `settings.manage`, an explicit Super Administrator check, POST, CSRF and confirmation, and records an Activity Log event.
+- Existing records are never overwritten; failed installation cleanup targets only IDs already attributed to this dataset.
+- Search and Statistics continue using their normal provider/derived-data paths. The demo installer creates neither synthetic search rows nor Wiki or Block content.
+
+### Compatibility
+
+- The core version advances to 0.2.0-alpha.34. Demo Content 1.0.0 requires this release and has no Composer dependency.
+- Existing alpha.33 installations need no core migration; Demo Content creates its ownership tables only when the optional module is installed.
+
 ## [0.2.0-alpha.33] - 2026-09-09
 
 ### Added

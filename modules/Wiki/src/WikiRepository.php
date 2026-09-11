@@ -300,6 +300,73 @@ final class WikiRepository
         if ($statement->rowCount() !== 1) throw new RuntimeException('Wiki page not found.');
     }
 
+    /**
+     * @param list<int> $ids
+     * @return list<array{id:int,path:string}>
+     */
+    public function bulkChange(array $ids, string $action, int $actorId): array
+    {
+        if ($ids === [] || count($ids) > 500 || ! in_array($action, [
+            'publish', 'draft', 'audience_public', 'audience_member', 'audience_vip', 'delete',
+        ], true)) throw new RuntimeException('Invalid bulk Wiki action.');
+
+        $changed = [];
+        $this->database->beginTransaction();
+        try {
+            foreach ($ids as $id) {
+                $page = $this->locked($id);
+                if ($page === null) throw new RuntimeException('A selected Wiki page no longer exists.');
+                $path = (string) $page['path'];
+                if ($action === 'delete') {
+                    $this->delete($id);
+                    $changed[] = ['id' => $id, 'path' => $path];
+                    continue;
+                }
+
+                $status = match ($action) {
+                    'publish' => 'published',
+                    'draft' => 'draft',
+                    default => (string) $page['status'],
+                };
+                $audience = match ($action) {
+                    'audience_public' => 'public',
+                    'audience_member' => 'member',
+                    'audience_vip' => 'vip',
+                    default => (string) $page['audience'],
+                };
+                if ($status === $page['status'] && $audience === $page['audience']) continue;
+                $publishedAt = $status === 'published'
+                    ? ($page['published_at'] ?? gmdate('Y-m-d H:i:s'))
+                    : null;
+                $statement = $this->database->prepare(
+                    'UPDATE wiki_pages SET status=:status,audience=:audience,published_at=:published_at,'
+                    . 'updated_at=UTC_TIMESTAMP() WHERE id=:id AND deleted_at IS NULL'
+                );
+                $statement->execute([
+                    'status' => $status,
+                    'audience' => $audience,
+                    'published_at' => $publishedAt,
+                    'id' => $id,
+                ]);
+                $this->insertRevision($id, [
+                    'namespace' => $page['namespace'],
+                    'slug' => $page['slug'],
+                    'title' => $page['title'],
+                    'content' => $page['content'],
+                    'status' => $status,
+                    'audience' => $audience,
+                    'comments_enabled' => $page['comments_enabled'],
+                ], $publishedAt, $actorId);
+                $changed[] = ['id' => $id, 'path' => $path];
+            }
+            $this->database->commit();
+            return $changed;
+        } catch (\Throwable $error) {
+            if ($this->database->inTransaction()) $this->database->rollBack();
+            throw $error;
+        }
+    }
+
     /** @return array{0:string,1:string} */
     private function split(string $path): array
     {

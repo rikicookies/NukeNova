@@ -7,6 +7,7 @@ use NovaNuke\Core\Database\Migrator;
 use NovaNuke\Core\Database\MigrationStatus;
 use NovaNuke\Core\Backup\DatabaseBackup;
 use NovaNuke\Core\Backup\FileBackup;
+use NovaNuke\Core\Backup\BackupVerifier;
 use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
@@ -15,6 +16,8 @@ use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Version;
 use NovaNuke\Core\I18n\CatalogueAuditor;
+use NovaNuke\Installer\RequirementsChecker;
+use NovaNuke\Core\Update\UpgradeReadiness;
 $command = $argv[1] ?? 'help';
 $rootPath = dirname(__DIR__);
 require_once $rootPath . '/vendor/autoload.php';
@@ -34,6 +37,16 @@ if ($command === 'release:check') {
 if ($command === 'i18n:check') {
     $checks = (new CatalogueAuditor($rootPath))->run(); $passed = true;
     foreach ($checks as $check) { $passed = $passed && $check['passed']; fwrite(STDOUT, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['label'] . ': ' . $check['detail'] . "\n"); }
+    exit($passed ? 0 : 1);
+}
+
+if ($command === 'install:check') {
+    $checks = (new RequirementsChecker())->check($rootPath);
+    $passed = true;
+    foreach ($checks as $check) {
+        $passed = $passed && $check['passed'];
+        fwrite($check['passed'] ? STDOUT : STDERR, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['name'] . ': ' . $check['detail'] . "\n");
+    }
     exit($passed ? 0 : 1);
 }
 
@@ -73,12 +86,56 @@ if ($command === 'backup:files') {
     }
 }
 
+if ($command === 'backup:verify') {
+    if (count($argv) !== 2) {
+        fwrite(STDERR, "Usage: php bin/cms backup:verify\n");
+        exit(2);
+    }
+    $results = (new BackupVerifier($rootPath . '/storage/private/backups'))->verifyLatest();
+    $passed = true;
+    foreach ($results as $result) {
+        $passed = $passed && $result['passed'];
+        $file = $result['file'] === '' ? '' : " ({$result['file']})";
+        fwrite($result['passed'] ? STDOUT : STDERR, ($result['passed'] ? '[PASS] ' : '[FAIL] ') . ucfirst($result['type']) . " backup{$file}: {$result['detail']}\n");
+    }
+    exit($passed ? 0 : 1);
+}
+
 if ($command === 'help') {
-    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n");
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  install:check              Check requirements before web installation\n  upgrade:check --from=VER   Audit a supported upgrade before migration\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  backup:verify              Verify the latest database and file backups\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n");
     exit(0);
 }
 
 $application = require $rootPath . '/bootstrap/app.php';
+
+if ($command === 'upgrade:check') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) !== 1 || ! str_starts_with($arguments[0], '--from=')) {
+        fwrite(STDERR, "Usage: php bin/cms upgrade:check --from=VERSION\n");
+        exit(2);
+    }
+    $source = substr($arguments[0], strlen('--from='));
+    if (! preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/', $source)) {
+        fwrite(STDERR, "Invalid source version.\n");
+        exit(2);
+    }
+    try {
+        $status = $application->container()->get(MigrationStatus::class)->inspect();
+        $checks = (new UpgradeReadiness($rootPath, Version::CURRENT, [
+            '0.2.0-alpha.33', '0.2.0-alpha.34', '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', Version::CURRENT,
+        ]))->check($source, $status);
+        $passed = true;
+        foreach ($checks as $check) {
+            if ($check['required']) $passed = $passed && $check['passed'];
+            $label = $check['passed'] ? 'PASS' : ($check['required'] ? 'FAIL' : 'WARN');
+            fwrite($check['required'] && ! $check['passed'] ? STDERR : STDOUT, "[{$label}] {$check['name']}: {$check['detail']}\n");
+        }
+        exit($passed ? 0 : 1);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Upgrade check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
 
 if (in_array($command, ['downloads:orphans', 'maintenance:prune'], true)) {
     try {
@@ -96,8 +153,18 @@ if ($command === 'production:check') {
 }
 
 if ($command === 'migrate') {
-    $completed = (new Migrator($application->container()->get(\PDO::class)))
-        ->run(NOVANUKE_ROOT . '/database/migrations');
+    try {
+        $completed = (new Migrator($application->container()->get(\PDO::class)))
+            ->run(NOVANUKE_ROOT . '/database/migrations');
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Migration stopped: {$error->getMessage()}\n");
+        if ($error->getPrevious() !== null) {
+            $cause = preg_replace('/[\r\n]+/', ' ', $error->getPrevious()->getMessage()) ?? 'Unknown migration error.';
+            fwrite(STDERR, "Cause: {$cause}\n");
+        }
+        fwrite(STDERR, "Do not retry blindly. Restore the matching pre-upgrade database and files, then inspect migrate:status.\n");
+        exit(1);
+    }
 
     if ($completed === []) {
         fwrite(STDOUT, "No pending migrations.\n");

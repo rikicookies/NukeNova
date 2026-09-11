@@ -11,6 +11,10 @@ final class EnvWriter
     /** @param array<string, string|int|bool> $values */
     public function write(string $path, array $values): void
     {
+        if (file_exists($path) || is_link($path)) {
+            throw new RuntimeException('The environment file already exists and will not be overwritten.');
+        }
+
         $lines = [];
 
         foreach ($values as $key => $value) {

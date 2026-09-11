@@ -26,12 +26,17 @@ final class InstallerService
     public function install(InstallationData $data): array
     {
         $lockPath = $this->rootPath . '/storage/installed.lock';
+        $envPath = $this->rootPath . '/.env';
 
-        if (is_file($lockPath)) {
+        if (file_exists($lockPath) || is_link($lockPath)) {
             throw new RuntimeException('NovaNuke is already installed.');
+        }
+        if (file_exists($envPath) || is_link($envPath)) {
+            throw new RuntimeException('The environment file already exists and will not be overwritten.');
         }
 
         $database = $this->connectAndCreateDatabase($data);
+        $this->assertDatabaseIsEmpty($database);
         $migrations = (new Migrator($database))->run($this->rootPath . '/database/migrations');
 
         $database->beginTransaction();
@@ -46,7 +51,7 @@ final class InstallerService
             throw $error;
         }
 
-        $this->envWriter->write($this->rootPath . '/.env', [
+        $this->envWriter->write($envPath, [
             'APP_NAME' => $data->siteName,
             'APP_ENV' => 'production',
             'APP_DEBUG' => false,
@@ -150,6 +155,16 @@ final class InstallerService
             'locale' => $data->locale,
             'timezone' => $data->timezone,
         ]);
+    }
+
+    private function assertDatabaseIsEmpty(PDO $database): void
+    {
+        $tables = (int) $database->query(
+            'SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=DATABASE()'
+        )->fetchColumn();
+        if ($tables !== 0) {
+            throw new RuntimeException('The selected database is not empty. Choose an empty database to avoid overwriting existing data.');
+        }
     }
 
     private function saveInitialSettings(PDO $database, InstallationData $data): void

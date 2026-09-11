@@ -58,6 +58,32 @@ final class ModuleLifecycleIntegrationTest extends MySqlIntegrationTestCase
         )->fetchColumn());
     }
 
+    public function testEveryBundledModuleInstallsAndEnablesOnAFreshDatabase(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $detector = new ModuleDetector($root . '/modules');
+        $manifests = $detector->detect();
+        $manager = $this->manager();
+
+        foreach (array_keys($manifests) as $slug) {
+            $manager->install($slug);
+            $manager->enable($slug);
+        }
+
+        $inventory = $manager->inventory();
+        self::assertCount(count($manifests), $inventory);
+        foreach ($manifests as $slug => $manifest) {
+            self::assertTrue($inventory[$slug]['installed'], "{$slug} was not installed.");
+            self::assertTrue($inventory[$slug]['enabled'], "{$slug} was not enabled.");
+            self::assertSame([], (new ModuleMigrator($this->db()))->status($manifest)['pending'], "{$slug} has pending migrations.");
+        }
+
+        foreach (array_reverse(array_keys($manifests)) as $slug) {
+            $manager->disable($slug);
+        }
+        self::assertSame(0, (int) $this->db()->query('SELECT COUNT(*) FROM modules WHERE enabled=1')->fetchColumn());
+    }
+
     private ?Router $testRouter = null;
 
     private function router(): Router

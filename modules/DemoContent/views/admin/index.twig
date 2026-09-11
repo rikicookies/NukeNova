@@ -1,0 +1,29 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Demo Content — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+    <p class="eyebrow">System</p>
+    <h1>NovaTech Community Demo</h1>
+    <p><strong>Development / demonstration only.</strong> Installs fictional users and realistic technology content for visual review and manual QA.</p>
+    {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+    {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
+    <dl class="system-list">
+        <div><dt>Dataset</dt><dd><code>{{ dataset }}</code></dd></div>
+        <div><dt>Status</dt><dd>{{ state ? state.status : 'Not installed' }}</dd></div>
+        {% if state and state.installed_at %}<div><dt>Installed</dt><dd>{{ state.installed_at }}</dd></div>{% endif %}
+    </dl>
+    {% if state %}
+        <h2>Installed content</h2>
+        <ul>{% for type, count in state.counts %}<li>{{ type }}: {{ count }}</li>{% else %}<li>No counts recorded.</li>{% endfor %}</ul>
+    {% else %}
+        <h2>Module coverage</h2>
+        <ul>{% for module, available in available_modules %}<li>{{ module }}: {{ available ? 'Available' : 'Skipped (module inactive)' }}</li>{% endfor %}</ul>
+        <p>All 12 fictional accounts use the temporary password <code>{{ demo_password }}</code> and must change it after sign-in.</p>
+        <form class="settings-form" method="post" action="/admin/system/demo-content/install">
+            <input type="hidden" name="_token" value="{{ csrf_token }}">
+            <label><input type="checkbox" name="confirm_install" value="1" required> I understand this creates demonstration accounts and content.</label>
+            <button type="submit">Install Demo Content</button>
+        </form>
+    {% endif %}
+</section>
+{% endblock %}

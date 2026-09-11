@@ -27,6 +27,18 @@ This creates a private TAR archive containing `modules/`, `themes/`, `public/upl
 
 The archive can contain executable module code and private user files. Treat it as sensitive, keep it outside `public/`, encrypt off-server copies and restore only code from a trusted backup. Save `.env` separately through a secure channel.
 
+## Verify the backup pair
+
+Immediately after creating both files, run:
+
+```bash
+php bin/cms backup:verify
+```
+
+The database, files and matched-pair checks must all report `PASS`. NovaNuke verifies the latest SQL envelope and fingerprint, every TAR header and manifest size/hash, safe archive paths and a complete terminator without executing or extracting anything. The two files must have been created no more than ten minutes apart. Record their filenames and displayed SHA-256 fingerprints with the off-server copy.
+
+`php bin/cms upgrade:check --from=VERSION` repeats these integrity checks and additionally requires backups created within the last 24 hours. Neither command proves authenticity against an attacker who can replace both a backup and its recorded fingerprint.
+
 ## Restore test
 
 Restoration is deliberately not exposed through the web panel. Create an empty database, import the SQL file with MySQL/MariaDB tools or phpMyAdmin, extract the matching file archive over a clean copy of the same NovaNuke release, then configure `.env`. Compare restored files with the manifest before exposing the site. Test restoration periodically on a non-production system. A backup that has never been restored is not yet proven usable.

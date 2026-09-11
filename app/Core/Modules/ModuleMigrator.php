@@ -8,6 +8,7 @@ use NovaNuke\Core\Database\Migration;
 use NovaNuke\Core\Database\MigrationFileSet;
 use PDO;
 use RuntimeException;
+use Throwable;
 
 final class ModuleMigrator
 {
@@ -19,6 +20,13 @@ final class ModuleMigrator
     public function run(ModuleManifest $manifest): array
     {
         $directory = $manifest->path . '/database/migrations';
+        $status = $this->status($manifest);
+        if ($status['missing_files'] !== []) {
+            throw new RuntimeException(
+                "Cannot update module {$manifest->slug} while executed migration files are missing: "
+                . implode(', ', $status['missing_files'])
+            );
+        }
         $files = is_dir($directory) ? (glob($directory . '/*.php') ?: []) : [];
         sort($files, SORT_STRING);
         $executed = $this->executed($manifest->slug);
@@ -30,17 +38,25 @@ final class ModuleMigrator
             if (isset($executed[$name])) {
                 continue;
             }
-            $migration = require $file;
-            if (! $migration instanceof Migration) {
-                throw new RuntimeException("Module migration must implement Migration: {$file}");
+            try {
+                $migration = require $file;
+                if (! $migration instanceof Migration) {
+                    throw new RuntimeException("Module migration must implement Migration: {$file}");
+                }
+                $migration->up($this->database);
+                $statement = $this->database->prepare(
+                    'INSERT INTO module_migrations (module_slug, migration, batch, executed_at) '
+                    . 'VALUES (:module_slug, :migration, :batch, UTC_TIMESTAMP())'
+                );
+                $statement->execute(['module_slug' => $manifest->slug, 'migration' => $name, 'batch' => $batch]);
+                $completed[] = $name;
+            } catch (Throwable $error) {
+                throw new RuntimeException(
+                    "Module migration failed: {$manifest->slug}.{$name}. No later migration was run.",
+                    0,
+                    $error,
+                );
             }
-            $migration->up($this->database);
-            $statement = $this->database->prepare(
-                'INSERT INTO module_migrations (module_slug, migration, batch, executed_at) '
-                . 'VALUES (:module_slug, :migration, :batch, UTC_TIMESTAMP())'
-            );
-            $statement->execute(['module_slug' => $manifest->slug, 'migration' => $name, 'batch' => $batch]);
-            $completed[] = $name;
         }
 
         return $completed;

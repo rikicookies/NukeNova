@@ -94,6 +94,29 @@ final class WikiModuleContractTest extends TestCase
         self::assertStringContainsString('/assets/js/wiki-folder-import.js', $view);
     }
 
+    public function testBulkActionsAreTransactionalAuthorizedAndExplicitlyConfirmed(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $module = (string) file_get_contents($root . '/modules/Wiki/src/WikiModule.php');
+        $controller = (string) file_get_contents($root . '/modules/Wiki/src/AdminWikiController.php');
+        $repository = (string) file_get_contents($root . '/modules/Wiki/src/WikiRepository.php');
+        $view = (string) file_get_contents($root . '/modules/Wiki/views/admin/index.twig');
+
+        self::assertStringContainsString("post('/admin/wiki/bulk'", $module);
+        self::assertStringContainsString("guard('wiki.edit')", $controller);
+        self::assertStringContainsString("guard('wiki.publish')", $controller);
+        self::assertStringContainsString("input('confirm_bulk') !== '1'", $controller);
+        self::assertStringContainsString("input('page_ids', [])", $controller);
+        self::assertStringContainsString('count($value) > 500', $controller);
+        self::assertStringContainsString('function bulkChange(array $ids', $repository);
+        self::assertStringContainsString('beginTransaction()', $repository);
+        self::assertStringContainsString('insertRevision($id', $repository);
+        self::assertStringContainsString('rollBack()', $repository);
+        self::assertStringContainsString('name="page_ids[]"', $view);
+        self::assertStringContainsString('data-wiki-select-all', $view);
+        self::assertStringContainsString('name="confirm_bulk" value="1" required', $view);
+    }
+
     public function testMarkdownPreviewIsAuthorizedSanitizedAndNeverPersisted(): void
     {
         $root = dirname(__DIR__, 2);

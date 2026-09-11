@@ -47,12 +47,14 @@ final class AdminWikiController
 
     private function listing(?string $importError = null, int $status = 200): Response
     {
+        $user = $this->auth->user();
         return Response::html($this->views->render('@wiki/admin/index.twig', [
             'pages' => $this->pages->adminPages(),
             'missing_links' => $this->pages->missingLinks(),
             'message' => $this->session->pull('wiki.message'),
             'import_error' => $importError,
             'csrf_token' => $this->csrf->token(),
+            'can_publish' => $user !== null && $this->authorization->allows((int) $user['id'], 'wiki.publish'),
         ]), $status);
     }
 
@@ -215,6 +217,45 @@ final class AdminWikiController
             ]);
         } catch (RuntimeException $error) {
             return Response::html(htmlspecialchars($error->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 422);
+        }
+    }
+
+    public function bulk(Request $request): Response
+    {
+        if ($guard = $this->guard('wiki.edit')) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
+        if ($request->input('confirm_bulk') !== '1') return Response::html('Confirm the bulk Wiki action.', 422);
+
+        try {
+            $action = $request->input('bulk_action');
+            if (! is_string($action) || ! in_array($action, [
+                'publish', 'draft', 'audience_public', 'audience_member', 'audience_vip', 'delete',
+            ], true)) throw new RuntimeException('Select a valid bulk Wiki action.');
+            if (in_array($action, ['publish', 'audience_public', 'audience_member', 'audience_vip'], true)) {
+                if ($guard = $this->guard('wiki.publish')) return $guard;
+            }
+
+            $actor = $this->auth->user();
+            $changed = $this->pages->bulkChange(
+                $this->selectedPageIds($request->input('page_ids', [])),
+                $action,
+                (int) $actor['id'],
+            );
+            if ($action !== 'delete') {
+                foreach ($changed as $page) {
+                    $this->events->dispatch('content.updated', new WikiPageChanged(
+                        $page['id'], $page['path'], (int) $actor['id'],
+                    ));
+                }
+            }
+            $this->activity->log((int) $actor['id'], 'wiki.pages.bulk', 'wiki_page', null, [
+                'action' => $action,
+                'count' => count($changed),
+            ], $request->ip());
+            $this->session->put('wiki.message', sprintf('Bulk action applied to %d Wiki pages.', count($changed)));
+            return Response::redirect('/admin/wiki', 303);
+        } catch (RuntimeException $error) {
+            return $this->listing($error->getMessage(), 422);
         }
     }
 
@@ -390,5 +431,22 @@ final class AdminWikiController
         $id = filter_var($request->query($key), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
         if ($id === false) throw new RuntimeException('Invalid Wiki revision comparison.');
         return (int) $id;
+    }
+
+    /** @return list<int> */
+    private function selectedPageIds(mixed $value): array
+    {
+        if (! is_array($value) || $value === [] || count($value) > 500) {
+            throw new RuntimeException('Select between 1 and 500 Wiki pages.');
+        }
+        $ids = [];
+        foreach ($value as $candidate) {
+            $id = filter_var($candidate, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if ($id === false) throw new RuntimeException('A selected Wiki page identifier is invalid.');
+            $ids[(int) $id] = (int) $id;
+        }
+        $ids = array_values($ids);
+        sort($ids, SORT_NUMERIC);
+        return $ids;
     }
 }

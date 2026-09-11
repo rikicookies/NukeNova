@@ -22,8 +22,21 @@ final class InstallationValidator
         $this->requiredLength($errors, $input, 'database_host', 1, 255);
         $this->requiredLength($errors, $input, 'database_username', 1, 128);
 
-        if (! filter_var($input['site_url'] ?? null, FILTER_VALIDATE_URL)) {
+        $siteUrl = trim((string) ($input['site_url'] ?? ''));
+        $scheme = strtolower((string) parse_url($siteUrl, PHP_URL_SCHEME));
+        if (! filter_var($siteUrl, FILTER_VALIDATE_URL)
+            || ! in_array($scheme, ['http', 'https'], true)
+            || parse_url($siteUrl, PHP_URL_USER) !== null
+            || parse_url($siteUrl, PHP_URL_PASS) !== null
+            || parse_url($siteUrl, PHP_URL_QUERY) !== null
+            || parse_url($siteUrl, PHP_URL_FRAGMENT) !== null
+            || preg_match('/[\x00-\x1F\x7F]/', $siteUrl)) {
             $errors['site_url'] = 'Enter a valid site URL including http:// or https://.';
+        }
+
+        $databaseHost = trim((string) ($input['database_host'] ?? ''));
+        if (! preg_match('/^[a-zA-Z0-9._:-]{1,255}$/', $databaseHost)) {
+            $errors['database_host'] = 'Enter a hostname or IP address without connection options.';
         }
 
         if (! ($this->locales?->supports((string)($input['locale']??'')) ?? in_array($input['locale'] ?? null, ['en', 'es'], true))) {

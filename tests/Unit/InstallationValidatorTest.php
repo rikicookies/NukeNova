@@ -33,6 +33,17 @@ final class InstallationValidatorTest extends TestCase
         self::assertArrayHasKey('admin_password_confirmation', $errors);
     }
 
+    public function testItRejectsUnsafeSiteUrlsAndDatabaseConnectionOptions(): void
+    {
+        $input = $this->validInput();
+        $input['site_url'] = 'ftp://admin:secret@example.test/site?debug=1';
+        $input['database_host'] = '127.0.0.1;dbname=mysql';
+        $errors = (new InstallationValidator())->validate($input);
+
+        self::assertArrayHasKey('site_url', $errors);
+        self::assertArrayHasKey('database_host', $errors);
+    }
+
     /** @return array<string, string|int> */
     private function validInput(): array
     {

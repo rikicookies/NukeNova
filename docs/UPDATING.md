@@ -12,10 +12,25 @@ Never extract an update in a way that deletes unrelated persistent files.
 
 ## Safe update sequence
 
-1. Create an off-server database and file backup.
+1. Create database and file backups, verify them, and copy the verified pair off-server:
+
+```bash
+php bin/cms backup:database
+php bin/cms backup:files
+php bin/cms backup:verify
+```
+
 2. Enable maintenance mode in `/admin/settings`.
 3. Replace application files while preserving the items above.
-4. Run:
+4. Run the read-only preflight with the exact version being replaced:
+
+```bash
+php bin/cms upgrade:check --from=0.2.0-alpha.38
+```
+
+Alpha.39 supports direct preflight from Alpha.33 through Alpha.38. For an older release, follow its documented intermediate updates or perform a clean installation and controlled data migration; do not claim an untested direct upgrade.
+
+5. Run:
 
 ```bash
 composer install --no-dev --optimize-autoloader
@@ -25,10 +40,10 @@ php bin/cms cache:clear
 php bin/cms release:check
 ```
 
-5. Apply compatible updates shown in `/admin/modules` and `/admin/themes`.
-6. Run `php bin/cms migrate:status` again. It succeeds only when no core/module migrations, missing migration files or module-version updates require attention.
-7. Run the smoke-test list in `docs/RELEASE.md`.
-8. Disable maintenance mode.
+6. Apply compatible updates shown in `/admin/modules` and `/admin/themes`.
+7. Run `php bin/cms migrate:status` again. It succeeds only when no core/module migrations, missing migration files or module-version updates require attention.
+8. Run the smoke-test list in `docs/RELEASE.md`.
+9. Disable maintenance mode.
 
 `migrate` executes core migrations only. Module migrations run through the controlled update action in `/admin/modules`, where NovaNuke also checks module and dependency versions.
 
@@ -39,6 +54,22 @@ composer update phpmailer/phpmailer
 ```
 
 Do not delete `storage/installed.lock` during an update. Removing it intentionally re-enables installer routing and is not an update procedure.
+
+`upgrade:check` never writes to the database or filesystem. It performs the same database, TAR and matched-pair integrity checks as `backup:verify`, additionally requiring both backups to be no more than 24 hours old. A `WARN` for pending migrations or module updates describes expected work; a `FAIL` must be resolved before running `migrate`.
+
+## Recovering from a failed migration
+
+NovaNuke stops at the first failed core or module migration and does not record that migration as completed. It does not automatically call `down()`: MySQL and MariaDB may commit DDL implicitly, so an automatic rollback cannot promise restoration of the previous schema.
+
+1. Keep maintenance mode enabled and do not retry the migration blindly.
+2. Save the exact migration name and underlying error from the console or application log.
+3. Restore the database backup and file backup created together immediately before the update. Do not combine a restored database with newer application files.
+4. Confirm the restored site's version and run `php bin/cms migrate:status`.
+5. Correct the original cause in a disposable copy, create a fresh matched backup pair and repeat the documented update sequence.
+
+If `migrate` reports executed migration files as missing, restore the correct release files before doing anything else. Never delete rows from `migrations` or `module_migrations` merely to silence the check.
+
+`backup:verify` checks the newest NovaNuke SQL and TAR backups in private storage. It validates the SQL envelope and SHA-256 fingerprint, then validates TAR headers, terminator, safe regular-file paths and every manifest size/hash without extracting content. Both files must be valid and created no more than ten minutes apart. Verification proves that the generated files are internally intact; a periodic restoration test on a disposable database remains necessary.
 
 ## Updating to alpha.15
 

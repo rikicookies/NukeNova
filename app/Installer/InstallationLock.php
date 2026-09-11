@@ -10,7 +10,7 @@ final class InstallationLock
 {
     public function create(string $path, string $version): void
     {
-        if (is_file($path)) throw new RuntimeException('NovaNuke is already installed.');
+        if (file_exists($path) || is_link($path)) throw new RuntimeException('NovaNuke is already installed.');
         $payload = json_encode([
             'installed_at' => gmdate('c'),
             'version' => $version,
@@ -25,7 +25,7 @@ final class InstallationLock
             fclose($stream);
             $stream = null;
             @chmod($temporary, 0600);
-            if (is_file($path) || ! rename($temporary, $path)) {
+            if (file_exists($path) || is_link($path) || ! rename($temporary, $path)) {
                 throw new RuntimeException('The installation lock could not be finalized.');
             }
         } finally {
