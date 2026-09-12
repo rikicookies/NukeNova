@@ -23,10 +23,10 @@ final class SearchModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
-        $context->events->listen('admin.menu.building', static function (object $event): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Search', '/admin/search', 'search.manage');
         });
-        $context->events->listen('maintenance.pruning', static function (object $event) use ($context): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MAINTENANCE_PRUNING, static function (object $event) use ($context): void {
             if ($event instanceof MaintenancePruning) {
                 $event->add('search.queries', $context->container->get(SearchRepository::class)->prune($event->dryRun));
             }

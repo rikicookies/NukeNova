@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Pages\src;
 
-use Modules\Media\src\MediaRepository;
+use NovaNuke\Core\Media\MediaLibraryInterface;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
@@ -25,7 +25,7 @@ final class AdminPagesController
         private readonly ActivityLogger $activity, private readonly EventDispatcher $events,
         private readonly CsrfTokenManager $csrf, private readonly SessionManager $session,
         private readonly ViewRenderer $views,
-        private readonly ?MediaRepository $media = null,
+        private readonly ?MediaLibraryInterface $media = null,
     ) {
     }
 
@@ -62,7 +62,7 @@ final class AdminPagesController
             $id = filter_var($request->input('id'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
             $data = $this->input->page($request->allInput(), $this->authorization->allows((int) $actor['id'], 'pages.publish'));
             $pageId = $this->pages->save($id ? (int) $id : null, $data, (int) $actor['id']);
-            $action = $id ? 'content.updated' : 'content.created';
+            $action = $id ? \NovaNuke\Core\Events\EventName::CONTENT_UPDATED : \NovaNuke\Core\Events\EventName::CONTENT_CREATED;
             $this->events->dispatch($action, new PageChanged('pages', $pageId, (int) $actor['id']));
             $this->activity->log((int) $actor['id'], 'page.' . ($id ? 'updated' : 'created'), 'page', $pageId, ['status' => $data['status']], $request->ip());
             $this->session->put('pages.message', 'Page saved.');

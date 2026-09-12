@@ -4,16 +4,32 @@ declare(strict_types=1);
 
 namespace NovaNuke\Core\Security;
 
+use InvalidArgumentException;
 use RuntimeException;
 
 final class SessionManager
 {
+    private const STARTED_AT = '_started_at';
+    private const LAST_ACTIVITY_AT = '_last_activity_at';
+    private const LAST_REGENERATED_AT = '_last_regenerated_at';
+
     public function __construct(
         private readonly string $name,
         private readonly bool $secure,
         private readonly string $sameSite = 'Lax',
         private readonly int $lifetime = 7200,
+        private readonly int $idleTimeout = 1800,
+        private readonly int $rotationInterval = 900,
     ) {
+        if (! in_array($this->sameSite, ['Lax', 'Strict', 'None'], true)) {
+            throw new InvalidArgumentException('SESSION_SAME_SITE must be Lax, Strict or None.');
+        }
+        if ($this->sameSite === 'None' && ! $this->secure) {
+            throw new InvalidArgumentException('SESSION_SAME_SITE=None requires SESSION_SECURE=true.');
+        }
+        if ($this->lifetime < 300 || $this->idleTimeout < 60 || $this->rotationInterval < 60) {
+            throw new InvalidArgumentException('Session lifetime, idle timeout and rotation interval are below safe minimums.');
+        }
     }
 
     public function start(): void
@@ -36,19 +52,38 @@ final class SessionManager
         ]);
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
+        ini_set('session.use_trans_sid', '0');
 
         if (! session_start()) {
             throw new RuntimeException('The session could not be started.');
         }
 
-        if (! isset($_SESSION['_started_at'])) {
-            $_SESSION['_started_at'] = time();
+        $now = time();
+        $startedAt = (int) ($_SESSION[self::STARTED_AT] ?? 0);
+        $lastActivityAt = (int) ($_SESSION[self::LAST_ACTIVITY_AT] ?? 0);
+        $lastRegeneratedAt = (int) ($_SESSION[self::LAST_REGENERATED_AT] ?? 0);
+
+        if ($startedAt <= 0) {
+            $_SESSION[self::STARTED_AT] = $now;
+            $_SESSION[self::LAST_ACTIVITY_AT] = $now;
+            $_SESSION[self::LAST_REGENERATED_AT] = $now;
+            return;
         }
 
-        if ((time() - (int) $_SESSION['_started_at']) > $this->lifetime) {
-            session_regenerate_id(true);
-            $_SESSION = ['_started_at' => time()];
+        $expired = ($now - $startedAt) > $this->lifetime
+            || ($lastActivityAt > 0 && ($now - $lastActivityAt) > $this->idleTimeout);
+
+        if ($expired) {
+            $this->renew($now, true);
+            return;
         }
+
+        if ($lastRegeneratedAt <= 0 || ($now - $lastRegeneratedAt) > $this->rotationInterval) {
+            session_regenerate_id(true);
+            $_SESSION[self::LAST_REGENERATED_AT] = $now;
+        }
+
+        $_SESSION[self::LAST_ACTIVITY_AT] = $now;
     }
 
     public function get(string $key, mixed $default = null): mixed
@@ -76,14 +111,24 @@ final class SessionManager
 
     public function regenerate(): void
     {
+        $now = time();
         session_regenerate_id(true);
-        $_SESSION['_started_at'] = time();
+        $_SESSION[self::STARTED_AT] = $now;
+        $_SESSION[self::LAST_ACTIVITY_AT] = $now;
+        $_SESSION[self::LAST_REGENERATED_AT] = $now;
     }
 
     public function invalidate(): void
     {
+        $this->renew(time(), true);
+    }
+
+    private function renew(int $now, bool $destroyOld): void
+    {
         $_SESSION = [];
-        session_regenerate_id(true);
-        $_SESSION['_started_at'] = time();
+        session_regenerate_id($destroyOld);
+        $_SESSION[self::STARTED_AT] = $now;
+        $_SESSION[self::LAST_ACTIVITY_AT] = $now;
+        $_SESSION[self::LAST_REGENERATED_AT] = $now;
     }
 }

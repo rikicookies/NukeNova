@@ -2,8 +2,8 @@
 {% block title %}Themes — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Appearance</p>
-    <h1>Themes</h1>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Themes'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Appearance', title: 'Themes', description: 'Install trusted themes and select the active presentation for the site.'} only %}
     <p>Copy trusted themes into <code>themes/</code>, install them and select one active theme.</p>
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
@@ -55,6 +55,5 @@
         </article>
         {% endfor %}
     </div>
-    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
 </section>
 {% endblock %}

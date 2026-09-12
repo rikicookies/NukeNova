@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Media\src;
 
+use NovaNuke\Core\Media\MediaUsageChecking;
+
 use NovaNuke\Core\Events\EventDispatcher;
 use RuntimeException;
 use Throwable;
@@ -20,7 +22,7 @@ final class MediaManager
     public function delete(int $id):void
     {
         $media=$this->repository->find($id);if($media===null)throw new RuntimeException('Media item not found.');
-        $usage=new MediaUsageChecking((string)$media['public_path']);$this->events->dispatch('media.usage.checking',$usage);
+        $usage=new MediaUsageChecking((string)$media['public_path']);$this->events->dispatch(\NovaNuke\Core\Events\EventName::MEDIA_USAGE_CHECKING,$usage);
         if($usage->total()>0)throw new RuntimeException('This image is still used by site content and cannot be deleted.');
         $this->repository->delete($id);$this->storage->remove((string)$media['public_path']);
     }

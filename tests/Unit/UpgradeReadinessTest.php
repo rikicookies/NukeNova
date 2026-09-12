@@ -26,6 +26,7 @@ final class UpgradeReadinessTest extends TestCase
         file_put_contents($this->root . '/source/example.txt', 'backup-data');
         $this->databaseBackup = $this->root . '/storage/private/backups/novanuke-db-test.sql';
         file_put_contents($this->databaseBackup, "-- NovaNuke database backup\n-- Created: 2026-09-09T00:00:00+00:00\n\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\nSET FOREIGN_KEY_CHECKS=1;\n");
+        @chmod($this->databaseBackup, 0600);
         $this->fileBackup = (new FileBackup($this->root, $this->root . '/storage/private/backups', [
             'custom' => $this->root . '/source',
         ]))->create()['path'];
@@ -41,7 +42,7 @@ final class UpgradeReadinessTest extends TestCase
 
     public function testSupportedUpgradeWithRecentBackupsPassesRequiredChecks(): void
     {
-        $checks = $this->checker()->check('0.2.0-alpha.35', $this->status());
+        $checks = $this->checker()->check('0.2.0-alpha.35', $this->upgradeStatus());
         foreach ($checks as $check) {
             if ($check['required']) self::assertTrue($check['passed'], $check['name']);
         }
@@ -49,7 +50,7 @@ final class UpgradeReadinessTest extends TestCase
 
     public function testUnsupportedSourceAndMissingMigrationFilesBlockUpgrade(): void
     {
-        $status = $this->status();
+        $status = $this->upgradeStatus();
         $status['missing_total'] = 1;
         $checks = $this->byName($this->checker()->check('0.2.0-alpha.20', $status));
 
@@ -62,7 +63,7 @@ final class UpgradeReadinessTest extends TestCase
     {
         $old = time() - 90000;
         foreach (glob($this->root . '/storage/private/backups/*') ?: [] as $file) touch($file, $old);
-        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->status()));
+        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->upgradeStatus()));
 
         self::assertFalse($checks['Verified database backup']['passed']);
         self::assertFalse($checks['Verified file backup']['passed']);
@@ -71,7 +72,7 @@ final class UpgradeReadinessTest extends TestCase
     public function testMalformedInstallationLockBlocksUpgrade(): void
     {
         file_put_contents($this->root . '/storage/installed.lock', "{}\n");
-        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->status()));
+        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->upgradeStatus()));
         self::assertFalse($checks['Installation lock']['passed']);
     }
 
@@ -79,22 +80,34 @@ final class UpgradeReadinessTest extends TestCase
     {
         file_put_contents($this->databaseBackup, '');
         file_put_contents($this->fileBackup, '');
-        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->status()));
+        $checks = $this->byName($this->checker()->check('0.2.0-alpha.35', $this->upgradeStatus()));
 
         self::assertFalse($checks['Verified database backup']['passed']);
         self::assertFalse($checks['Verified file backup']['passed']);
         self::assertFalse($checks['Matched backup pair']['passed']);
     }
 
+    public function testRecordedSourceMustMatchTheDeclaredSource(): void
+    {
+        $checks = $this->byName($this->checker()->check(
+            '0.2.0-alpha.38',
+            $this->upgradeStatus(),
+            recordedVersion: '0.2.0-alpha.37',
+        ));
+
+        self::assertTrue($checks['Recorded source version']['required']);
+        self::assertFalse($checks['Recorded source version']['passed']);
+    }
+
     private function checker(): UpgradeReadiness
     {
-        return new UpgradeReadiness($this->root, '0.2.0-alpha.39', [
-            '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39',
+        return new UpgradeReadiness($this->root, '0.4.0-beta.10', [
+            '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9',
         ]);
     }
 
     /** @return array<string,int> */
-    private function status(): array
+    private function upgradeStatus(): array
     {
         return ['pending_total' => 2, 'missing_total' => 0, 'module_updates_total' => 1];
     }

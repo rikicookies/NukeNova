@@ -12,15 +12,26 @@ use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
 use NovaNuke\Core\System\ProductionReadiness;
+use NovaNuke\Core\System\DistributionSmokeCheck;
 use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Version;
 use NovaNuke\Core\I18n\CatalogueAuditor;
 use NovaNuke\Installer\RequirementsChecker;
 use NovaNuke\Core\Update\UpgradeReadiness;
+use NovaNuke\Core\Update\UpgradeCompletion;
+use NovaNuke\Core\Settings\SettingsRepository;
+use NovaNuke\Core\Developer\ModuleScaffolder;
+use NovaNuke\Core\Developer\ModuleDiagnostic;
+use NovaNuke\Core\Developer\ModuleInspector;
+use NovaNuke\Core\Membership\MembershipHealthCheck;
 $command = $argv[1] ?? 'help';
 $rootPath = dirname(__DIR__);
 require_once $rootPath . '/vendor/autoload.php';
+$supportedUpgradeSources = [
+    '0.2.0-alpha.33', '0.2.0-alpha.34', '0.2.0-alpha.35', '0.2.0-alpha.36',
+    '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9', Version::CURRENT,
+];
 
 if ($command === 'release:check') {
     $checklist = new ReleaseChecklist($rootPath);
@@ -30,6 +41,18 @@ if ($command === 'release:check') {
     foreach ($checks as $check) {
         $passed = $passed && $check['passed'];
         fwrite(STDOUT, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['name'] . ': ' . $check['detail'] . "\n");
+    }
+    exit($passed ? 0 : 1);
+}
+
+
+if ($command === 'release:smoke') {
+    $checks = (new DistributionSmokeCheck($rootPath))->run();
+    $passed = true;
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " release smoke\n\n");
+    foreach ($checks as $check) {
+        $passed = $passed && $check['passed'];
+        fwrite($check['passed'] ? STDOUT : STDERR, ($check['passed'] ? '[PASS] ' : '[FAIL] ') . $check['name'] . ': ' . $check['detail'] . "\n");
     }
     exit($passed ? 0 : 1);
 }
@@ -101,8 +124,127 @@ if ($command === 'backup:verify') {
     exit($passed ? 0 : 1);
 }
 
+
+if ($command === 'module:inspect') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) !== 1) {
+        fwrite(STDERR, "Usage: php bin/cms module:inspect MODULE\n");
+        exit(2);
+    }
+    $requested = trim((string) $arguments[0]);
+    if ($requested === '' || str_contains($requested, '..') || str_contains($requested, '/') || str_contains($requested, '\\')) {
+        fwrite(STDERR, "Invalid module identifier. Use a module directory name or slug.\n");
+        exit(2);
+    }
+    $modulesPath = $rootPath . '/modules';
+    $modulePath = $modulesPath . '/' . $requested;
+    if (! is_dir($modulePath)) {
+        $modulePath = '';
+        foreach (glob($modulesPath . '/*/module.json') ?: [] as $manifestFile) {
+            $data = json_decode((string) file_get_contents($manifestFile), true);
+            if (is_array($data) && (($data['slug'] ?? null) === $requested)) { $modulePath = dirname($manifestFile); break; }
+        }
+    }
+    if ($modulePath === '' || ! is_dir($modulePath)) {
+        fwrite(STDERR, "Module not found: {$requested}\n");
+        exit(1);
+    }
+    try {
+        $info = (new ModuleInspector())->inspect($modulePath);
+        fwrite(STDOUT, "NovaNuke " . Version::CURRENT . " module inspect: {$info['name']}\n\n");
+        fwrite(STDOUT, "Slug: {$info['slug']}\nVersion: {$info['version']}\nAPI: {$info['api_version']}\nProvider: {$info['provider']}\nCMS minimum: {$info['cms_min_version']}\nPHP minimum: {$info['php_min_version']}\n");
+        fwrite(STDOUT, "\nDependencies:\n");
+        if ($info['dependencies'] === []) fwrite(STDOUT, "  (none)\n"); else foreach ($info['dependencies'] as $slug => $version) fwrite(STDOUT, "  {$slug} >= {$version}\n");
+        fwrite(STDOUT, "\nPermissions:\n");
+        if ($info['permissions'] === []) fwrite(STDOUT, "  (none)\n"); else foreach ($info['permissions'] as $permission) fwrite(STDOUT, "  {$permission}\n");
+        fwrite(STDOUT, "\nRoutes:\n");
+        if ($info['routes'] === []) fwrite(STDOUT, "  (none statically detected)\n"); else foreach ($info['routes'] as $route) fwrite(STDOUT, '  ' . $route['method'] . ' ' . $route['path'] . ($route['name'] ? ' [' . $route['name'] . ']' : '') . "\n");
+        fwrite(STDOUT, "\nListens:\n");
+        if ($info['listens'] === []) fwrite(STDOUT, "  (none)\n"); else foreach ($info['listens'] as $event) fwrite(STDOUT, "  EventName::{$event}\n");
+        fwrite(STDOUT, "\nDispatches:\n");
+        if ($info['dispatches'] === []) fwrite(STDOUT, "  (none)\n"); else foreach ($info['dispatches'] as $event) fwrite(STDOUT, "  EventName::{$event}\n");
+        fwrite(STDOUT, "\nMigrations: " . count($info['migrations']) . "\nCatalogues: " . ($info['catalogues'] === [] ? '(none)' : implode(', ', $info['catalogues'])) . "\nREADME: " . ($info['readme'] ? 'yes' : 'no') . "\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Module inspection failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'module:list') {
+    if (count($argv) !== 2) {
+        fwrite(STDERR, "Usage: php bin/cms module:list\n");
+        exit(2);
+    }
+    $items = (new ModuleInspector())->inventory($rootPath . '/modules');
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " module inventory\n\n");
+    foreach ($items as $item) {
+        fwrite(STDOUT, sprintf("%-18s %-10s API %-4s deps:%d perms:%d routes:%d\n", $item['slug'], $item['version'], $item['api_version'], count($item['dependencies']), count($item['permissions']), count($item['routes'])));
+    }
+    fwrite(STDOUT, "\nModules: " . count($items) . "\n");
+    exit(0);
+}
+
+if ($command === 'module:check') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) !== 1) {
+        fwrite(STDERR, "Usage: php bin/cms module:check MODULE\n");
+        exit(2);
+    }
+    $requested = trim((string) $arguments[0]);
+    if ($requested === '' || str_contains($requested, '..') || str_contains($requested, '/') || str_contains($requested, '\\')) {
+        fwrite(STDERR, "Invalid module identifier. Use a module directory name or slug.\n");
+        exit(2);
+    }
+    $modulesPath = $rootPath . '/modules';
+    $modulePath = $modulesPath . '/' . $requested;
+    if (! is_dir($modulePath)) {
+        $modulePath = '';
+        foreach (glob($modulesPath . '/*/module.json') ?: [] as $manifestFile) {
+            $data = json_decode((string) file_get_contents($manifestFile), true);
+            if (is_array($data) && (($data['slug'] ?? null) === $requested)) {
+                $modulePath = dirname($manifestFile);
+                break;
+            }
+        }
+    }
+    if ($modulePath === '' || ! is_dir($modulePath)) {
+        fwrite(STDERR, "Module not found: {$requested}\n");
+        exit(1);
+    }
+    $checks = (new ModuleDiagnostic())->inspect($modulePath, $modulesPath);
+    $passed = true;
+    $warnings = 0;
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . ' module check: ' . basename($modulePath) . "\n\n");
+    foreach ($checks as $check) {
+        $passed = $passed && $check['passed'];
+        if ($check['level'] === 'WARN') $warnings++;
+        $stream = $check['level'] === 'FAIL' ? STDERR : STDOUT;
+        fwrite($stream, '[' . $check['level'] . '] ' . $check['label'] . ': ' . $check['detail'] . "\n");
+    }
+    fwrite(STDOUT, "\nResult: " . ($passed ? 'PASS' : 'FAIL') . "; warnings: {$warnings}.\n");
+    exit($passed ? 0 : 1);
+}
+
+if ($command === 'module:make') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) !== 1) {
+        fwrite(STDERR, "Usage: php bin/cms module:make NAME\n");
+        exit(2);
+    }
+    try {
+        $written = (new ModuleScaffolder($rootPath . '/modules'))->create((string) $arguments[0]);
+        fwrite(STDOUT, "Module scaffold created: {$arguments[0]}\n");
+        foreach ($written as $file) fwrite(STDOUT, "  {$file}\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Module scaffold failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
 if ($command === 'help') {
-    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  install:check              Check requirements before web installation\n  upgrade:check --from=VER   Audit a supported upgrade before migration\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  backup:verify              Verify the latest database and file backups\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n");
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  install:check              Check requirements before web installation\n  upgrade:check --from=VER   Audit a supported upgrade before migration\n  upgrade:complete --from=VER  Record a successfully completed upgrade\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  backup:verify              Verify the latest database and file backups\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n  release:smoke              Run release-package smoke checks\n  module:make NAME           Generate a safe Module API 1.0 scaffold\n  module:check MODULE        Statically inspect a module before installation\n  module:inspect MODULE      Show a module contract/extension inventory\n  module:list                List bundled/on-disk modules and contract counts\n  membership:check           Audit membership schema and grant integrity\n");
     exit(0);
 }
 
@@ -121,9 +263,13 @@ if ($command === 'upgrade:check') {
     }
     try {
         $status = $application->container()->get(MigrationStatus::class)->inspect();
-        $checks = (new UpgradeReadiness($rootPath, Version::CURRENT, [
-            '0.2.0-alpha.33', '0.2.0-alpha.34', '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', Version::CURRENT,
-        ]))->check($source, $status);
+        $settings = $application->container()->get(SettingsRepository::class);
+        $recorded = $settings->string('system.core_version', '');
+        $checks = (new UpgradeReadiness($rootPath, Version::CURRENT, $supportedUpgradeSources))->check(
+            $source,
+            $status,
+            recordedVersion: $recorded === '' ? null : $recorded,
+        );
         $passed = true;
         foreach ($checks as $check) {
             if ($check['required']) $passed = $passed && $check['passed'];
@@ -137,11 +283,69 @@ if ($command === 'upgrade:check') {
     }
 }
 
+if ($command === 'upgrade:complete') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) !== 1 || ! str_starts_with($arguments[0], '--from=')) {
+        fwrite(STDERR, "Usage: php bin/cms upgrade:complete --from=VERSION\n");
+        exit(2);
+    }
+    $source = substr($arguments[0], strlen('--from='));
+    if (! in_array($source, $supportedUpgradeSources, true)) {
+        fwrite(STDERR, "Completion is not supported from the declared source version.\n");
+        exit(2);
+    }
+    try {
+        $settings = $application->container()->get(SettingsRepository::class);
+        $recorded = $settings->string('system.core_version', '');
+        $status = $application->container()->get(MigrationStatus::class)->inspect();
+        $checks = (new UpgradeCompletion())->check(
+            $source,
+            Version::CURRENT,
+            $recorded === '' ? null : $recorded,
+            $status,
+            (new ReleaseChecklist($rootPath))->passed(),
+        );
+        $passed = true;
+        foreach ($checks as $check) {
+            if ($check['required']) $passed = $passed && $check['passed'];
+            $label = $check['passed'] ? 'PASS' : ($check['required'] ? 'FAIL' : 'WARN');
+            fwrite($check['required'] && ! $check['passed'] ? STDERR : STDOUT, "[{$label}] {$check['name']}: {$check['detail']}\n");
+        }
+        if (! $passed) exit(1);
+        $settings->setMany([
+            'system.core_version' => ['value' => Version::CURRENT, 'type' => 'string', 'group' => 'system'],
+            'system.core_updated_at' => ['value' => gmdate(DATE_ATOM), 'type' => 'string', 'group' => 'system'],
+        ]);
+        fwrite(STDOUT, "Upgrade completion recorded: {$source} -> " . Version::CURRENT . "\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Upgrade completion failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
 if (in_array($command, ['downloads:orphans', 'maintenance:prune'], true)) {
     try {
         $application->boot();
     } catch (Throwable $error) {
         fwrite(STDERR, "Application boot failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+
+if ($command === 'membership:check') {
+    try {
+        $checks=$application->container()->get(MembershipHealthCheck::class)->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." membership check\n\n");
+        foreach($checks as $check){
+            $passed=$passed&&$check['passed'];
+            fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+        }
+        exit($passed?0:1);
+    } catch (Throwable $error) {
+        fwrite(STDERR,"Membership check failed: {$error->getMessage()}\n");
         exit(1);
     }
 }

@@ -27,7 +27,7 @@ final class PublicCommentsController
             $type = (string) $request->attribute('type');
             $contentId = $this->id($request->attribute('id'));
             $id = $this->comments->create($request, $type, $contentId);
-            return [$id, 'comment.created', 'Comment submitted successfully.'];
+            return [$id, \NovaNuke\Core\Events\EventName::COMMENT_CREATED, 'Comment submitted successfully.'];
         });
     }
 

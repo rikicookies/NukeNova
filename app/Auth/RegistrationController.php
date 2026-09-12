@@ -47,7 +47,13 @@ final class RegistrationController
         $errors = $this->validator->validate($input);
         $key = hash('sha256', 'register|' . $request->ip());
         if ($this->throttle->tooManyAttempts($key)) {
-            $errors['register'] = 'Too many registration attempts. Try again later.';
+            $retryAfter = max(1, $this->throttle->retryAfter($key));
+            unset($input['password'], $input['password_confirmation'], $input['_token']);
+            return $this->form(
+                ['register' => 'Too many registration attempts. Try again later.'],
+                $input,
+                429,
+            )->withHeader('Retry-After', (string) $retryAfter);
         }
 
         if ($errors === []) {
@@ -97,7 +103,8 @@ final class RegistrationController
         $key = hash('sha256', 'verification-resend|' . $result['email'] . '|' . $request->ip());
         if ($result['error'] !== null) return $this->resendView($result['email'], $result['error'], false, 422);
         if ($this->resendThrottle->tooManyAttempts($key)) {
-            return $this->resendView($result['email'], 'Too many requests. Try again later.', false, 429);
+            return $this->resendView($result['email'], 'Too many requests. Try again later.', false, 429)
+                ->withHeader('Retry-After', (string) max(1, $this->resendThrottle->retryAfter($key)));
         }
         $this->resendThrottle->hit($key);
         $this->registration->resendVerification($result['email']);

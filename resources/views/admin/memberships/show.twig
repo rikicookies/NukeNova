@@ -1,0 +1,83 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Membership — {{ membership_user.username }} — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+{% include 'components/breadcrumbs.twig' with {items:[{label:'Admin',url:'/admin'},{label:'Memberships',url:'/admin/memberships'},{label:membership_user.username}]} only %}
+{% include 'components/page-header.twig' with {eyebrow:'Membership',title:membership_user.username,description:membership_user.email} only %}
+
+<h2>Current status</h2>
+{% if membership_status.vip|default(false) %}
+<p><span class="badge badge-active">{{ membership_status.label|default(membership_status.plan_key|default('VIP')) }}</span>
+{% if membership_status.lifetime %} Lifetime VIP
+{% else %} Expires {{ membership_status.expires_at }} UTC{% if membership_status.days_remaining is not null %} · about {{ membership_status.days_remaining }} day(s) remaining{% endif %}{% endif %}</p>
+{% else %}
+<p><span class="badge">Free</span> Standard registered-member access.</p>
+{% endif %}
+
+<h2>Assign plan</h2>
+<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/assign">
+<input type="hidden" name="_token" value="{{ csrf_token }}">
+<label>Plan<select name="plan" required>{% for key,plan in membership_plans %}<option value="{{ key }}">{{ plan.name }}</option>{% endfor %}</select></label>
+<label>Note<input type="text" name="note" maxlength="255" placeholder="Reason, invoice, courtesy, etc."></label>
+<button type="submit">Apply membership</button>
+</form>
+{% if membership_status.vip|default(false) %}
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/revoke" onsubmit="return confirm('Revoke VIP access now?')">
+<input type="hidden" name="_token" value="{{ csrf_token }}">
+<button type="submit" class="secondary-button">Revoke current VIP</button>
+</form>
+{% endif %}
+
+
+{% if membership_status.vip|default(false) and not membership_status.lifetime|default(false) %}
+<h2>Extend active VIP</h2>
+<div class="button-group">
+{% for quick_days in [30,90,365] %}
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/extend">
+<input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="days" value="{{ quick_days }}">
+<button type="submit" class="secondary-button">+{{ quick_days }} days</button>
+</form>
+{% endfor %}
+</div>
+<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/extend">
+<input type="hidden" name="_token" value="{{ csrf_token }}">
+<label>Additional days<input type="number" name="days" min="1" max="3650" value="30" required></label>
+<label>Note<input type="text" name="note" maxlength="255" placeholder="Optional reason"></label>
+<button type="submit">Add days</button>
+</form>
+{% endif %}
+
+<h2>Schedule future VIP</h2>
+{% if scheduled_membership %}
+<p><span class="badge">Scheduled</span> {{ scheduled_membership.name|default('VIP') }} starts {{ scheduled_membership.starts_at }} UTC{% if scheduled_membership.starts_in_days is not null %} (about {{ scheduled_membership.starts_in_days }} day(s)){% endif %}{% if scheduled_membership.expires_at %}, expires {{ scheduled_membership.expires_at }} UTC{% else %}, lifetime{% endif %}.</p>
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/schedule/cancel" onsubmit="return confirm('Cancel scheduled VIP?')">
+<input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="secondary-button">Cancel scheduled VIP</button>
+</form>
+{% else %}
+<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/schedule">
+<input type="hidden" name="_token" value="{{ csrf_token }}">
+<label>Plan<select name="plan" required>{% for key,plan in membership_plans %}{% if key != 'free' %}<option value="{{ key }}">{{ plan.name }}</option>{% endif %}{% endfor %}</select></label>
+<label>Starts at (UTC)<input type="datetime-local" name="starts_at" required></label>
+<label>Note<input type="text" name="note" maxlength="255" placeholder="Optional reason"></label>
+<button type="submit">Schedule VIP</button>
+</form>
+{% endif %}
+
+<h2>Membership history</h2>
+<div class="table-wrap"><table class="admin-table">
+<thead><tr><th>Plan</th><th>Period</th><th>Source</th><th>Granted by</th><th>Status</th></tr></thead>
+<tbody>
+{% for row in membership_history %}
+<tr>
+<td>{{ row.plan_key|default('vip-custom')|replace({'-':' '})|title }}</td>
+<td>{{ row.starts_at }} → {{ row.expires_at ?: 'Lifetime' }}</td>
+<td>{{ row.source }}{% if row.note %}<small>{{ row.note }}</small>{% endif %}</td>
+<td>{{ row.granted_by_username|default('System / unavailable') }}</td>
+<td>{% if row.revoked_at %}<span class="badge">Revoked {{ row.revoked_at }}</span>{% elseif row.starts_at > "now"|date("Y-m-d H:i:s") %}<span class="badge">Scheduled</span>{% elseif row.expires_at and row.expires_at < "now"|date("Y-m-d H:i:s") %}<span class="badge">Expired</span>{% else %}<span class="badge badge-active">Active / granted</span>{% endif %}</td>
+</tr>
+{% else %}
+{% include 'components/admin-table-empty.twig' with {colspan:5,title:'No membership history',message:'This account has no membership grants yet.'} only %}
+{% endfor %}
+</tbody></table></div>
+</section>
+{% endblock %}

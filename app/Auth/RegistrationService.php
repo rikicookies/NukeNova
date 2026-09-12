@@ -101,7 +101,7 @@ final class RegistrationService
             throw $error;
         }
 
-        $this->dispatchSafely('user.registered', new UserRegistered($userId, $verificationRequired));
+        $this->dispatchSafely(\NovaNuke\Core\Events\EventName::USER_REGISTERED, new UserRegistered($userId, $verificationRequired));
         return $verificationRequired;
     }
 
@@ -136,7 +136,7 @@ final class RegistrationService
             $this->database->commit();
 
             $verified = $user->rowCount() === 1;
-            if ($verified) $this->dispatchSafely('user.email_verified', new UserEmailVerified((int) $record['user_id']));
+            if ($verified) $this->dispatchSafely(\NovaNuke\Core\Events\EventName::USER_EMAIL_VERIFIED, new UserEmailVerified((int) $record['user_id']));
             return $verified;
         } catch (Throwable $error) {
             if ($this->database->inTransaction()) {

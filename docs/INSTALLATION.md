@@ -10,7 +10,7 @@ Enable PHP's ZIP extension when the site needs Wiki's complete Markdown archive 
 
 1. Extract NovaNuke to a dedicated directory such as `C:\\dev\\www\\novanuke`.
 2. Open a terminal in that directory and run `composer install`.
-3. Run `php bin/cms install:check` and resolve every failed requirement.
+3. Run `php bin/cms install:check`. NovaNuke creates its required runtime directories automatically, including `storage/private/downloads` and `storage/private/backups`; resolve only permissions or other failed requirements it reports.
 4. Create or select an empty database. The installer refuses a database containing any table.
 5. Configure the Laragon virtual host document root as `C:\\dev\\www\\novanuke\\public`.
 6. Ensure Apache rewrite support is enabled.
@@ -42,3 +42,7 @@ Use the `try_files` and PHP-FPM example in `docs/PRODUCTION.md`. `.htaccess` app
 - Install/enable required modules and select the active theme.
 - Keep registration closed until email delivery and moderation settings are ready.
 - Create the first backup and test restoring it on another database.
+
+## Failed installation recovery
+
+After NovaNuke verifies that the selected database contains no tables, it treats tables created during that installation attempt as installer-owned. If a later installation step fails, NovaNuke removes those newly created tables and any incomplete `.env` so the same empty database can be retried. The database itself is never dropped. If the cleanup cannot complete, the next attempt will stop at the normal non-empty database guard rather than overwriting data.

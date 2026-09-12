@@ -16,6 +16,7 @@ final class ErrorHandler
         private readonly bool $debug,
         private readonly string $logPath,
         private readonly SensitiveDataRedactor $redactor = new SensitiveDataRedactor(),
+        private readonly ?string $projectRoot = null,
     ) {
     }
 
@@ -51,6 +52,21 @@ final class ErrorHandler
         );
     }
 
+    private function logFile(string $file): string
+    {
+        if ($this->debug) {
+            return $file;
+        }
+
+        $root = $this->projectRoot !== null ? realpath($this->projectRoot) : null;
+        $resolved = realpath($file);
+        if ($root !== false && $root !== null && $resolved !== false && str_starts_with($resolved, $root . DIRECTORY_SEPARATOR)) {
+            return '[APP]/' . str_replace(DIRECTORY_SEPARATOR, '/', substr($resolved, strlen($root) + 1));
+        }
+
+        return '[INTERNAL]';
+    }
+
     private function writeLog(string $id, Throwable $error): void
     {
         $directory = dirname($this->logPath);
@@ -65,7 +81,7 @@ final class ErrorHandler
             $id,
             $error::class,
             $this->redactor->redact($error->getMessage()),
-            $error->getFile(),
+            $this->logFile($error->getFile()),
             $error->getLine(),
             PHP_EOL,
         );

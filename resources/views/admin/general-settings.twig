@@ -1,10 +1,9 @@
 {% extends "layouts/default.twig" %}
 {% block title %}{{ trans('settings.title') }} — NovaNuke{% endblock %}
 {% block content %}
-<section class="dashboard-card">
-    <p class="eyebrow">{{ trans('settings.eyebrow') }}</p>
-    <h1>{{ trans('settings.title') }}</h1>
-    <p>{{ trans('settings.description') }}</p>
+<section class="admin-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: trans('settings.title')}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: trans('settings.eyebrow'), title: trans('settings.title'), description: trans('settings.description')} only %}
     {% if saved %}<div class="alert alert-success">{{ trans('settings.saved') }}</div>{% endif %}
     {% if errors %}<div class="alert alert-error"><strong>{{ trans('settings.review') }}</strong></div>{% endif %}
 
@@ -53,6 +52,5 @@
         <p>{{ trans('settings.maintenance_help') }}</p>
         <button type="submit">{{ trans('settings.save') }}</button>
     </form>
-    <p><a href="/admin">{{ trans('settings.back') }}</a></p>
 </section>
 {% endblock %}

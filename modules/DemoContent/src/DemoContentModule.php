@@ -27,7 +27,7 @@ final class DemoContentModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
-        $context->events->listen('admin.menu.building', static function (object $event): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) {
                 $event->add('Demo content', '/admin/system/demo-content', 'settings.manage', 'system', 'system');
             }

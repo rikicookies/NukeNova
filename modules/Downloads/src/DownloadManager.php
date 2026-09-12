@@ -51,7 +51,7 @@ final class DownloadManager
         $path = $download['source_type'] === 'local' ? $this->storage->path((string) $download['stored_name']) : null;
         $identity = $user ? 'user:' . $user['id'] : 'guest:' . $request->ip() . '|' . $request->userAgent();
         $counted = $this->repository->recordDownload((int) $download['id'], $this->hash($identity));
-        $this->events->dispatch('download.completed', new DownloadCompleted((int) $download['id'], $counted));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::DOWNLOAD_COMPLETED, new DownloadCompleted((int) $download['id'], $counted));
         return ['download' => $download, 'path' => $path, 'counted' => $counted];
     }
 

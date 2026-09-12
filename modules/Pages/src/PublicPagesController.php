@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Pages\src;
 
-use Modules\Comments\src\CommentService;
+use NovaNuke\Core\Comments\CommentProviderInterface;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
@@ -24,7 +24,7 @@ final class PublicPagesController
         private readonly PageRepository $pages, private readonly AuthManager $auth,
         private readonly SessionManager $session, private readonly ViewRenderer $views,
         private readonly EventDispatcher $events, private readonly ContentRendererInterface $contentRenderer,
-        private readonly ?CommentService $comments = null,
+        private readonly ?CommentProviderInterface $comments = null,
         private readonly ?CsrfTokenManager $csrf = null, private readonly ?AuthorizationService $authorization = null,
     ) {
     }
@@ -34,6 +34,9 @@ final class PublicPagesController
         $user = $this->auth->user();
         return Response::html($this->views->render('@pages/index.twig', [
             'pages' => $this->pages->directory($user ? (int) $user['id'] : null),
+            'manage_url' => $user !== null && $this->authorization?->allows((int) $user['id'], 'pages.edit')
+                ? '/admin/pages'
+                : null,
         ]));
     }
 
@@ -56,7 +59,7 @@ final class PublicPagesController
             ContentProfile::FullContent,
         ), 'UTF-8');
         $rendering = new PageRendering($page);
-        $this->events->dispatch('page.rendering', $rendering);
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::PAGE_RENDERING, $rendering);
         $page = $rendering->page;
         $template = in_array($page['template'] ?? null, ['default', 'landing'], true) ? (string) $page['template'] : 'default';
         $editUrl = $user !== null && $this->authorization?->allows((int) $user['id'], 'pages.edit')

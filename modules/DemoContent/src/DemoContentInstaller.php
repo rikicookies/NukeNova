@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\DemoContent\src;
 
-use Modules\Comments\src\CommentCreated;
+use NovaNuke\Core\Comments\CommentCreated;
 use Modules\Comments\src\CommentRepository;
 use Modules\Downloads\src\DownloadInput;
 use Modules\Downloads\src\DownloadRepository;
@@ -225,7 +225,7 @@ final class DemoContentInstaller
                 $this->track('news_tag', $tagId, ['slug' => $slug]);
                 $trackedTags[$slug] = true;
             }
-            $this->events->dispatch('content.created', new ContentChanged('news', $id, $actorId));
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::CONTENT_CREATED, new ContentChanged('news', $id, $actorId));
             $ids[] = $id;
         }
         return $ids;
@@ -249,7 +249,7 @@ final class DemoContentInstaller
             ], true);
             $id = $repository->save(null, $data, $users[$authors[$index % count($authors)]] ?? $actorId);
             $this->track('page', $id);
-            $this->events->dispatch('content.created', new PageChanged('pages', $id, $actorId));
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::CONTENT_CREATED, new PageChanged('pages', $id, $actorId));
             $ids[] = $id;
         }
         return $ids;
@@ -325,7 +325,7 @@ final class DemoContentInstaller
             ]);
             $commentIds[$index] = $id;
             $this->track('comment', $id);
-            $this->events->dispatch('comment.created', new CommentCreated($id, $definition['target'], $contentId, 'approved'));
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::COMMENT_CREATED, new CommentCreated($id, $definition['target'], $contentId, 'approved'));
             $created++;
         }
         $userIds = array_values($users);

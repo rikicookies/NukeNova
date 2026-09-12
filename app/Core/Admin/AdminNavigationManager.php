@@ -38,6 +38,7 @@ final class AdminNavigationManager
         $items = [
             $this->item('Dashboard', '/admin', 'admin.access', 'dashboard', 'overview'),
             $this->item('Users', '/admin/users', 'users.view', 'users', 'community'),
+            $this->item('Memberships', '/admin/memberships', 'memberships.manage', 'badge', 'community'),
             $this->item('Roles & permissions', '/admin/roles', 'roles.view', 'shield', 'community'),
             $this->item('Themes', '/admin/themes', 'themes.manage', 'palette', 'appearance'),
             $this->item('Menus', '/admin/menus', 'menus.manage', 'menu', 'appearance'),
@@ -50,7 +51,7 @@ final class AdminNavigationManager
         ];
 
         $modules = new AdminMenuBuilding();
-        $this->events->dispatch('admin.menu.building', $modules);
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, $modules);
         foreach ($modules->items() as $item) {
             $items[] = $this->moduleItem($item);
         }

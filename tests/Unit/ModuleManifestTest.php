@@ -55,6 +55,59 @@ final class ModuleManifestTest extends TestCase
         ModuleManifest::fromArray($data, '/modules/Example');
     }
 
+
+    public function testItRejectsLooseSemanticVersions(): void
+    {
+        foreach (['version' => '1.2.3garbage', 'cms_min_version' => '0.2', 'php_min_version' => '8.3.x'] as $field => $value) {
+            $data = $this->valid();
+            $data[$field] = $value;
+            try {
+                ModuleManifest::fromArray($data, '/modules/Example');
+                self::fail("Expected {$field} to be rejected.");
+            } catch (InvalidArgumentException) {
+                self::assertTrue(true);
+            }
+        }
+
+        $data = $this->valid();
+        $data['dependencies'] = ['welcome' => '1.0.0junk'];
+        $this->expectException(InvalidArgumentException::class);
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
+    public function testItRejectsPermissionsOutsideTheModuleNamespace(): void
+    {
+        $data = $this->valid();
+        $data['permissions'] = ['users.manage'];
+        $this->expectException(InvalidArgumentException::class);
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
+    public function testItRejectsDuplicatePermissionsAndEvents(): void
+    {
+        $data = $this->valid();
+        $data['permissions'] = ['example.view', 'example.view'];
+        try {
+            ModuleManifest::fromArray($data, '/modules/Example');
+            self::fail('Expected duplicate permission to be rejected.');
+        } catch (InvalidArgumentException) {
+            self::assertTrue(true);
+        }
+
+        $data = $this->valid();
+        $data['events'] = ['example.created', 'example.created'];
+        $this->expectException(InvalidArgumentException::class);
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
+    public function testProviderMustBelongToItsModuleDirectoryNamespace(): void
+    {
+        $data = $this->valid();
+        $data['provider'] = 'Modules\\Other\\src\\OtherModule';
+        $this->expectException(InvalidArgumentException::class);
+        ModuleManifest::fromArray($data, '/modules/Example');
+    }
+
     /** @return array<string, mixed> */
     private function valid(): array
     {

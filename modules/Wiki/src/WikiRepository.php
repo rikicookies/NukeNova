@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Wiki\src;
 
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
 use PDO;
 use PDOException;
 use RuntimeException;
@@ -13,7 +13,7 @@ final class WikiRepository
 {
     public function __construct(
         private readonly PDO $database,
-        private readonly EntitlementService $entitlements,
+        private readonly MembershipManagerInterface $memberships,
         private readonly WikiLinkIndexer $links,
     )
     {
@@ -133,7 +133,7 @@ final class WikiRepository
         if ($audience === 'public') return true;
         if ($userId === null) return false;
         if ($audience === 'member') return true;
-        return $audience === 'vip' && $this->entitlements->has($userId, EntitlementService::VIP);
+        return $audience === 'vip' && $this->memberships->isVip($userId);
     }
 
     public function acceptsComments(int $id, ?int $userId): bool

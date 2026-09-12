@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
+use NovaNuke\Core\Storage\SafeStorageBoundary;
 use RuntimeException;
 
 final class AvatarStorage
@@ -14,10 +15,12 @@ final class AvatarStorage
 
     public function store(ValidatedAvatar $avatar): string
     {
-        if (! is_dir($this->directory) && ! mkdir($this->directory, 0750, true) && ! is_dir($this->directory)) {
-            throw new RuntimeException('Avatar storage could not be created.');
+        try {
+            SafeStorageBoundary::ensureDirectory($this->directory, 0750);
+        } catch (RuntimeException) {
+            throw new RuntimeException('Avatar storage is unavailable.');
         }
-        if (! is_writable($this->directory) || ! is_uploaded_file($avatar->temporaryPath)) throw new RuntimeException('Avatar storage is unavailable.');
+        if (! is_uploaded_file($avatar->temporaryPath)) throw new RuntimeException('Avatar storage is unavailable.');
         $filename = bin2hex(random_bytes(20)) . '.' . $avatar->extension;
         if (! move_uploaded_file($avatar->temporaryPath, $this->directory . '/' . $filename)) throw new RuntimeException('Avatar could not be stored.');
         return '/avatars/' . $filename;
@@ -27,8 +30,8 @@ final class AvatarStorage
     public function resolve(string $filename): array
     {
         if (! preg_match('/^[a-f0-9]{40}\.(?:jpg|png|webp)$/', $filename)) throw new RuntimeException('Avatar not found.');
-        $root = realpath($this->directory); $path = realpath($this->directory . '/' . $filename);
-        if ($root === false || $path === false || ! str_starts_with($path, $root . DIRECTORY_SEPARATOR) || ! is_file($path)) throw new RuntimeException('Avatar not found.');
+        try { $path = SafeStorageBoundary::existingFile($this->directory, $filename); }
+        catch (RuntimeException) { throw new RuntimeException('Avatar not found.'); }
         $mimes = ['jpg' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp'];
         return ['path' => $path, 'mime' => $mimes[pathinfo($filename, PATHINFO_EXTENSION)], 'size' => (int) filesize($path)];
     }

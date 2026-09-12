@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Search\src;
 
+use NovaNuke\Core\Search\SearchProviderInterface;
+use NovaNuke\Core\Search\SearchProviderRegistryInterface;
 use RuntimeException;
 
-final class SearchProviderRegistry
+final class SearchProviderRegistry implements SearchProviderRegistryInterface
 {
     /** @var array<string,SearchProviderInterface> */
     private array $providers = [];

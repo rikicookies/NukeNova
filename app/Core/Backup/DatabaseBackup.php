@@ -18,6 +18,7 @@ final class DatabaseBackup
 
     public function create(): string
     {
+        if (is_link($this->directory)) throw new RuntimeException('Private backup directory must not be a symbolic link.');
         if (! is_dir($this->directory) && ! mkdir($this->directory, 0700, true) && ! is_dir($this->directory)) {
             throw new RuntimeException('Unable to create the private backup directory.');
         }

@@ -1,10 +1,9 @@
 {% extends "layouts/default.twig" %}
 {% block title %}System information — NovaNuke{% endblock %}
 {% block content %}
-<section class="dashboard-card">
-    <p class="eyebrow">Production readiness</p>
-    <h1>System information</h1>
-    <p>This page deliberately omits credentials, tokens, paths and detailed server errors.</p>
+<section class="admin-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'System information'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Production readiness', title: 'System information', description: 'Review environment, security and migration readiness without exposing credentials, tokens, paths or detailed server errors.'} only %}
     <p>Maintenance mode and public site preferences are managed under <a href="/admin/settings">General settings</a>.</p>
 
     {% if system.warnings %}
@@ -47,6 +46,5 @@
             <li>No installed modules.</li>
         {% endfor %}
     </ul>
-    <p><a href="/admin">Back to dashboard</a></p>
 </section>
 {% endblock %}

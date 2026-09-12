@@ -12,17 +12,32 @@ final class UpgradeCliContractTest extends TestCase
     {
         $cli = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/cms');
         $start = strpos($cli, "if (\$command === 'upgrade:check')");
-        $end = strpos($cli, "if (in_array(\$command", $start);
+        $end = strpos($cli, "if (\$command === 'upgrade:complete')", $start);
         $section = substr($cli, $start, $end - $start);
 
         self::assertStringContainsString("count(\$arguments) !== 1", $section);
         self::assertStringContainsString("str_starts_with(\$arguments[0], '--from=')", $section);
         self::assertStringContainsString('MigrationStatus::class', $section);
-        self::assertStringContainsString("'0.2.0-alpha.36'", $section);
-        self::assertStringContainsString("'0.2.0-alpha.37'", $section);
-        self::assertStringContainsString("'0.2.0-alpha.38'", $section);
+        self::assertStringContainsString('$supportedUpgradeSources', $section);
+        self::assertStringContainsString("'0.4.0-beta.9', Version::CURRENT", $cli);
         self::assertStringContainsString('UpgradeReadiness', $section);
+        self::assertStringContainsString("'system.core_version'", $section);
         self::assertStringNotContainsString('->run(', $section);
         self::assertStringNotContainsString('backup:database', $section);
+    }
+
+    public function testUpgradeCompletionWritesOnlyAfterAllRequiredChecksPass(): void
+    {
+        $cli = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/cms');
+        $start = strpos($cli, "if (\$command === 'upgrade:complete')");
+        $end = strpos($cli, "if (in_array(\$command", $start);
+        $section = substr($cli, $start, $end - $start);
+
+        self::assertStringContainsString('MigrationStatus::class', $section);
+        self::assertStringContainsString('ReleaseChecklist', $section);
+        self::assertStringContainsString("'system.core_version'", $section);
+        self::assertLessThan(strpos($section, '$settings->setMany'), strpos($section, 'if (! $passed) exit(1)'));
+        self::assertStringNotContainsString('->run(', $section);
+        self::assertStringNotContainsString('->down(', $section);
     }
 }

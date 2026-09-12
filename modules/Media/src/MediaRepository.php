@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Media\src;
 
+use NovaNuke\Core\Media\MediaLibraryInterface;
 use PDO;
 use RuntimeException;
 
-final class MediaRepository
+final class MediaRepository implements MediaLibraryInterface
 {
     public function __construct(private readonly PDO $database){}
     public function all():array{return $this->database->query('SELECT m.*,u.username FROM media_files m INNER JOIN users u ON u.id=m.uploaded_by ORDER BY m.id DESC LIMIT 200')->fetchAll();}

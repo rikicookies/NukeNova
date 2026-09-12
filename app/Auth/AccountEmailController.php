@@ -37,7 +37,11 @@ final class AccountEmailController
         if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
         $data = $this->input->validate($request->input('email'), $request->input('password'));
         $key = (string) $user['id'];
-        if ($this->limiter->tooManyAttempts($key)) $data['errors']['email'] = 'Too many requests. Try again later.';
+        if ($this->limiter->tooManyAttempts($key)) {
+            $data['errors']['email'] = 'Too many requests. Try again later.';
+            return $this->view((string) $user['email'], $data['email'], $data['errors'], 429)
+                ->withHeader('Retry-After', (string) max(1, $this->limiter->retryAfter($key)));
+        }
         if ($data['errors'] !== []) return $this->view((string) $user['email'], $data['email'], $data['errors'], 422);
         $error = $this->emails->request((int) $user['id'], $data['email'], $data['password']);
         if ($error !== null) {

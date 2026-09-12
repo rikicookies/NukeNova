@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Modules\Comments\src;
 
 use NovaNuke\Auth\AuthManager;
+use NovaNuke\Core\Comments\CommentCreated;
+use NovaNuke\Core\Comments\CommentProviderInterface;
+use NovaNuke\Core\Comments\CommentTargetChecking;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
@@ -15,7 +18,7 @@ use NovaNuke\Core\Content\ContentRendererInterface;
 use Twig\Markup;
 use RuntimeException;
 
-final class CommentService
+final class CommentService implements CommentProviderInterface
 {
     public function __construct(
         private readonly CommentRepository $repository,
@@ -48,7 +51,7 @@ final class CommentService
     {
         if (! preg_match('/^[a-z][a-z0-9-]{0,99}$/', $type) || $contentId < 1) throw new RuntimeException('Invalid comment target.');
         $target = new CommentTargetChecking($type, $contentId);
-        $this->events->dispatch('comments.content.checking', $target);
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::COMMENTS_CONTENT_CHECKING, $target);
         if (! $target->accepted) throw new RuntimeException('This content does not accept comments.');
         $user = $this->auth->user();
         if ($user === null && ! $this->guestsAllowed()) throw new RuntimeException('Sign in to comment.');
@@ -68,7 +71,7 @@ final class CommentService
             'status' => $status, 'ip_hash' => $this->hash($request->ip()),
         ]);
         $this->limiter->hit($key);
-        $this->events->dispatch('comment.created', new CommentCreated($id, $type, $contentId, $status));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::COMMENT_CREATED, new CommentCreated($id, $type, $contentId, $status));
         return $id;
     }
 

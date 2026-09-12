@@ -32,6 +32,24 @@ final class EnvWriterTest extends TestCase
         }
     }
 
+
+    public function testItRestrictsEnvironmentFilePermissionsOnPosix(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::markTestSkipped('POSIX permission bits are not reliable on Windows.');
+        }
+
+        $path = sys_get_temp_dir() . '/novanuke-env-perms-' . bin2hex(random_bytes(5));
+        try {
+            (new EnvWriter())->write($path, ['APP_KEY' => 'secret']);
+            $permissions = fileperms($path);
+            self::assertNotFalse($permissions);
+            self::assertSame(0, $permissions & 0077);
+        } finally {
+            if (is_file($path)) unlink($path);
+        }
+    }
+
     public function testItNeverOverwritesAnExistingEnvironmentFile(): void
     {
         $path = tempnam(sys_get_temp_dir(), 'novanuke-env-existing-');

@@ -18,6 +18,9 @@ final class SecurityHeadersTest extends TestCase
         self::assertSame('nosniff', $response->header('X-Content-Type-Options'));
         self::assertSame('no-referrer', $response->header('Referrer-Policy'));
         self::assertNotNull($response->header('Content-Security-Policy'));
+        self::assertSame('same-origin', $response->header('Cross-Origin-Opener-Policy'));
+        self::assertSame('same-origin', $response->header('Cross-Origin-Resource-Policy'));
+        self::assertSame('none', $response->header('X-Permitted-Cross-Domain-Policies'));
         self::assertNull($response->header('Strict-Transport-Security'));
     }
 

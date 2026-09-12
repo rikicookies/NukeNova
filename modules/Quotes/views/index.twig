@@ -1,0 +1,15 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Quotes — NovaNuke{% endblock %}
+{% block content %}
+<section class="content-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Quotes'}]} only %}
+  {% include 'components/page-header.twig' with {eyebrow: 'Example module', title: 'Quotes', description: 'A deliberately small reference module built on the public NovaNuke Module API.'} only %}
+  <div class="content-list">
+    {% for quote in quotes %}
+      <article class="content-card"><blockquote>{{ quote.quote_text }}</blockquote>{% if quote.attribution %}<p>— {{ quote.attribution }}</p>{% endif %}</article>
+    {% else %}
+      <p>No published quotes yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

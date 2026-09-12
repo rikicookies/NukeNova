@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Wiki\src;
 
-use Modules\Search\src\LikePattern;
-use Modules\Search\src\SearchProviderInterface;
-use Modules\Search\src\SearchProviderResult;
-use Modules\Search\src\SearchQuery;
-use Modules\Search\src\SearchResultItem;
+use NovaNuke\Core\Search\LikePattern;
+use NovaNuke\Core\Search\SearchProviderInterface;
+use NovaNuke\Core\Search\SearchProviderResult;
+use NovaNuke\Core\Search\SearchQuery;
+use NovaNuke\Core\Search\SearchResultItem;
 use NovaNuke\Core\Access\AccessAudience;
 use PDO;
 

@@ -2,7 +2,9 @@
 {% block title %}{{ page.id|default(false) ? 'Edit wiki page' : 'Create wiki page' }} — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Wiki</p><h1>{{ page.id|default(false) ? 'Edit page' : 'Create page' }}</h1>
+    {% set editor_title = page.id|default(false) ? 'Edit page' : 'Create page' %}
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Wiki', url: '/admin/wiki'}, {label: editor_title}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Wiki', title: editor_title, description: page.id|default(false) ? 'Update this Markdown page, its publication state and attachments.' : 'Create a Markdown page with namespace, audience and publication controls.'} only %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
     {% if notice %}<div class="notice-message">{{ notice }}</div>{% endif %}
     <form class="news-editor" method="post" action="/admin/wiki/save">
@@ -37,7 +39,6 @@
         </section>
     {% endif %}
     {% if page.id|default(false) %}<nav class="context-actions"><a href="/wiki/{{ page.path }}">View page</a><a href="/admin/wiki/{{ page.id }}/history">Revision history</a><a href="/admin/wiki/{{ page.id }}/export">Export .md</a></nav><form class="delete-block-form" method="post" action="/admin/wiki/{{ page.id }}/delete" onsubmit="return confirm('Delete this wiki page?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><label><input type="checkbox" name="confirm_delete" value="1" required> Confirm deletion</label><button class="danger-button" type="submit">Delete page</button></form>{% endif %}
-    <p><a href="/admin/wiki">Return to Wiki</a></p>
 </section>
 <script src="/assets/js/wiki-editor.js" defer></script>
 {% endblock %}

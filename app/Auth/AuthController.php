@@ -52,7 +52,13 @@ final class AuthController
         $key = hash('sha256', strtolower($login) . '|' . $request->ip());
 
         if ($this->throttle->tooManyAttempts($key)) {
-            $errors['login'] = 'Too many login attempts. Try again in ' . $this->throttle->retryAfter($key) . ' seconds.';
+            $retryAfter = max(1, $this->throttle->retryAfter($key));
+            return Response::html($this->views->render('auth/login.twig', [
+                'csrf_token' => $this->csrf->token(),
+                'errors' => ['login' => 'Too many login attempts. Try again in ' . $retryAfter . ' seconds.'],
+                'old_login' => $login,
+                'password_changed' => false,
+            ]), 429)->withHeader('Retry-After', (string) $retryAfter);
         }
 
         if ($errors === []) {

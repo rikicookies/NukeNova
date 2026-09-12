@@ -2,15 +2,14 @@
 {% block title %}Revision history — {{ page.title }} — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Wiki history</p><h1>{{ page.title }}</h1><p><code>{{ page.path }}</code></p>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Wiki', url: '/admin/wiki'}, {label: page.title, url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: 'Revision history'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Wiki history', title: page.title, description: 'Inspect and compare recorded snapshots for ' ~ page.path ~ '.', actions: [{label: 'Edit current page', url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: 'View current page', url: '/wiki/' ~ page.path}]} only %}
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
-    <nav class="context-actions"><a href="/admin/wiki/{{ page.id }}/edit">Edit current page</a><a href="/wiki/{{ page.path }}">View current page</a></nav>
     <form method="get" action="/admin/wiki/{{ page.id }}/compare">
         <div class="table-wrap"><table class="admin-table"><thead><tr><th>From</th><th>To</th><th>Revision</th><th>Author</th><th>Status</th><th>Audience</th><th>Saved</th><th></th></tr></thead><tbody>
             {% for revision in revisions %}<tr><td><input type="radio" name="from" value="{{ revision.id }}" required {{ loop.index == 2 ? 'checked' : '' }} aria-label="Compare from revision {{ revision.revision_number }}"></td><td><input type="radio" name="to" value="{{ revision.id }}" required {{ loop.first ? 'checked' : '' }} aria-label="Compare to revision {{ revision.revision_number }}"></td><td><strong>#{{ revision.revision_number }}</strong><small>{{ revision.title }}</small></td><td>{{ revision.actor }}</td><td>{{ revision.status }}</td><td>{{ revision.audience }}</td><td>{{ revision.created_at }}</td><td><a href="/admin/wiki/{{ page.id }}/revisions/{{ revision.id }}">Inspect</a></td></tr>{% else %}<tr><td colspan="8">No revisions recorded.</td></tr>{% endfor %}
         </tbody></table></div>
         {% if revisions|length > 1 %}<p><button type="submit">Compare selected revisions</button></p>{% endif %}
     </form>
-    <p><a href="/admin/wiki">Return to Wiki</a></p>
 </section>
 {% endblock %}

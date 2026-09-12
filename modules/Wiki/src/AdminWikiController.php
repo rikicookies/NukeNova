@@ -86,7 +86,7 @@ final class AdminWikiController
             $data = $this->input->page($request->allInput(), $this->authorization->allows((int) $actor['id'], 'wiki.publish'));
             $pageId = $this->pages->save($id ? (int) $id : null, $data, (int) $actor['id']);
             $event = new WikiPageChanged($pageId, (string) $data['path'], (int) $actor['id']);
-            $this->events->dispatch($id ? 'content.updated' : 'content.created', $event);
+            $this->events->dispatch($id ? \NovaNuke\Core\Events\EventName::CONTENT_UPDATED : \NovaNuke\Core\Events\EventName::CONTENT_CREATED, $event);
             $this->activity->log((int) $actor['id'], 'wiki.page.' . ($id ? 'updated' : 'created'), 'wiki_page', $pageId, ['path' => $data['path'], 'status' => $data['status']], $request->ip());
             $this->session->put('wiki.message', 'Wiki page saved.');
             return Response::redirect('/admin/wiki', 303);
@@ -157,7 +157,7 @@ final class AdminWikiController
                 }
                 $data = $this->input->page($draft, false);
                 $pageId = $this->pages->save(null, $data, (int) $actor['id']);
-                $this->events->dispatch('content.created', new WikiPageChanged($pageId, (string) $data['path'], (int) $actor['id']));
+                $this->events->dispatch(\NovaNuke\Core\Events\EventName::CONTENT_CREATED, new WikiPageChanged($pageId, (string) $data['path'], (int) $actor['id']));
                 $existing[$data['path']] = true;
                 $created++;
             }
@@ -243,7 +243,7 @@ final class AdminWikiController
             );
             if ($action !== 'delete') {
                 foreach ($changed as $page) {
-                    $this->events->dispatch('content.updated', new WikiPageChanged(
+                    $this->events->dispatch(\NovaNuke\Core\Events\EventName::CONTENT_UPDATED, new WikiPageChanged(
                         $page['id'], $page['path'], (int) $actor['id'],
                     ));
                 }
@@ -385,7 +385,7 @@ final class AdminWikiController
                 $pageId, $revisionId, (int) $actor['id'],
                 $this->authorization->allows((int) $actor['id'], 'wiki.publish'),
             );
-            $this->events->dispatch('content.updated', new WikiPageChanged($pageId, $restored['path'], (int) $actor['id']));
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::CONTENT_UPDATED, new WikiPageChanged($pageId, $restored['path'], (int) $actor['id']));
             $this->activity->log((int) $actor['id'], 'wiki.page.restored', 'wiki_page', $pageId, [
                 'source_revision_id' => $revisionId,
                 'new_revision_number' => $restored['revision_number'],

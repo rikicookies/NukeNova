@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Logging\ActivityLogger;
@@ -28,7 +28,7 @@ final class AccountController
         private readonly CsrfTokenManager $csrf,
         private readonly SessionManager $session,
         private readonly ViewRenderer $views,
-        private readonly EntitlementService $entitlements,
+        private readonly MembershipManagerInterface $memberships,
     ) {
     }
 
@@ -92,7 +92,10 @@ final class AccountController
         $user = $this->auth->user(); if ($user === null) return Response::redirect('/login');
         if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
         $key = (string) $user['id'];
-        if ($this->passwordThrottle->tooManyAttempts($key)) return $this->view($this->profiles->byUserId((int) $user['id']) ?? [], [], null, null, 429, 'Try changing the password again later.');
+        if ($this->passwordThrottle->tooManyAttempts($key)) {
+            return $this->view($this->profiles->byUserId((int) $user['id']) ?? [], [], null, null, 429, 'Try changing the password again later.')
+                ->withHeader('Retry-After', (string) max(1, $this->passwordThrottle->retryAfter($key)));
+        }
         $error = $this->passwords->change((int) $user['id'], $request->input('current_password'), $request->input('password'), $request->input('password_confirmation'));
         if ($error !== null) {
             $this->passwordThrottle->hit($key);
@@ -127,7 +130,8 @@ final class AccountController
             'message' => is_string($message) ? $message : null, 'password_error' => $passwordError,
             'csrf_token' => $this->csrf->token(),
             'timezones' => timezone_identifiers_list(),
-            'vip' => $user === [] ? null : $this->entitlements->status((int) $user['id'], EntitlementService::VIP),
+            'membership' => $user === [] ? null : $this->memberships->status((int) $user['id']),
+            'scheduled_membership' => $user === [] ? null : $this->memberships->nextScheduled((int) $user['id']),
         ]), $status);
     }
 }

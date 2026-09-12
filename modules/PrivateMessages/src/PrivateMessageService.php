@@ -8,13 +8,20 @@ use NovaNuke\Core\Content\ContentFormat;
 use NovaNuke\Core\Content\ContentProfile;
 use NovaNuke\Core\Content\ContentRendererInterface;
 use NovaNuke\Core\Events\EventDispatcher;
+use NovaNuke\Core\Messaging\PrivateMessageComposerInterface;
+use NovaNuke\Core\Messaging\PrivateMessageSent;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use RuntimeException;
 use Twig\Markup;
 
-final class PrivateMessageService
+final class PrivateMessageService implements PrivateMessageComposerInterface
 {
     public function __construct(private readonly PrivateMessageRepository $repository,private readonly PrivateMessageInput $input,private readonly DatabaseRateLimiter $sendLimiter,private readonly DatabaseRateLimiter $reportLimiter,private readonly EventDispatcher $events,private readonly ContentRendererInterface $contentRenderer) {}
+
+    public function composeUrlFor(string $username): string
+    {
+        return '/messages/compose?to=' . rawurlencode($username);
+    }
 
     public function compose(int $sender,string $username,mixed $subject,mixed $body,mixed $bodyFormat=null): int
     {
@@ -22,7 +29,7 @@ final class PrivateMessageService
         $recipient=$this->repository->userByUsername($username); if($recipient===null)throw new RuntimeException('Recipient was not found.');
         $recipientId=(int)$recipient['id']; if($recipientId===$sender)throw new RuntimeException('You cannot message yourself.');
         $this->assertCanSend($sender,$recipientId); $created=$this->repository->createWithMessage($sender,$recipientId,$subject,$body,$format->value);
-        $this->events->dispatch('private-message.sent',new PrivateMessageSent($recipientId,$created['conversation_id'],(string)$created['message_id']));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::PRIVATE_MESSAGE_SENT,new PrivateMessageSent($recipientId,$created['conversation_id'],(string)$created['message_id']));
         return $created['conversation_id'];
     }
 
@@ -31,7 +38,7 @@ final class PrivateMessageService
         [$body,$format]=$this->content($body,$bodyFormat);
         $thread=$this->repository->conversation($conversation,$sender); if($thread===null)throw new RuntimeException('Conversation not found.');
         $recipient=(int)$thread['other']['id'];$this->assertCanSend($sender,$recipient);$message=$this->repository->reply($conversation,$sender,$body,$format->value);
-        $this->events->dispatch('private-message.sent',new PrivateMessageSent($recipient,$conversation,(string)$message));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::PRIVATE_MESSAGE_SENT,new PrivateMessageSent($recipient,$conversation,(string)$message));
         return $message;
     }
 

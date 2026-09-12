@@ -1,5 +1,6 @@
 {% extends "layouts/default.twig" %}{% block title %}{{ download.name }} — Downloads — NovaNuke{% endblock %}{% block content %}
 <article class="download-detail">
+{% include 'components/breadcrumbs.twig' with {items: [{label: 'Downloads', url: '/downloads'}, {label: download.name}]} only %}
 {% if message %}<div class="success-message">{{ message }}</div>{% endif %}{% if error %}<div class="form-errors"><p>{{ error }}</p></div>{% endif %}
 <header>{% include 'components/content-actions.twig' with {edit_url: edit_url|default(null), delete_url: delete_url|default(null), csrf_token: content_csrf_token|default(null), return_to: delete_return_to|default(null)} only %}{% if download.is_featured %}<span class="badge badge-active">Featured</span>{% endif %}<h1>{{ download.name }}</h1><p>{{ download.category_name|default('Uncategorized', true) }} · {{ download.download_count }} downloads</p></header>
 {% if download.image_path %}<img src="{{ download.image_path }}" alt="">{% endif %}<div class="article-content">{{ download.description_html }}</div>

@@ -14,7 +14,7 @@ use NovaNuke\Core\View\ViewRenderer;
 use NovaNuke\Core\Security\UserRoleSafety;
 use NovaNuke\Auth\RegistrationValidator;
 use NovaNuke\Auth\PasswordPolicy;
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
 use PDO;
 use PDOException;
 
@@ -29,7 +29,7 @@ final class UsersController
         private readonly ViewRenderer $views,
         private readonly RegistrationValidator $validator,
         private readonly PasswordPolicy $passwordPolicy,
-        private readonly EntitlementService $entitlements,
+        private readonly MembershipManagerInterface $memberships,
     ) {
     }
 
@@ -42,27 +42,31 @@ final class UsersController
         $vipFilter = (string) $request->query('vip', 'all');
         if (! in_array($vipFilter, ['all', 'active', 'inactive', 'none'], true)) $vipFilter = 'all';
         $vipWhere = match ($vipFilter) {
-            'active' => ' AND ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP()',
-            'inactive' => ' AND ue.id IS NOT NULL AND (ue.revoked_at IS NOT NULL OR ue.expires_at <= UTC_TIMESTAMP())',
+            'active' => ' AND ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND (ue.expires_at IS NULL OR ue.expires_at > UTC_TIMESTAMP())',
+            'inactive' => ' AND ue.id IS NOT NULL AND (ue.revoked_at IS NOT NULL OR (ue.expires_at IS NOT NULL AND ue.expires_at <= UTC_TIMESTAMP()))',
             'none' => ' AND ue.id IS NULL',
             default => '',
         };
         $users = $this->database->query(
             "SELECT u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, "
             . "COALESCE(GROUP_CONCAT(r.name ORDER BY r.id SEPARATOR ', '), '') AS roles, "
-            . "ue.expires_at AS vip_expires_at, CASE WHEN ue.id IS NULL THEN 'none' "
-            . "WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP() THEN 'active' ELSE 'inactive' END AS vip_status, "
-            . "CASE WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at > UTC_TIMESTAMP() "
+            . "ue.plan_key AS membership_plan, ue.expires_at AS vip_expires_at, CASE WHEN ue.id IS NULL THEN 'none' "
+            . "WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND (ue.expires_at IS NULL OR ue.expires_at > UTC_TIMESTAMP()) THEN 'active' ELSE 'inactive' END AS vip_status, "
+            . "CASE WHEN ue.revoked_at IS NULL AND ue.starts_at <= UTC_TIMESTAMP() AND ue.expires_at IS NOT NULL AND ue.expires_at > UTC_TIMESTAMP() "
             . "AND ue.expires_at <= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 DAY) THEN 1 ELSE 0 END AS vip_expiring_soon "
             . 'FROM users u LEFT JOIN user_roles ur ON ur.user_id = u.id '
             . 'LEFT JOIN roles r ON r.id = ur.role_id '
             . "LEFT JOIN user_entitlements ue ON ue.id = (SELECT MAX(latest.id) FROM user_entitlements latest WHERE latest.user_id = u.id AND latest.entitlement = 'vip') "
             . 'WHERE u.deleted_at IS NULL ' . $vipWhere
-            . ' GROUP BY u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, ue.id, ue.starts_at, ue.expires_at, ue.revoked_at '
+            . ' GROUP BY u.id, u.username, u.email, u.status, u.last_login_at, u.created_at, ue.id, ue.plan_key, ue.starts_at, ue.expires_at, ue.revoked_at '
             . 'ORDER BY u.created_at DESC LIMIT 200'
         )->fetchAll();
 
-        return Response::html($this->views->render('admin/users/index.twig', ['users' => $users, 'vip_filter' => $vipFilter]));
+        return Response::html($this->views->render('admin/users/index.twig', [
+            'users' => $users,
+            'vip_filter' => $vipFilter,
+            'can_create_account' => $this->canCreateAccount(),
+        ]));
     }
 
     public function edit(Request $request): Response
@@ -249,9 +253,41 @@ final class UsersController
         if($target===null)return Response::html('User not found.',404);
         $days=filter_var($request->input('days'),FILTER_VALIDATE_INT,['options'=>['min_range'=>1,'max_range'=>3650]]);
         if($days===false)return Response::html('VIP duration must be between 1 and 3650 days.',422);
-        $expires=$this->entitlements->grant((int)$target['id'],EntitlementService::VIP,(int)$days,(int)$actor['id']);
+        $expires=$this->memberships->grantDays((int)$target['id'],(int)$days,(int)$actor['id'],'Legacy custom-day VIP grant');
         $this->activity->log((int)$actor['id'],'user.vip.granted','user',$target['id'],['days'=>(int)$days,'expires_at'=>$expires],$request->ip());
         return Response::redirect('/admin/users/'.$target['id'].'?vip_updated=1',303);
+    }
+
+    public function assignMembership(Request $request): Response
+    {
+        if ($guard = $this->creationGuard()) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
+        $actor = $this->auth->user();
+        $target = $this->user((int) $request->attribute('id'));
+        if ($target === null) return Response::html('User not found.', 404);
+
+        $plan = trim((string) $request->input('plan', ''));
+        $note = trim((string) $request->input('note', ''));
+        try {
+            $status = $this->memberships->assign(
+                (int) $target['id'],
+                $plan,
+                (int) $actor['id'],
+                $note === '' ? null : $note,
+            );
+        } catch (\InvalidArgumentException $error) {
+            return Response::html(htmlspecialchars($error->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), 422);
+        }
+
+        $this->activity->log(
+            (int) $actor['id'],
+            'user.membership.assigned',
+            'user',
+            $target['id'],
+            ['plan' => $plan, 'expires_at' => $status['expires_at'] ?? null],
+            $request->ip(),
+        );
+        return Response::redirect('/admin/users/' . $target['id'] . '?vip_updated=1', 303);
     }
 
     public function revokeVip(Request $request): Response
@@ -260,7 +296,7 @@ final class UsersController
         if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
         $actor=$this->auth->user();$target=$this->user((int)$request->attribute('id'));
         if($target===null)return Response::html('User not found.',404);
-        $this->entitlements->revoke((int)$target['id'],EntitlementService::VIP);
+        $this->memberships->revoke((int)$target['id'],(int)$actor['id']);
         $this->activity->log((int)$actor['id'],'user.vip.revoked','user',$target['id'],[],$request->ip());
         return Response::redirect('/admin/users/'.$target['id'].'?vip_updated=1',303);
     }
@@ -275,6 +311,17 @@ final class UsersController
         return $this->authorization->allows((int) $user['id'], $permission)
             ? null
             : Response::html('Forbidden', 403);
+    }
+
+    private function canCreateAccount(): bool
+    {
+        $actor = $this->auth->user();
+        if ($actor === null) return false;
+
+        $userId = (int) $actor['id'];
+        return $this->authorization->allows($userId, 'users.manage')
+            && $this->authorization->allows($userId, 'users.assign_roles')
+            && $this->auth->isSuperAdministrator($userId);
     }
 
     private function creationGuard(): ?Response
@@ -318,7 +365,8 @@ final class UsersController
             'saved' => $saved,
             'password_reset' => $passwordReset,
             'password_error' => $passwordError,
-            'vip' => $this->entitlements->status((int) $user['id'], EntitlementService::VIP),
+            'membership' => $this->memberships->status((int) $user['id']),
+            'membership_plans' => $this->memberships->plans(),
             'vip_updated' => $vipUpdated,
             'current_user_id' => (int) $this->auth->user()['id'],
         ]), $status);

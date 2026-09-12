@@ -38,4 +38,40 @@ final class RouterTest extends TestCase
         $this->expectException(RouteNotFound::class);
         $router->match(Request::create('GET', '/missing'));
     }
+
+    public function testItRejectsDuplicateRouteNames(): void
+    {
+        $router = new Router();
+        $router->get('/first', static fn (): Response => Response::html('first'), 'example.route');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $router->get('/second', static fn (): Response => Response::html('second'), 'example.route');
+    }
+
+    public function testItRejectsExactMethodAndPathCollisionsAcrossOwners(): void
+    {
+        $router = new Router();
+        $router->get('/shared', static fn (): Response => Response::html('core'));
+        $router->beginOwner('example');
+
+        try {
+            $router->get('/shared', static fn (): Response => Response::html('module'));
+            self::fail('Expected route collision to be rejected.');
+        } catch (\InvalidArgumentException $error) {
+            self::assertStringContainsString('module example', $error->getMessage());
+        } finally {
+            $router->endOwner();
+        }
+    }
+
+    public function testSamePathMayUseDifferentHttpMethods(): void
+    {
+        $router = new Router();
+        $router->get('/settings', static fn (): Response => Response::html('form'));
+        $router->post('/settings', static fn (): Response => Response::html('saved'));
+
+        self::assertSame(['GET', 'HEAD'], $router->match(Request::create('GET', '/settings'))->route->methods);
+        self::assertSame(['POST'], $router->match(Request::create('POST', '/settings'))->route->methods);
+    }
+
 }

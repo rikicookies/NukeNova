@@ -6,6 +6,10 @@ namespace NovaNuke\Core\Http;
 
 final class Request
 {
+    private const MAX_QUERY_KEYS = 200;
+    private const MAX_REQUEST_KEYS = 500;
+    private const MAX_NESTING_DEPTH = 8;
+
     /** @param array<string, string> $attributes */
     public function __construct(
         private readonly string $method,
@@ -21,6 +25,9 @@ final class Request
 
     public static function capture(): self
     {
+        self::assertInputShape($_GET, self::MAX_QUERY_KEYS, 'query');
+        self::assertInputShape($_POST, self::MAX_REQUEST_KEYS, 'request');
+
         return new self(
             strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET'),
             $_SERVER['REQUEST_URI'] ?? '/',
@@ -38,6 +45,29 @@ final class Request
         parse_str((string) parse_url($uri, PHP_URL_QUERY), $query);
 
         return new self(strtoupper($method), $uri, $query);
+    }
+
+
+    /** @param array<mixed> $input */
+    private static function assertInputShape(array $input, int $maxKeys, string $label): void
+    {
+        if (count($input) > $maxKeys) {
+            throw new \RuntimeException("Too many {$label} parameters.");
+        }
+
+        $walk = static function (array $values, int $depth) use (&$walk, $label): void {
+            if ($depth > self::MAX_NESTING_DEPTH) {
+                throw new \RuntimeException("{$label} parameters are nested too deeply.");
+            }
+
+            foreach ($values as $value) {
+                if (is_array($value)) {
+                    $walk($value, $depth + 1);
+                }
+            }
+        };
+
+        $walk($input, 1);
     }
 
     public function method(): string

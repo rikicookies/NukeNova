@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\PrivateMessages\src;
 
-use NovaNuke\Core\Admin\AdminMenuBuilding;use NovaNuke\Core\Container\Container;use NovaNuke\Core\Http\Request;use NovaNuke\Core\Http\Response;use NovaNuke\Core\Modules\ModuleContext;use NovaNuke\Core\Modules\ModuleInterface;use NovaNuke\Core\Security\DatabaseRateLimiter;use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Admin\AdminMenuBuilding;use NovaNuke\Core\Container\Container;
+use NovaNuke\Core\Messaging\PrivateMessageComposerInterface;use NovaNuke\Core\Http\Request;use NovaNuke\Core\Http\Response;use NovaNuke\Core\Modules\ModuleContext;use NovaNuke\Core\Modules\ModuleInterface;use NovaNuke\Core\Security\DatabaseRateLimiter;use NovaNuke\Core\View\ViewRenderer;
 
 final class PrivateMessagesModule implements ModuleInterface
 {
@@ -13,10 +14,11 @@ final class PrivateMessagesModule implements ModuleInterface
         $views=$context->container->get(ViewRenderer::class);$views->addNamespace('private-messages',$context->basePath.'/views');$views->addGlobal('private_messages_available',true);
         $context->container->bind(PrivateMessageRepository::class,static fn(Container $c)=>new PrivateMessageRepository($c->get(\PDO::class)));
         $context->container->bind(PrivateMessageService::class,static fn(Container $c)=>new PrivateMessageService($c->get(PrivateMessageRepository::class),new PrivateMessageInput(),new DatabaseRateLimiter($c->get(\PDO::class),20,3600,'private-messages-send'),new DatabaseRateLimiter($c->get(\PDO::class),5,3600,'private-messages-report'),$c->get(\NovaNuke\Core\Events\EventDispatcher::class),$c->get(\NovaNuke\Core\Content\ContentRendererInterface::class)));
+        $context->container->bind(PrivateMessageComposerInterface::class, static fn (Container $c) => $c->get(PrivateMessageService::class));
     }
     public function boot(ModuleContext $context):void
     {
-        $context->events->listen('admin.menu.building',static function(object $e):void{if($e instanceof AdminMenuBuilding)$e->add('Private messages','/admin/private-messages','private-messages.moderate');});
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING,static function(object $e):void{if($e instanceof AdminMenuBuilding)$e->add('Private messages','/admin/private-messages','private-messages.moderate');});
         $public=static fn(Container $c)=>new PublicPrivateMessagesController($c->get(PrivateMessageRepository::class),$c->get(PrivateMessageService::class),$c->get(\NovaNuke\Auth\AuthManager::class),$c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),$c->get(\NovaNuke\Core\Security\SessionManager::class),$c->get(ViewRenderer::class));
         $admin=static fn(Container $c)=>new AdminPrivateMessagesController($c->get(PrivateMessageRepository::class),$c->get(\NovaNuke\Auth\AuthManager::class),$c->get(\NovaNuke\Core\Security\AuthorizationService::class),$c->get(\NovaNuke\Core\Logging\ActivityLogger::class),$c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),$c->get(\NovaNuke\Core\Security\SessionManager::class),$c->get(ViewRenderer::class));
         $context->router->get('/messages',static fn(Request $r,Container $c):Response=>$public($c)->inbox(),'private-messages.inbox');

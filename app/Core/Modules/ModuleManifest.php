@@ -8,6 +8,8 @@ use InvalidArgumentException;
 
 final readonly class ModuleManifest
 {
+    private const SEMVER_PATTERN = '/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$/';
+
     /** @param array<string, string> $dependencies
      *  @param list<string> $permissions
      *  @param list<string> $events
@@ -37,57 +39,88 @@ final readonly class ModuleManifest
                 throw new InvalidArgumentException("Module manifest field is required: {$field}");
             }
         }
-        if (! preg_match('/^[a-z][a-z0-9-]{0,99}$/', $data['slug'])) {
+
+        $slug = trim($data['slug']);
+        $version = trim($data['version']);
+        $provider = trim($data['provider']);
+        $cmsMinVersion = trim($data['cms_min_version']);
+        $phpMinVersion = trim($data['php_min_version']);
+
+        if (! preg_match('/^[a-z][a-z0-9-]{0,99}$/', $slug)) {
             throw new InvalidArgumentException('Module slug must use lowercase letters, numbers and hyphens.');
         }
-        if (! preg_match('/^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.-]+)?$/', $data['version'])) {
-            throw new InvalidArgumentException('Module version must use semantic versioning.');
+        self::assertSemanticVersion($version, 'Module version');
+        self::assertSemanticVersion($cmsMinVersion, 'Module cms_min_version');
+        self::assertSemanticVersion($phpMinVersion, 'Module php_min_version');
+
+        if (! preg_match('/^Modules\\\\[A-Za-z][A-Za-z0-9_\\\\]+$/', $provider)) {
+            throw new InvalidArgumentException('Module provider must use the Modules namespace.');
         }
+        $directory = basename(rtrim(str_replace('\\', '/', $path), '/'));
+        if ($directory === '' || ! str_starts_with($provider, 'Modules\\' . $directory . '\\')) {
+            throw new InvalidArgumentException('Module provider must belong to its module namespace.');
+        }
+
         $dependencies = $data['dependencies'] ?? [];
         $permissions = $data['permissions'] ?? [];
         $events = $data['events'] ?? [];
         if (! is_array($dependencies) || ! is_array($permissions) || ! is_array($events)) {
             throw new InvalidArgumentException('Module dependencies, permissions and events must be arrays.');
         }
-        if (! preg_match('/^Modules\\\\[A-Za-z][A-Za-z0-9_\\\\]+$/', $data['provider'])) {
-            throw new InvalidArgumentException('Module provider must use the Modules namespace.');
-        }
+
         foreach ($dependencies as $dependency => $minimumVersion) {
             if (! is_string($dependency) || ! preg_match('/^[a-z][a-z0-9-]{0,99}$/', $dependency)) {
                 throw new InvalidArgumentException('Invalid module dependency slug.');
             }
-            if ($dependency === $data['slug']) {
+            if ($dependency === $slug) {
                 throw new InvalidArgumentException('A module cannot depend on itself.');
             }
-            if (! is_string($minimumVersion) || ! preg_match('/^\d+\.\d+\.\d+/', $minimumVersion)) {
+            if (! is_string($minimumVersion)) {
                 throw new InvalidArgumentException("Invalid dependency version for {$dependency}.");
             }
+            self::assertSemanticVersion(trim($minimumVersion), "Dependency version for {$dependency}");
         }
+
+        $permissionPattern = '/^' . preg_quote($slug, '/') . '\\.[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$/';
+        $seenPermissions = [];
         foreach ($permissions as $permission) {
-            if (! is_string($permission)) {
-                throw new InvalidArgumentException('Module permissions must be strings.');
+            if (! is_string($permission) || ! preg_match($permissionPattern, $permission)) {
+                throw new InvalidArgumentException("Module permission must begin with {$slug}. and use lowercase dot-separated identifiers.");
             }
+            if (isset($seenPermissions[$permission])) {
+                throw new InvalidArgumentException("Duplicate module permission: {$permission}");
+            }
+            $seenPermissions[$permission] = true;
         }
+
+        $seenEvents = [];
         foreach ($events as $event) {
-            if (! is_string($event) || ! preg_match('/^[a-z][a-z0-9.-]{1,119}$/', $event)) {
+            if (! is_string($event) || ! preg_match('/^[a-z][a-z0-9-]*(?:\\.[a-z][a-z0-9-]*)*$/', $event) || strlen($event) > 120) {
                 throw new InvalidArgumentException('Invalid module event name.');
             }
+            if (isset($seenEvents[$event])) {
+                throw new InvalidArgumentException("Duplicate module event: {$event}");
+            }
+            $seenEvents[$event] = true;
         }
-        $apiVersion=(string)($data['api_version']??'1.0');
-        if(!preg_match('/^\d+\.\d+$/',$apiVersion))throw new InvalidArgumentException('Module API version must use major.minor format.');
+
+        $apiVersion = trim((string) ($data['api_version'] ?? '1.0'));
+        if (! preg_match('/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/', $apiVersion)) {
+            throw new InvalidArgumentException('Module API version must use major.minor format.');
+        }
 
         return new self(
             trim($data['name']),
-            $data['slug'],
-            $data['version'],
+            $slug,
+            $version,
             (string) ($data['description'] ?? ''),
             (string) ($data['author'] ?? ''),
-            $data['provider'],
-            $data['cms_min_version'],
-            $data['php_min_version'],
-            array_map('strval', $dependencies),
+            $provider,
+            $cmsMinVersion,
+            $phpMinVersion,
+            array_map(static fn (mixed $value): string => trim((string) $value), $dependencies),
             array_values(array_map('strval', $permissions)),
-            array_values(array_unique(array_map('strval', $events))),
+            array_values(array_map('strval', $events)),
             $apiVersion,
             $path,
         );
@@ -110,5 +143,12 @@ final readonly class ModuleManifest
             'events' => $this->events,
             'api_version' => $this->apiVersion,
         ];
+    }
+
+    private static function assertSemanticVersion(string $version, string $label): void
+    {
+        if (! preg_match(self::SEMVER_PATTERN, $version)) {
+            throw new InvalidArgumentException("{$label} must use semantic versioning.");
+        }
     }
 }

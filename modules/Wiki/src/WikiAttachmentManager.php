@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Wiki\src;
 
+use NovaNuke\Core\Storage\SafeStorageBoundary;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -53,7 +54,11 @@ final class WikiAttachmentManager
     public function store(int $pageId, int $actorId, ?array $file): int
     {
         $upload = $this->uploads->validate($file);
-        if (! is_dir($this->directory) || ! is_writable($this->directory)) throw new RuntimeException('Private Wiki attachment storage is not writable.');
+        try {
+            SafeStorageBoundary::ensureDirectory($this->directory);
+        } catch (RuntimeException) {
+            throw new RuntimeException('Private Wiki attachment storage is not writable.');
+        }
         if (! is_uploaded_file($upload['temporary_path'])) throw new RuntimeException('Attachment source was not accepted by PHP.');
 
         $storedName = bin2hex(random_bytes(20)) . '.' . $upload['extension'];
@@ -97,11 +102,10 @@ final class WikiAttachmentManager
     public function path(string $storedName): string
     {
         if (! preg_match('/^[a-f0-9]{40}\.[a-z0-9]{2,5}$/', $storedName)) throw new RuntimeException('Stored Wiki attachment filename is invalid.');
-        $root = realpath($this->directory);
-        $path = realpath($this->directory . '/' . $storedName);
-        if ($root === false || $path === false || ! str_starts_with($path, $root . DIRECTORY_SEPARATOR) || ! is_file($path)) {
+        try {
+            return SafeStorageBoundary::existingFile($this->directory, $storedName);
+        } catch (RuntimeException) {
             throw new RuntimeException('Wiki attachment file is unavailable.');
         }
-        return $path;
     }
 }

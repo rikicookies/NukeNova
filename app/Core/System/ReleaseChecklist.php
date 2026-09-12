@@ -19,8 +19,10 @@ final class ReleaseChecklist
     {
         $checks = [];
         $required = [
-            'public/index.php', 'public/.htaccess', 'public/.user.ini', 'bootstrap/app.php', 'composer.json', '.env.example',
-            'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private',
+            'public/index.php', 'public/.htaccess', 'public/.user.ini', 'public/uploads/.htaccess',
+            'bootstrap/app.php', 'composer.json', '.env.example',
+            'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private', 'storage/private/.htaccess',
+            'docs/INSTALLATION.md', 'docs/PRODUCTION.md', 'docs/PRODUCTION_HARDENING.md',
         ];
         $missing = array_values(array_filter($required, fn (string $path): bool => ! file_exists($this->rootPath . '/' . $path)));
         $checks[] = [

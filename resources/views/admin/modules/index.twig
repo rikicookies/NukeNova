@@ -2,8 +2,8 @@
 {% block title %}Modules — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Extensions</p>
-    <h1>Modules</h1>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Modules'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Extensions', title: 'Modules', description: 'Install, enable, update and configure trusted modules detected in modules/.'} only %}
     <p>Copy trusted modules into <code>modules/</code>, then install and enable them here.</p>
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
@@ -51,6 +51,5 @@
             <div class="notice-message">No module manifests were detected.</div>
         {% endfor %}
     </div>
-    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
 </section>
 {% endblock %}

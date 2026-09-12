@@ -4,6 +4,18 @@ NovaNuke modules are trusted PHP packages copied manually into `modules/`. Insta
 
 The administrative panel never accepts PHP uploads. Files must be placed on the server by an authorized operator before NovaNuke can detect them.
 
+## Start with the scaffolder
+
+For a new module, generate a minimal Module API 1.0 structure instead of copying an unrelated production module:
+
+```bash
+php bin/cms module:make "Reading List"
+```
+
+The command does not boot NovaNuke, connect to the database, install the module or overwrite an existing directory. It creates a valid manifest/provider/view/language skeleton and empty migration/test directories. See `docs/DEVELOPER_EXPERIENCE.md`.
+
+For a complete small example, read `modules/Quotes/`. Quotes adds a module-owned migration, repository, public/admin routes, authorization, CSRF, activity logging and an Admin menu entry while remaining independent of other modules.
+
 ## Structure
 
 ```text
@@ -49,12 +61,12 @@ Composer maps `Modules\` to `modules/`. A provider stored at `modules/Example/sr
 ```
 
 - Slugs use lowercase letters, numbers and hyphens.
-- Versions use semantic versioning.
+- Module, CMS minimum, PHP minimum and dependency versions use complete semantic versioning.
 - `api_version` selects the stable NovaNuke module contract; Beta 1 supports API 1.0.
 - Dependencies map module slugs to minimum installed versions.
-- Permission slugs must start with the module slug followed by a dot.
-- Event names use lowercase letters, numbers, dots and hyphens. Declare emitted and consumed events in the optional `events` array.
-- The provider must use the `Modules` PHP namespace and implement `ModuleInterface`.
+- Permission slugs must start with the module slug followed by a dot, use lowercase dot-separated identifiers, and cannot be duplicated.
+- Event names use lowercase dot-separated identifiers with letters, numbers and hyphens; duplicate declarations are rejected. Declare emitted and consumed events in the optional `events` array.
+- The provider must use the module directory's own `Modules\<Directory>\...` PHP namespace and implement `ModuleInterface`.
 
 ## Provider lifecycle
 
@@ -101,11 +113,14 @@ Register routes during `boot()`:
 $context->router->get('/example', $handler, 'example.index');
 ```
 
-Core routes are registered first. Modules must use unique URL prefixes and route names.
+Core routes are registered first. Exact HTTP-method/path collisions and duplicate named routes are rejected at registration time. Modules should still use a unique URL prefix and namespaced route names to avoid conflicts.
 
 An installed module also has an administrator-selected audience: public, guests, registered members or active VIP members. The router records which module owns each route, and the HTTP kernel enforces that audience on public module routes. Administrative routes continue to rely on their explicit permissions. A module must still authorize individual records when it supports mixed audiences inside the same module.
 
 ## Events and hooks
+
+Core and bundled modules should reference shared event identifiers through `NovaNuke\Core\Events\EventName`. The dispatcher remains string based for Module API 1.0 compatibility; module-specific custom events may still use their manifest-declared strings. See `docs/EVENTS.md` for the Core-owned event/payload matrix.
+
 
 Listeners are synchronous and ordered from highest to lowest priority:
 
@@ -135,7 +150,9 @@ Core authentication notifications include `user.registered`, `user.email_verifie
 
 Public profiles expose `profile.actions.building` and `profile.statistics.building`. Optional modules should add only internal action URLs and privacy-safe aggregate values. Friends demonstrates both contracts without making Profiles depend on its tables.
 
-Searchable content modules can listen to `search.providers.registering` and add a provider implementing `SearchProviderInterface`. The provider is responsible for publication and viewer-access checks. See `docs/SEARCH.md` for the complete contract.
+Searchable content modules can listen to `search.providers.registering` and add a provider implementing `NovaNuke\Core\Search\SearchProviderInterface`. Search DTOs, the registration payload and `LikePattern` live under `NovaNuke\Core\Search` so modules do not depend on Search implementation classes. The provider is responsible for publication and viewer-access checks. See `docs/SEARCH.md` for the complete contract.
+
+Sitemap contributors listen to `sitemap.collecting` with `NovaNuke\Core\Sitemap\SitemapCollecting`. SEO owns sitemap rendering, but Core owns the extension payload so contributors remain decoupled from SEO internals.
 
 ## Migrations
 
@@ -159,4 +176,17 @@ An update runs only pending migrations and updates the installed semantic versio
 - Missing files: installed record exists but its directory is absent.
 - Error: the last provider boot failed; details appear in the modules panel and application log.
 
-The `Welcome` module bundled with NovaNuke is the executable reference implementation.
+The `Welcome` module remains the smallest lifecycle demonstration. The `Quotes` module is the recommended small-but-complete reference implementation for new module development.
+
+## Optional services and cross-module events
+
+Optional integrations must depend on Core-owned contracts rather than another module's `src` implementation classes. During `register()`, a provider module binds its Core interface; during `boot()`, consumers may call `Container::has()` for that interface before using it.
+
+Bundled examples include `NovaNuke\Core\Comments\CommentProviderInterface`, `NovaNuke\Core\Media\MediaLibraryInterface`, and `NovaNuke\Core\Messaging\PrivateMessageComposerInterface`. Cross-module event payloads likewise use Core-owned classes such as `CommentCreated`, `CommentTargetChecking`, `MediaUsageChecking`, `FriendRequested`, `FriendAccepted`, and `PrivateMessageSent`.
+
+Do not import `Modules\OtherModule\src\...` from a normal bundled module. Demo Content is the intentional exception because it coordinates concrete services from several optional modules to install a deterministic sample dataset.
+
+
+## Developer preflight
+
+Before installing a new module, run `php bin/cms module:check DirectoryName` (or pass its slug). The diagnostic is intentionally pre-bootstrap and non-executing: it validates module structure and declared contracts without running provider code or migrations. Treat FAIL results as installation blockers and WARN results as review items. See `docs/DEVELOPER_EXPERIENCE.md`.

@@ -2,9 +2,8 @@
 {% block title %}Create account — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Accounts</p>
-    <h1>Create account</h1>
-    <p>Create an active, email-verified account without opening public registration.</p>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Users', url: '/admin/users'}, {label: 'Create account'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Accounts', title: 'Create account', description: 'Create an active, email-verified account without opening public registration.'} only %}
     {% if errors %}<div class="alert alert-error"><strong>Please correct the form.</strong><ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul></div>{% endif %}
     <form class="settings-form admin-form" method="post" action="/admin/users">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
@@ -16,6 +15,5 @@
         <label class="toggle-row"><input type="checkbox" name="must_change_password" value="1" checked><span><strong>Require password change</strong><small>The user must replace the initial password before accessing the rest of the site.</small></span></label>
         <button type="submit">Create account</button>
     </form>
-    <p><a href="/admin/users">Return to users</a></p>
 </section>
 {% endblock %}

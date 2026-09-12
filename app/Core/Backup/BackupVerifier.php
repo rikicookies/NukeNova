@@ -210,7 +210,16 @@ final class BackupVerifier
 
     private function assertRegularFile(string $path): void
     {
-        if (! is_file($path) || is_link($path)) throw new RuntimeException('Backup is not a regular file.');
+        if (! is_file($path) || is_link($path) || ! is_readable($path)) {
+            throw new RuntimeException('Backup is not a regular readable file.');
+        }
+
+        if (PHP_OS_FAMILY !== 'Windows') {
+            $permissions = fileperms($path);
+            if ($permissions !== false && (($permissions & 0077) !== 0)) {
+                throw new RuntimeException('Backup file permissions are too permissive; expected owner-only access.');
+            }
+        }
     }
 
     private function assertTarChecksum(string $header): void

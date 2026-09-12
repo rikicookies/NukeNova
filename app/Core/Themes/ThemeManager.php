@@ -109,7 +109,7 @@ final class ThemeManager
         $this->assertCompatible($manifest);
         $this->assets->publish($manifest);
         $this->settings->setString('theme.active', $slug, 'appearance');
-        $this->events->dispatch('theme.activated', new ThemeActivated($slug));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::THEME_ACTIVATED, new ThemeActivated($slug));
     }
 
     public function uninstall(string $slug): void

@@ -65,7 +65,7 @@ final class AccountLifecycleService
         }
 
         try {
-            $this->events->dispatch('user.anonymized', new UserAnonymized($userId));
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::USER_ANONYMIZED, new UserAnonymized($userId));
         } catch (\Throwable $error) {
             error_log('A user.anonymized listener failed: ' . $error->getMessage());
         }

@@ -8,7 +8,7 @@ use DOMDocument;
 use DOMXPath;
 use InvalidArgumentException;
 use Modules\Seo\src\SitemapBuilder;
-use Modules\Seo\src\SitemapCollecting;
+use NovaNuke\Core\Sitemap\SitemapCollecting;
 use PHPUnit\Framework\TestCase;
 
 final class SitemapTest extends TestCase

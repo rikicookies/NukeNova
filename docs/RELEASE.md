@@ -56,3 +56,15 @@ Integration tests create and remove random `novanuke_test_*` databases. Run them
 - Detailed PHP display errors are disabled at application and server levels.
 
 Record PHP, MySQL/MariaDB and Composer versions with the test results. Required failures must block public deployment until corrected.
+
+## Release package smoke check
+
+Before uploading or extracting a release, run:
+
+```bash
+php bin/cms release:smoke
+```
+
+This command executes before application bootstrap and does not require a database. It checks distribution completeness, release/version metadata, bundled module manifests, migration file safety and private-storage guards. A release archive that fails this command should not be deployed.
+
+After extraction, continue with `release:check`, `migrate:status`, `production:check`, `security:audit` and the normal upgrade completion workflow.

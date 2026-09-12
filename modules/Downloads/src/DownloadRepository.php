@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Downloads\src;
 
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
 use PDO;
 use RuntimeException;
 
@@ -14,7 +14,7 @@ final class DownloadRepository
 
     public function __construct(
         private readonly PDO $database,
-        private readonly EntitlementService $entitlements,
+        private readonly MembershipManagerInterface $memberships,
         int $perPage = 10,
     )
     {
@@ -100,7 +100,7 @@ final class DownloadRepository
 
     public function catalog(int $page, ?string $category, string $search, string $order, ?int $userId): array
     {
-        $where = "d.deleted_at IS NULL AND d.published_at<=UTC_TIMESTAMP() AND d.status IN ('published','scheduled') AND (d.access_type='public' OR (:viewer>0 AND d.access_type='members') OR (:vip_viewer>0 AND d.access_type='vip' AND EXISTS (SELECT 1 FROM user_entitlements ue WHERE ue.user_id=:entitlement_viewer AND ue.entitlement='vip' AND ue.starts_at<=UTC_TIMESTAMP() AND ue.expires_at>UTC_TIMESTAMP() AND ue.revoked_at IS NULL)) OR EXISTS (SELECT 1 FROM download_role_access dra INNER JOIN user_roles ur ON ur.role_id=dra.role_id WHERE dra.download_id=d.id AND ur.user_id=:role_viewer))";
+        $where = "d.deleted_at IS NULL AND d.published_at<=UTC_TIMESTAMP() AND d.status IN ('published','scheduled') AND (d.access_type='public' OR (:viewer>0 AND d.access_type='members') OR (:vip_viewer>0 AND d.access_type='vip' AND EXISTS (SELECT 1 FROM user_entitlements ue WHERE ue.user_id=:entitlement_viewer AND ue.entitlement='vip' AND ue.starts_at<=UTC_TIMESTAMP() AND (ue.expires_at IS NULL OR ue.expires_at>UTC_TIMESTAMP()) AND ue.revoked_at IS NULL)) OR EXISTS (SELECT 1 FROM download_role_access dra INNER JOIN user_roles ur ON ur.role_id=dra.role_id WHERE dra.download_id=d.id AND ur.user_id=:role_viewer))";
         $parameters = ['viewer' => $userId ?? 0, 'vip_viewer' => $userId ?? 0, 'entitlement_viewer' => $userId ?? 0, 'role_viewer' => $userId ?? 0];
         if ($category !== null) { $where .= ' AND c.slug=:category'; $parameters['category'] = $category; }
         if ($search !== '') { $where .= ' AND (d.name LIKE :search OR d.description LIKE :search_description OR d.author_name LIKE :search_author)'; $term = '%' . $search . '%'; $parameters += ['search' => $term, 'search_description' => $term, 'search_author' => $term]; }
@@ -117,7 +117,7 @@ final class DownloadRepository
     public function canView(array $download, ?int $userId): bool
     {
         if ($download['access_type'] === 'public') return true; if ($userId === null) return false; if ($download['access_type'] === 'members') return true;
-        if ($download['access_type'] === 'vip') return $this->entitlements->has($userId, EntitlementService::VIP);
+        if ($download['access_type'] === 'vip') return $this->memberships->isVip($userId);
         $statement = $this->database->prepare('SELECT COUNT(*) FROM download_role_access dra INNER JOIN user_roles ur ON ur.role_id=dra.role_id WHERE dra.download_id=:download AND ur.user_id=:user');
         $statement->execute(['download' => $download['id'], 'user' => $userId]); return (int) $statement->fetchColumn() > 0;
     }

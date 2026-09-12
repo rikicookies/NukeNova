@@ -95,10 +95,28 @@ final class BackupVerifierTest extends TestCase
         self::assertStringContainsString('fresh matched pair', $results[2]['detail']);
     }
 
+
+    public function testItRejectsOverlyPermissiveBackupPermissionsOnPosix(): void
+    {
+        if (PHP_OS_FAMILY === 'Windows') {
+            self::markTestSkipped('POSIX permission bits are not reliable on Windows.');
+        }
+
+        $database = $this->databaseBackup();
+        @chmod($database, 0644);
+        (new FileBackup($this->root, $this->backups, ['custom' => $this->root . '/source']))->create();
+
+        $results = (new BackupVerifier($this->backups))->verifyLatest();
+
+        self::assertFalse($results[0]['passed']);
+        self::assertStringContainsString('permissions are too permissive', $results[0]['detail']);
+    }
+
     private function databaseBackup(): string
     {
         $path = $this->backups . '/novanuke-db-test.sql';
         file_put_contents($path, "-- NovaNuke database backup\n-- Created: 2026-09-09T00:00:00+00:00\n\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\nSET FOREIGN_KEY_CHECKS=1;\n");
+        @chmod($path, 0600);
         return $path;
     }
 }

@@ -28,9 +28,11 @@ A module declares `sitemap.collecting` in `module.json` and registers a listener
 
 ```php
 $context->events->listen('sitemap.collecting', static function (object $event): void {
-    if (! $event instanceof \Modules\Seo\src\SitemapCollecting) return;
+    if (! $event instanceof \NovaNuke\Core\Sitemap\SitemapCollecting) return;
     $event->add('/catalog/example', '2026-09-03 12:00:00', 'weekly', 0.7);
 });
 ```
 
 Only clean internal paths are accepted. Query strings, protocol-relative URLs, whitespace and control characters are rejected. Providers must enforce publication and access rules before adding a URL. The collection deduplicates paths and enforces the standard 50,000 URL limit.
+
+The sitemap collection payload is a Core extension contract as of alpha.55. The former `Modules\Seo\src\SitemapCollecting` name remains a compatibility alias for Module API 1.0, but new modules should import `NovaNuke\Core\Sitemap\SitemapCollecting`.

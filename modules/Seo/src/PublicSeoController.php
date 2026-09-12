@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Seo\src;
 
+use NovaNuke\Core\Sitemap\SitemapCollecting;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Http\Response;
 
@@ -20,7 +21,7 @@ final class PublicSeoController
     {
         $collection = new SitemapCollecting();
         $collection->add('/', null, 'daily', 1.0);
-        $this->events->dispatch('sitemap.collecting', $collection);
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::SITEMAP_COLLECTING, $collection);
         return Response::xml($this->builder->build($this->baseUrl, $collection), 200, ['Cache-Control'=>'public, max-age=900']);
     }
 

@@ -69,6 +69,7 @@ use NovaNuke\Core\Security\AdminAccessGate;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
 use NovaNuke\Core\System\ProductionReadiness;
+use NovaNuke\Core\System\DistributionSmokeCheck;
 use NovaNuke\Core\Admin\AdminDashboardService;
 use NovaNuke\Core\Admin\AdminNavigationManager;
 use NovaNuke\Core\I18n\Translator;
@@ -77,6 +78,14 @@ use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Content\ContentRenderer;
 use NovaNuke\Core\Content\ContentRendererInterface;
 use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
+use NovaNuke\Core\Membership\MembershipRepository;
+use NovaNuke\Core\Membership\MembershipStatusPresenter;
+use NovaNuke\Core\Membership\MembershipHealthCheck;
+use NovaNuke\Core\Membership\MembershipPlanCatalog;
+use NovaNuke\Core\Membership\MembershipExpirationProcessor;
+use NovaNuke\Core\Membership\MembershipActivationProcessor;
 use NovaNuke\Core\Access\AccessAudience;
 use NovaNuke\Core\Modules\ModuleRouteAccess;
 use PDO;
@@ -110,6 +119,8 @@ final class Application
                 (bool) $config->get('session.secure', false),
                 (string) $config->get('session.same_site', 'Lax'),
                 (int) $config->get('session.lifetime', 7200),
+                (int) $config->get('session.idle_timeout', 1800),
+                (int) $config->get('session.rotation_interval', 900),
             );
             $session->start();
 
@@ -193,7 +204,15 @@ final class Application
             $c->get(PDO::class),
         ));
         $container->bind(EntitlementService::class, static fn (Container $c) => new EntitlementService($c->get(PDO::class)));
-        $container->bind(AccessAudience::class, static fn (Container $c) => new AccessAudience($c->get(EntitlementService::class)));
+        $container->bind(MembershipPlanCatalog::class, static fn () => new MembershipPlanCatalog());
+        $container->bind(MembershipService::class, static fn (Container $c) => new MembershipService($c->get(EntitlementService::class), $c->get(MembershipPlanCatalog::class), $c->get(EventDispatcher::class)));
+        $container->bind(MembershipRepository::class, static fn (Container $c) => new MembershipRepository($c->get(PDO::class)));
+        $container->bind(MembershipStatusPresenter::class, static fn () => new MembershipStatusPresenter());
+        $container->bind(MembershipHealthCheck::class, static fn (Container $c) => new MembershipHealthCheck($c->get(PDO::class)));
+        $container->bind(MembershipActivationProcessor::class, static fn (Container $c) => new MembershipActivationProcessor($c->get(PDO::class), $c->get(EventDispatcher::class)));
+        $container->bind(MembershipExpirationProcessor::class, static fn (Container $c) => new MembershipExpirationProcessor($c->get(PDO::class), $c->get(EventDispatcher::class)));
+        $container->bind(MembershipManagerInterface::class, static fn (Container $c) => $c->get(MembershipService::class));
+        $container->bind(AccessAudience::class, static fn (Container $c) => new AccessAudience($c->get(MembershipManagerInterface::class)));
         $container->bind(ModuleRouteAccess::class, static fn (Container $c) => new ModuleRouteAccess(new ModuleRepository($c->get(PDO::class)), $c->get(AccessAudience::class), $c->get(AuthManager::class)));
         $container->bind(ContentRendererInterface::class, static fn () => new ContentRenderer(
             new HtmlSanitizer(),
@@ -258,6 +277,7 @@ final class Application
         $container->bind(ErrorHandler::class, static fn () => new ErrorHandler(
             (bool) $config->get('app.debug', false),
             $rootPath . '/storage/logs/novanuke.log',
+            projectRoot: $rootPath,
         ));
         $container->bind(SecurityHeaders::class, static fn () => new SecurityHeaders(
             (bool) $config->get('security.headers_enabled', true),
@@ -291,8 +311,10 @@ final class Application
         ));
         $container->bind(ReleaseChecklist::class, static fn () => new ReleaseChecklist($rootPath));
         $container->bind(ProductionReadiness::class, static fn (Container $c) => new ProductionReadiness($c->get(ConfigRepository::class), $rootPath));
+        $container->bind(DistributionSmokeCheck::class, static fn () => new DistributionSmokeCheck($rootPath));
         $container->bind(DataPruner::class, static fn (Container $c) => new DataPruner(
             $c->get(PDO::class), $c->get(EventDispatcher::class),
+            $c->get(MembershipActivationProcessor::class), $c->get(MembershipExpirationProcessor::class),
         ));
         $container->bind(AdminDashboardService::class, static fn (Container $c) => new AdminDashboardService(
             $c->get(PDO::class),

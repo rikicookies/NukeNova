@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Wiki\src;
 
-use Modules\Comments\src\CommentService;
+use NovaNuke\Core\Comments\CommentProviderInterface;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Content\ContentFormat;
 use NovaNuke\Core\Content\ContentProfile;
@@ -32,7 +32,7 @@ final class PublicWikiController
         private readonly ViewRenderer $views,
         private readonly SessionManager $session,
         private readonly CsrfTokenManager $csrf,
-        private readonly ?CommentService $comments = null,
+        private readonly ?CommentProviderInterface $comments = null,
     ) {
     }
 

@@ -8,7 +8,7 @@ From the project root:
 php bin/cms backup:database
 ```
 
-NovaNuke creates an atomic SQL dump under `storage/private/backups/` with restrictive file permissions. The command does not accept a browser-supplied path, and incomplete `.part` files are removed after failure.
+NovaNuke creates an atomic SQL dump under `storage/private/backups/` with owner-only file permissions. The backup directory itself must be a real directory and not a symbolic link. The command does not accept a browser-supplied path, and incomplete `.part` files are removed after failure.
 
 The SQL file contains sensitive data including password hashes, reset tokens, private messages and site content. Download it through SSH/SFTP or the host file manager, encrypt it, store it off-server and delete old server copies according to a retention policy. Never place it under `public/` or commit it.
 
@@ -35,7 +35,7 @@ Immediately after creating both files, run:
 php bin/cms backup:verify
 ```
 
-The database, files and matched-pair checks must all report `PASS`. NovaNuke verifies the latest SQL envelope and fingerprint, every TAR header and manifest size/hash, safe archive paths and a complete terminator without executing or extracting anything. The two files must have been created no more than ten minutes apart. Record their filenames and displayed SHA-256 fingerprints with the off-server copy.
+The database, files and matched-pair checks must all report `PASS`. On POSIX hosts verification also rejects backup files that are accessible to group/other users. NovaNuke verifies the latest SQL envelope and fingerprint, every TAR header and manifest size/hash, safe archive paths and a complete terminator without executing or extracting anything. The two files must have been created no more than ten minutes apart. Record their filenames and displayed SHA-256 fingerprints with the off-server copy.
 
 `php bin/cms upgrade:check --from=VERSION` repeats these integrity checks and additionally requires backups created within the last 24 hours. Neither command proves authenticity against an attacker who can replace both a backup and its recorded fingerprint.
 

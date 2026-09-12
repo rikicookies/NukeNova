@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.2.0-alpha.39**. This release makes verified, recent and matched database/file backups mandatory inside the read-only upgrade preflight. Use 0.1.4 for the stable line until this alpha completes acceptance testing.
+Current development release: **0.4.0-beta.10**. Beta 1 begins production hardening with stronger session lifetime/idle/rotation controls, stricter sensitive-response caching, additional browser security headers, shared-hosting Apache guards and expanded production readiness checks. Use 0.1.4 for the stable line until this beta completes acceptance testing.
 
 ## Included in 0.1.0
 
@@ -66,6 +66,7 @@ php bin/cms migrate
 composer test
 php bin/cms cache:clear
 php bin/cms release:check
+php bin/cms module:make "Reading List"
 ```
 
 Phase 7C added PHPMailer. If it is not yet present in your lock file, run `composer update phpmailer/phpmailer` once before the standard commands.
@@ -80,6 +81,8 @@ php bin/cms migrate:status
 php bin/cms backup:database
 php bin/cms backup:files
 php bin/cms backup:verify
+php bin/cms upgrade:check --from=VERSION
+php bin/cms upgrade:complete --from=VERSION
 php bin/cms cache:status
 php bin/cms cache:clear
 php bin/cms maintenance:prune --dry-run
@@ -87,6 +90,7 @@ php bin/cms maintenance:prune
 php bin/cms downloads:orphans
 php bin/cms security:audit
 php bin/cms release:check
+php bin/cms module:make "Reading List"
 ```
 
 ## Local email
@@ -103,6 +107,7 @@ For production SMTP and Bluehost guidance, see [docs/MAIL.md](docs/MAIL.md).
 - [Secure email changes](docs/EMAIL_CHANGE.md)
 - [Email verification recovery](docs/EMAIL_VERIFICATION.md)
 - [Authentication events](docs/AUTH_EVENTS.md)
+- [Event API](docs/EVENTS.md)
 - [Backups](docs/BACKUPS.md)
 - [Scheduled maintenance](docs/MAINTENANCE.md)
 - [Recovery](docs/RECOVERY.md)
@@ -133,3 +138,5 @@ composer test
 For the isolated Laragon database suite, configure `.env.testing` and run `composer test:integration`. See [docs/TESTING.md](docs/TESTING.md).
 
 Never report a test as passing unless it was actually executed under PHP 8.3 or newer. This package remains alpha until its installer, update, permissions, SMTP and restore smoke-test matrix has been completed on the target environment.
+
+Production deployment hardening: `docs/PRODUCTION_HARDENING.md`

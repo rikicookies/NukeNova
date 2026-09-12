@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\Seo\src;
 
+use NovaNuke\Core\Sitemap\SitemapCollecting;
 use DOMDocument;
 use InvalidArgumentException;
 

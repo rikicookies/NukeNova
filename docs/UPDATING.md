@@ -25,10 +25,10 @@ php bin/cms backup:verify
 4. Run the read-only preflight with the exact version being replaced:
 
 ```bash
-php bin/cms upgrade:check --from=0.2.0-alpha.38
+php bin/cms upgrade:check --from=0.2.0-alpha.49
 ```
 
-Alpha.39 supports direct preflight from Alpha.33 through Alpha.38. For an older release, follow its documented intermediate updates or perform a clean installation and controlled data migration; do not claim an untested direct upgrade.
+Alpha.50 supports direct preflight from Alpha.33 through Alpha.49. For an older release, follow its documented intermediate updates or perform a clean installation and controlled data migration; do not claim an untested direct upgrade.
 
 5. Run:
 
@@ -43,7 +43,13 @@ php bin/cms release:check
 6. Apply compatible updates shown in `/admin/modules` and `/admin/themes`.
 7. Run `php bin/cms migrate:status` again. It succeeds only when no core/module migrations, missing migration files or module-version updates require attention.
 8. Run the smoke-test list in `docs/RELEASE.md`.
-9. Disable maintenance mode.
+9. Record successful completion using the same source version supplied to the preflight:
+
+```bash
+php bin/cms upgrade:complete --from=0.2.0-alpha.49
+```
+
+10. Disable maintenance mode.
 
 `migrate` executes core migrations only. Module migrations run through the controlled update action in `/admin/modules`, where NovaNuke also checks module and dependency versions.
 
@@ -56,6 +62,8 @@ composer update phpmailer/phpmailer
 Do not delete `storage/installed.lock` during an update. Removing it intentionally re-enables installer routing and is not an update procedure.
 
 `upgrade:check` never writes to the database or filesystem. It performs the same database, TAR and matched-pair integrity checks as `backup:verify`, additionally requiring both backups to be no more than 24 hours old. A `WARN` for pending migrations or module updates describes expected work; a `FAIL` must be resolved before running `migrate`.
+
+`upgrade:complete` is the only upgrade command in this sequence that records state. It refuses to write while migrations are pending/missing, installed modules still require updates, `release:check` fails or the previously recorded Core version disagrees with `--from`. Installations created before Alpha.40 have no recorded Core version and receive one explicit bootstrap warning on their first successful completion. Do not run this command until manual tests also pass; NovaNuke cannot determine whether an operator actually ran PHPUnit or browser smoke tests.
 
 ## Recovering from a failed migration
 

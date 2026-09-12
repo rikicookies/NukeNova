@@ -16,6 +16,21 @@ final class InstallerSafetyContractTest extends TestCase
         self::assertStringContainsString('avoid overwriting existing data', $service);
     }
 
+
+    public function testFailedOwnedInstallationRollsBackSchemaAndEnvironmentArtifacts(): void
+    {
+        $service = (string) file_get_contents(dirname(__DIR__, 2) . '/app/Installer/InstallerService.php');
+
+        self::assertStringContainsString('rollbackOwnedSchema($database)', $service);
+        self::assertStringContainsString("DROP TABLE IF EXISTS", $service);
+        self::assertStringContainsString("SET FOREIGN_KEY_CHECKS=0", $service);
+        self::assertStringContainsString("@unlink($envPath)", $service);
+        self::assertLessThan(
+            strpos($service, 'rollbackOwnedSchema($database)'),
+            strpos($service, 'assertDatabaseIsEmpty($database)'),
+        );
+    }
+
     public function testInstallCheckRunsWithoutBootingTheApplication(): void
     {
         $cli = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/cms');

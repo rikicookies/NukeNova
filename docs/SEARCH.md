@@ -12,7 +12,7 @@ Search term logging is disabled by default. Users with `search.manage` can chang
 
 ## Provider contract
 
-A module can participate without making Search a required dependency. During `boot()`, listen for the registration hook only when its payload class is available:
+A module can participate without making Search a required dependency. The provider contract is owned by Core (`NovaNuke\Core\Search`) so content modules do not import implementation classes from the optional Search module. During `boot()`, listen for the registration hook:
 
 ```php
 $context->events->listen('search.providers.registering', function (object $event): void {
@@ -22,7 +22,7 @@ $context->events->listen('search.providers.registering', function (object $event
 });
 ```
 
-The provider implements `SearchProviderInterface`:
+Import `SearchProvidersRegistering`, `SearchProviderInterface`, `SearchQuery`, `SearchProviderResult`, `SearchResultItem` and `LikePattern` from `NovaNuke\Core\Search`. The provider implements `SearchProviderInterface`:
 
 - `type()` returns a unique lowercase identifier;
 - `label()` returns its human-readable filter label;
@@ -40,3 +40,7 @@ Providers must use prepared statements, return only published content, enforce a
 - Result excerpts are stripped of HTML, shortened and escaped before the matching text is wrapped in `<mark>`.
 
 Because `%term%` queries cannot efficiently use ordinary B-tree indexes, large sites should monitor query time. A future module migration can add MySQL full-text indexes without changing the provider contract.
+
+## Alpha.55 compatibility
+
+The former `Modules\Search\src` contract class names remain compatibility aliases during API 1.0. New modules must use the Core namespace. The Search module keeps only the registry/service/controller implementation; it no longer owns the public provider DTOs or interface.

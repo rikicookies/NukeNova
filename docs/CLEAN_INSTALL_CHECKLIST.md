@@ -1,10 +1,10 @@
 # Clean installation checklist
 
-This checklist is the acceptance baseline for NovaNuke 0.2.0-alpha.34. Run it against a disposable database and a new application directory. Never point these steps at a production database.
+This checklist is the acceptance baseline for NovaNuke 0.3.0-beta.1. Run it against a disposable database and a new application directory. Never point these steps at a production database.
 
 ## Laragon baseline
 
-1. Create an empty directory such as `C:\dev\www\novanuke-alpha34`.
+1. Create an empty directory such as `C:\dev\www\novanuke-alpha50`.
 2. Extract the release into that directory.
 3. Preserve no `.env` or `storage/installed.lock` from another installation.
 4. Run `composer install`, followed by `php bin/cms install:check`.
@@ -26,7 +26,7 @@ No database table, `.env` value or lock file should require manual editing.
 
 ## Module acceptance
 
-Install and enable each bundled module from Admin. Afterward:
+Run `php bin/cms module:check` against each bundled module and resolve every FAIL. Then install and enable each bundled module from Admin. Include **Quotes** and verify `/quotes` plus **Admin → Quotes** before continuing. Afterward:
 
 ```bat
 composer test
@@ -76,4 +76,8 @@ Repeat the entire process with a second empty database and a second empty applic
 
 ## Recorded result
 
-Record PHP version, database/version, web server, clean-install result, module test result, Demo Content result and any warning. Alpha.34 is accepted only after this checklist succeeds twice without undocumented intervention.
+Record PHP version, database/version, web server, clean-install result, module test result, Demo Content result and any warning. Alpha.59 is accepted only after this checklist succeeds twice without undocumented intervention.
+
+## Distribution smoke
+
+Before beginning a fresh-install test from a packaged release, run `php bin/cms release:smoke`. The package must pass before Composer/application/database bootstrap is considered part of the test.

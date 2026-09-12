@@ -26,7 +26,7 @@ final class DynamicBlockRenderer
     {
         try {
             $rendering = new BlockRendering($block);
-            $this->events->dispatch('block.rendering', $rendering);
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::BLOCK_RENDERING, $rendering);
             return $rendering->html;
         } catch (Throwable $error) {
             $type = preg_replace('/[^a-zA-Z0-9_.-]/', '', (string) ($block['type'] ?? 'unknown')) ?: 'unknown';

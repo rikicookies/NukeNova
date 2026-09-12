@@ -1,6 +1,481 @@
 # Changelog
 
+## 0.4.0-beta.10 - 2026-09-10
+
+### Memberships QA stabilization
+- Reconciled stale Membership contract tests with the interface-based Membership boundary.
+- Updated activation-marker coverage after extension hardening removed the old INSERT path.
+- Strengthened the extension contract to verify that extension preserves plan identity.
+- No Membership runtime behavior or database schema changes are introduced.
+
+
+## 0.4.0-beta.9 - 2026-09-10
+
+### Memberships validation
+- Added `composer test:membership`, a focused unit + MySQL integration validation pass for the accumulated Memberships work.
+- Added isolated Membership lifecycle integration coverage for Free, VIP assignment, extension, revocation, Lifetime, scheduling, cancellation, activation and expiration.
+- Added idempotency assertions for scheduled activation and expiration events.
+- Added `php bin/cms membership:check`, a read-only audit of the real installation's membership schema and grant integrity.
+- Membership health checks detect duplicate active grants, duplicate future grants, active/future overlap, unknown plan keys, orphan grants and accidental persisted VIP boolean columns.
+
+
+## 0.4.0-beta.8 - 2026-09-10
+
+### Memberships stabilization
+- Fixed an unbalanced Twig conditional in the membership detail screen.
+- Free membership now renders explicitly as Free instead of falling through to an inactive-VIP presentation.
+- Revoke controls are shown only for actual VIP memberships.
+- Custom extension controls are now entirely scoped to active finite VIP memberships.
+- Server-side extension now rejects Free accounts and Lifetime VIP instead of creating/changing membership unexpectedly.
+- Invalid extension attempts return a controlled HTTP 422 response.
+- Added regression coverage for the accumulated Beta 2 view/action inconsistencies.
+
+
+## 0.4.0-beta.7 - 2026-09-10
+
+### Membership stabilization
+- Fixed Free membership being rendered as an expiring active VIP in the admin detail screen.
+- Limited extension controls to finite active VIP memberships.
+- Fixed dependency-container wiring introduced during the membership maintenance batches: AccountLifecycleService again receives only its own dependencies and DataPruner receives the activation/expiration processors.
+- Fixed immediate extension inserts after adding the activation marker column.
+- Current VIP revocation no longer silently revokes a separately scheduled future membership.
+- Assigning Free or replacing membership cleans/reconciles an existing future schedule and emits schedule-cancellation lifecycle events when appropriate.
+- Added idempotent `membership.activated` processing for scheduled grants that reach their start time.
+- Historical/already-started grants are pre-marked by migration to avoid retroactive activation notifications.
+
+
+## 0.4.0-beta.6 - 2026-09-10
+
+### Memberships
+- Added a membership status presenter for explicit Free, finite VIP, Lifetime and Scheduled operational states.
+- Account settings now show pending future VIP activation and its configured period.
+- Admin membership detail shows approximate days remaining and days until a scheduled activation.
+- Added quick +30/+90/+365 day renewal shortcuts while retaining custom extensions.
+- Added Scheduled VIP dashboard metric.
+- Added Core lifecycle events and optional Notifications handling for membership scheduling and schedule cancellation.
+- Membership history now distinguishes Scheduled records from active/granted and expired records.
+
+
+## 0.4.0-beta.5 - 2026-09-10
+
+### Memberships
+- Added future VIP scheduling with explicit overlap prevention and one pending schedule per user.
+- Added scheduled membership cancellation from the admin membership screen.
+- Added additive VIP extension that preserves remaining time and current plan identity.
+- Added a dedicated Scheduled filter/count in membership administration.
+- Membership lookup now prioritizes the current active grant before scheduled/fallback history so future grants do not hide present access.
+- Lifetime VIP rejects overlapping future schedules.
+- No persisted `is_vip`/`vip_active` flag is introduced.
+
+
+## 0.4.0-beta.4 - 2026-09-10
+
+### Memberships
+- Added Core lifecycle events for membership assignment, revocation and expiration.
+- Added idempotent expiration processing through normal maintenance, without a persisted VIP boolean on users.
+- Notifications can react to membership lifecycle changes through Core events.
+- Added `expired_event_at` only as an event-delivery marker on entitlement grants.
+- Preserved date/revocation-based access semantics and Free fallback behavior.
+
+
+## 0.4.0-beta.3 - 2026-09-10
+
+### Memberships
+- Moved public profile, account access audience, user administration and bundled content visibility checks onto `MembershipManagerInterface`.
+- Preserved legacy custom-day VIP grants through `MembershipManagerInterface::grantDays()` instead of calling entitlement persistence directly.
+- Removed the accidental duplicate Memberships dependency from `UsersController`.
+- Public profiles now expose the named active membership plan rather than a raw VIP boolean.
+- Added an architectural regression test that forbids introducing `users.is_vip` / `vip_active` columns and keeps interactive consumers behind the membership contract.
+
+
+## 0.4.0-beta.2 - 2026-09-10
+
+### Memberships
+- Added `MembershipManagerInterface` so account/core consumers can use membership state without depending on entitlement persistence.
+- Normalized membership status: every account now resolves to an explicit Free or active VIP membership state.
+- Account profile now shows the named membership plan and expiration/lifetime status.
+- Added first-class membership dashboard metrics, expiring-within-7-days attention, and a membership quick action.
+- Removed dashboard VIP-expiration coupling from the user-creation permission path.
+
+
+## 0.4.0-beta.1 - 2026-09-10
+
+### Memberships
+- Began Beta 2 with a first-class membership administration surface built on the existing VIP entitlement layer.
+- Added Free, VIP 30-day, VIP 90-day, annual and lifetime plan management through the existing MembershipPlanCatalog/Service.
+- Added `memberships.manage`, granted to Super Administrator by default.
+- Added `/admin/memberships` with status/search filters, expiring-soon/lifetime visibility and manual assign/revoke actions.
+- Added per-user membership detail/history including plan, source, note, period and granting administrator.
+- Existing `vip` content audiences remain compatible and continue using the same entitlement checks.
+- No payment processing is included.
+
+
+## 0.3.0-beta.6 - 2026-09-10
+
+### Production hardening
+- Added `release:smoke`, a pre-bootstrap distribution smoke check for version metadata, bundled module manifests, migration files and private storage guards.
+- Strengthened `release:check` to require upload/private Apache guards and production/installation documentation.
+- Added release-package regression coverage so incomplete deployment archives fail before application bootstrap.
+- Documented a final deployment smoke workflow for fresh installs and upgrades.
+
+
+## 0.3.0-beta.5 - 2026-09-10
+
+### Production hardening
+- Fresh-install failures now roll back NovaNuke-owned tables and incomplete `.env` state after the installer has verified an empty database.
+- `.env` is re-secured after atomic activation and production readiness validates owner-only permissions on POSIX hosts.
+- Added `storage/private/.htaccess` as a defense-in-depth deny rule for Apache/shared-hosting misconfiguration.
+- Database and file backup writers reject symlinked backup directories.
+- Backup verification rejects non-regular/readable files and overly permissive POSIX backup permissions.
+- Expanded production/shared-hosting checks and installer/backup regression coverage.
+
+
+## 0.3.0-beta.4 - 2026-09-10
+
+### Production hardening
+- Added request-shape limits for excessive query/body parameter counts and deeply nested input.
+- Production error responses continue to hide exception details, while log paths are normalized to `[APP]/...` instead of absolute project paths.
+- Explicit authentication/account throttles now return HTTP 429 with `Retry-After`.
+- Added CSRF/state-changing-route contracts for core/admin surfaces.
+- Added abuse, disclosure, throttle and CSRF regression tests.
+
+
+## 0.3.0-beta.3 - 2026-09-10
+
+### Production hardening
+- Added a shared storage-boundary guard for private file roots and resolved files.
+- Downloads, avatars and Wiki attachments now reject symlinked storage/file paths consistently.
+- Media deletion now uses the same containment guard instead of module-specific path logic.
+- Added contract tests that private Downloads/Wiki files are authorized before their physical path is resolved.
+- Preserved avatars as intentionally public assets with explicit inline/cache/nosniff headers.
+
+
+## 0.3.0-beta.2 - 2026-09-10
+
+### Production hardening
+- Fixed fresh installation requiring manual creation of `storage/private/downloads` and `storage/private/backups`.
+- Installer preflight now provisions and validates the complete runtime storage layout.
+- Rejects symlinked required storage boundaries and keeps private download storage self-healing.
+- Fresh installer environment now records the Beta 1 session timeout/rotation defaults.
+
+
+## [0.3.0-beta.1] - 2026-09-10
+
+- Began Beta 1 production hardening without adding end-user features.
+- Added configurable session absolute lifetime, idle timeout and session-ID rotation, plus strict SameSite validation.
+- Added no-store/private defaults for admin, account, authentication and error responses.
+- Added cross-origin browser hardening headers and stronger Apache/shared-hosting upload protections.
+- Expanded `production:check` to validate session policy and shipped Apache guard files.
+- Added direct upgrade support for `0.2.0-alpha.60` → `0.3.0-beta.1`.
+
+## [0.2.0-alpha.60] - 2026-09-10
+
+### Added
+- Added `php bin/cms module:inspect MODULE` to expose a static human-readable inventory of a module manifest, dependencies, permissions, routes, event listeners/dispatches, migrations, catalogues and documentation state.
+- Added `php bin/cms module:list` for a compact inventory of every on-disk module and its contract counts.
+- Added module-inspection and Developer CLI contract coverage so both commands remain deterministic and pre-bootstrap.
+
+### Changed
+- Completed Phase 5 — Developer Experience by documenting the make → check → inspect → test → install workflow and the intended use of the bundled Quotes reference module.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.59` → `0.2.0-alpha.60` path.
+
+## [0.2.0-alpha.59] - 2026-09-10
+
+### Added
+- Added `php bin/cms module:check MODULE`, a no-database/non-booting module preflight for manifest, provider, compatibility, migration, catalogue, documentation and route-name diagnostics before installation.
+- Added developer CLI and module diagnostic contract tests covering safe pre-bootstrap behavior and common invalid-module failures.
+
+### Changed
+- `module:make` now writes `cms_min_version` from `Version::CURRENT` instead of a release-specific hardcoded string.
+- Expanded Developer Experience documentation with the recommended make → check → install workflow and clarified PASS/WARN/FAIL semantics.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.58` → `0.2.0-alpha.59` path.
+
+## [0.2.0-alpha.58] - 2026-09-10
+
+### Added
+- Began Phase 5 — Developer Experience with `php bin/cms module:make NAME`, a no-database scaffolder for safe Module API 1.0 starter modules.
+- Added the official Quotes reference module demonstrating a manifest, migration, repository binding, named public/admin routes, permission checks, CSRF, activity logging, Twig namespaces, translations and the Admin menu extension hook.
+- Added scaffolder and reference-module contract tests plus dedicated developer-experience documentation.
+
+### Changed
+- Module documentation now separates the minimal generated scaffold from the richer Quotes reference implementation and documents the recommended copy/extend workflow.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.57` → `0.2.0-alpha.58` path.
+
+## [0.2.0-alpha.57] - 2026-09-10
+
+### Changed
+- Added `NovaNuke\Core\Events\EventName` as the canonical Core/bundled event-name contract while keeping the Module API 1.0 dispatcher string based.
+- Moved profile action/statistics extension payload contracts into Core with compatibility subclasses under the historical Auth namespace.
+- Added a Core-owned `ContentChanged` payload and made News, Pages and Wiki lifecycle payloads compatible subclasses for generic `content.created` / `content.updated` listeners.
+- Migrated bundled dispatch/listen sites away from duplicated magic event strings and documented the event/payload matrix.
+- Added an event API architecture test and corrected stale Friends assertions left behind by the alpha.56 optional-service refactor.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.56` → `0.2.0-alpha.57` path.
+
+## [0.2.0-alpha.56] - 2026-09-10
+
+### Changed
+- Moved optional Comments, Media and Private Messages consumer contracts into Core-owned namespaces and bound the concrete module services behind those contracts.
+- Moved cross-module integration payloads for comment targets/creation, media usage, friend requests/acceptance and private-message delivery into Core.
+- Migrated bundled consumers and Notifications listeners to Core contracts so optional modules no longer import each other's implementation internals.
+- Kept the previous module-owned integration payload names as runtime compatibility aliases for Module API 1.0.
+- Documented Demo Content as the intentional orchestration exception because it builds a deterministic dataset through concrete optional-module services.
+
+### Tests
+- Expanded inter-module architecture checks and added optional-service compatibility tests.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.55` → `0.2.0-alpha.56` path.
+
+## [0.2.0-alpha.55] - 2026-09-10
+
+### Changed
+- Moved shared Search provider interfaces/DTOs/registration payload and the Sitemap collection payload into Core-owned extension-contract namespaces.
+- Migrated bundled News, Pages, Downloads and Wiki integrations to the Core contracts so optional Search/SEO implementations no longer own their consumers' public types.
+- Kept the former module-owned Search and Sitemap class names as compatibility aliases for Module API 1.0.
+- Added a Core `SearchProviderRegistryInterface`; the Search module registry implements it while remaining the concrete runtime implementation.
+
+### Tests
+- Added Core extension-contract and inter-module dependency tests to prevent bundled content modules from regressing to Search/SEO implementation imports.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.54` → `0.2.0-alpha.55` path.
+
 All notable NovaNuke changes will be documented here.
+
+## [0.2.0-alpha.54] - 2026-09-10
+
+### Changed
+- Began Phase 4 — Module Contracts / Internal API with fail-fast validation for the documented module API 1.0 manifest rules.
+- Module, CMS/PHP minimum and dependency versions now require complete semantic versions; permissions must remain inside the declaring module namespace; duplicate permissions/events are rejected; providers must belong to their module directory namespace.
+- Router registration now rejects duplicate route names and exact overlapping HTTP-method/path collisions so a module cannot silently shadow an existing handler.
+- Kept `ModuleApi::VERSION`, `ModuleInterface`, `ModuleContext` and documented public signatures unchanged.
+
+### Tests
+- Expanded manifest and router contract coverage and added `BundledModuleContractTest` to validate every shipped module manifest/provider.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.53` → `0.2.0-alpha.54` path.
+
+## [0.2.0-alpha.53] - 2026-09-10
+
+### Changed
+- Completed the shared Admin navigation/header consistency pass across General Settings, User Settings, System Information, Activity Logs, Menus, Modules and Themes.
+- Extended the same shared breadcrumbs/page-header pattern to Comments, Demo Content, Media, Polls, Private Message Reports, Search, Statistics and the Wiki administration family.
+- Promoted existing Wiki index actions into the shared page header and removed redundant legacy return links from completed Admin screens.
+- Intentionally left the Admin dashboard custom and Blocks untouched because Blocks remains frozen outside critical regressions.
+
+### Tests
+- Added `AdminExperienceCompletionTest` to protect the completed Admin surface and explicitly document the dashboard/Blocks exclusions.
+- Updated release and upgrade contracts for the direct `0.2.0-alpha.52` → `0.2.0-alpha.53` path.
+
+## [0.2.0-alpha.52] - 2026-09-10
+
+### Changed
+
+- News, Pages, Downloads and Web Links Create/Edit screens now use the shared Admin breadcrumb and page-header components.
+- Redundant Return-to-list links were removed from those editors because breadcrumbs provide consistent parent navigation.
+- Web Links now uses a context-aware browser title for Create versus Edit instead of always saying Edit.
+- Existing editor forms retain their current POST/CSRF behavior, routes, publication/access controls and authorization rules.
+
+### Compatibility
+
+- Alpha.52 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.51 as a documented source.
+
+## [0.2.0-alpha.51] - 2026-09-10
+
+### Changed
+
+- Create User, Manage User and Role Permissions screens now use the shared Admin breadcrumb and page-header components.
+- Redundant Return-to-list links were removed because the breadcrumb provides consistent parent navigation.
+- Existing account, VIP, password and role-permission forms retain their current POST/CSRF behavior and authorization rules.
+
+### Compatibility
+
+- Alpha.51 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.50 as a documented source.
+
+## [0.2.0-alpha.50] - 2026-09-10
+
+### Changed
+
+- Users and Roles now use the shared Admin breadcrumb, page-header, row-action and empty-table components.
+- The Users list keeps its VIP filters while moving account creation into the shared page-header action area.
+- The Create account shortcut is hidden unless the current administrator already satisfies the existing `users.manage`, `users.assign_roles` and Super Administrator requirements.
+
+### Compatibility
+
+- Alpha.50 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.49 as a documented source.
+
+## [0.2.0-alpha.49] - 2026-09-10
+
+### Added
+
+- A dashboard shortcut to the existing manual account-creation screen for authorized Super Administrators.
+- A priority-queue warning when active VIP access will expire within seven days.
+
+### Security
+
+- The Create account shortcut requires the same user-management, role-assignment and Super Administrator checks as the protected destination.
+- VIP expiration counts include distinct users only and exclude expired or revoked entitlements.
+
+### Compatibility
+
+- Alpha.49 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.48 as a documented source.
+
+## [0.2.0-alpha.48] - 2026-09-10
+
+### Added
+
+- Open Comment, Download, Web Link and Private Message reports now appear in the dashboard priority queue.
+- Web Links joins the permission-aware dashboard content-creation shortcuts.
+
+### Security
+
+- Every report counter requires its module to be enabled, its table to exist and the current administrator to hold that module's moderation permission.
+- Dashboard links reuse the existing protected report-management screens and do not expose report content.
+
+### Compatibility
+
+- Alpha.48 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.47 as a documented source.
+
+## [0.2.0-alpha.47] - 2026-09-10
+
+### Added
+
+- A compact Site health section for maintenance mode, migrations/module updates, writable storage and production configuration.
+- Safe operational summaries linked to the existing protected Settings and System Information screens.
+
+### Changed
+
+- NovaModern now gives dashboard health, attention and quick-action cards its native light palette.
+
+### Security
+
+- Site-health inspection and output require `settings.manage` and expose only summarized state, never credentials or internal paths.
+- Dynamic health values continue through Twig's default output escaping.
+
+### Compatibility
+
+- Alpha.47 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.46 as a documented source.
+
+## [0.2.0-alpha.46] - 2026-09-10
+
+### Added
+
+- A permission-aware dashboard priority queue for module problems, comments awaiting moderation and unpublished primary content.
+- Direct Create actions for News, Pages and Downloads when their modules and permissions are available.
+- Deterministic priority ordering with module issues and moderation work shown before unpublished content.
+
+### Security
+
+- Dashboard data and actions remain gated by the existing module state and server-side permissions.
+- Dynamic labels, counts and URLs continue through Twig's default output escaping.
+
+### Compatibility
+
+- Alpha.46 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.45 as a documented source.
+
+## [0.2.0-alpha.45] - 2026-09-10
+
+### Added
+
+- Shared accessible components for empty Admin table rows and per-record link actions.
+- Useful empty-state explanations and Create actions in the primary content tables.
+- Edit and View actions for published News, Pages, Downloads and Web Links records.
+
+### Security
+
+- Draft or otherwise unpublished records do not receive public View links.
+- Web Links deletion remains a POST form with CSRF token and explicit confirmation.
+
+### Compatibility
+
+- Alpha.45 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.44 as a documented source.
+
+## [0.2.0-alpha.44] - 2026-09-10
+
+### Changed
+
+- News, Pages, Downloads and Web Links Admin lists now share the same breadcrumb and page-header components.
+- Create and View-site actions occupy one predictable header location.
+- Redundant Return-to-dashboard links were removed because the breadcrumb now provides that route consistently.
+
+### Compatibility
+
+- Existing Admin controllers and protected Create routes are reused without changing authorization behavior.
+- Alpha.44 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.43 as a documented source.
+
+## [0.2.0-alpha.43] - 2026-09-10
+
+### Added
+
+- Shared public page-header component with consistent title, eyebrow, description and contextual-action regions.
+- Permission-aware Manage shortcuts on the News, Pages, Downloads and Web Links directories.
+- RSS and link-submission actions remain available from their respective directory headers.
+
+### Security
+
+- Public controllers expose Manage links only after checking their existing module permission through `AuthorizationService`.
+- Admin controllers continue to enforce authorization server-side; header visibility is not treated as access control.
+
+### Compatibility
+
+- Alpha.43 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.42 as a documented source.
+
+## [0.2.0-alpha.42] - 2026-09-10
+
+### Added
+
+- Shared Twig components for accessible empty states and public pagination.
+- Consistent empty results in News, Pages, Downloads and Web Links.
+- Current-page semantics through `aria-current` and descriptive pagination labels.
+
+### Changed
+
+- Downloads and Web Links retain encoded search and ordering filters while paging.
+- Empty Web Links results provide a direct link to the existing submission form.
+
+### Compatibility
+
+- The shared components use existing theme-independent view loading and work with Default, Classic and NovaModern.
+- Alpha.42 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.41 as a documented source.
+
+## [0.2.0-alpha.41] - 2026-09-09
+
+### Added
+
+- One accessible, autoescaped Twig breadcrumb component for public content navigation.
+- Consistent Home/list/detail trails for News, Pages, Downloads and Web Links.
+- Page trails retain the visible parent page for both default and landing templates.
+
+### Compatibility
+
+- Breadcrumbs use the existing shared CSS and therefore work in Default, Classic and NovaModern without theme-specific copies.
+- Alpha.41 adds no database migration, module/theme update or Composer dependency.
+- Direct upgrade preflight now includes Alpha.40 as a documented source.
+
+## [0.2.0-alpha.40] - 2026-09-09
+
+### Added
+
+- `php bin/cms upgrade:complete --from=VERSION` records a successful Core upgrade only after migration, module-version and distribution checks pass.
+- Fresh installations record `system.core_version` and `system.core_updated_at` as part of their initial settings.
+- Upgrade preflight compares the operator-declared source with the recorded installed Core version when available.
+
+### Safety
+
+- Completion refuses downgrades, malformed versions, mismatched recorded sources, pending/missing migrations, outstanding module updates and failed release checks.
+- Legacy installations without a recorded Core version receive a visible bootstrap warning before Alpha.40 initializes the value.
+- `storage/installed.lock` remains the immutable installer lock and is not repurposed as mutable upgrade state.
+
+### Compatibility
+
+- Alpha.40 adds no database migration, module/theme update or Composer dependency; version state uses the existing settings table.
+- Direct upgrade preflight now includes Alpha.39 as a documented source.
 
 ## [0.2.0-alpha.39] - 2026-09-09
 

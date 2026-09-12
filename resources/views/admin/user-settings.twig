@@ -1,10 +1,9 @@
 {% extends "layouts/default.twig" %}
 {% block title %}User settings — NovaNuke{% endblock %}
 {% block content %}
-<section class="dashboard-card">
-    <p class="eyebrow">Administration</p>
-    <h1>User settings.</h1>
-    <p>Control private-site access, public registration and email verification.</p>
+<section class="admin-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'User settings'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Accounts', title: 'User settings', description: 'Control private-site access, public registration and email verification.'} only %}
     {% if saved %}<div class="success-message">Settings saved.</div>{% endif %}
     <form class="settings-form" method="post" action="/admin/settings/users">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
@@ -22,6 +21,5 @@
         </label>
         <button class="install-button" type="submit">Save settings</button>
     </form>
-    <p><a class="auth-link" href="/admin">Return to dashboard</a></p>
 </section>
 {% endblock %}

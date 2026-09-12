@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Maintenance;
 
 use NovaNuke\Core\Events\EventDispatcher;
+use NovaNuke\Core\Membership\MembershipExpirationProcessor;
+use NovaNuke\Core\Membership\MembershipActivationProcessor;
 use PDO;
 
 final class DataPruner
@@ -29,7 +31,7 @@ final class DataPruner
         'core.activity_logs' => 'activity_logs',
     ];
 
-    public function __construct(private readonly PDO $database, private readonly EventDispatcher $events)
+    public function __construct(private readonly PDO $database, private readonly EventDispatcher $events, private readonly MembershipActivationProcessor $activations, private readonly MembershipExpirationProcessor $memberships)
     {
     }
 
@@ -37,6 +39,8 @@ final class DataPruner
     public function run(bool $dryRun): array
     {
         $event = new MaintenancePruning($dryRun);
+        $event->add('core.membership_activations', $this->activations->process($dryRun));
+        $event->add('core.membership_expirations', $this->memberships->process($dryRun));
         if (! $dryRun) $this->database->beginTransaction();
         try {
             foreach (self::CORE_RULES as $name => $where) {
@@ -46,7 +50,7 @@ final class DataPruner
                     : $this->database->exec("DELETE FROM `{$table}` WHERE {$where}");
                 $event->add($name, (int) $records);
             }
-            $this->events->dispatch('maintenance.pruning', $event);
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::MAINTENANCE_PRUNING, $event);
             if (! $dryRun) $this->database->commit();
         } catch (\Throwable $error) {
             if ($this->database->inTransaction()) $this->database->rollBack();

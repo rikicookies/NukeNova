@@ -2,8 +2,8 @@
 {% block title %}Demo Content — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">System</p>
-    <h1>NovaTech Community Demo</h1>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Demo Content'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'System', title: 'NovaTech Community Demo', description: 'Development and demonstration dataset for visual review and manual QA.'} only %}
     <p><strong>Development / demonstration only.</strong> Installs fictional users and realistic technology content for visual review and manual QA.</p>
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}

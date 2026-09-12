@@ -2,50 +2,37 @@
 {% block title %}Manage {{ edited_user.username }} — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Account</p>
-    <h1>{{ edited_user.username }}</h1>
-    <p>{{ edited_user.email }}</p>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Users', url: '/admin/users'}, {label: edited_user.username}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Account', title: edited_user.username, description: edited_user.email} only %}
     {% if saved %}<div class="success-message">User authorization saved.</div>{% endif %}
     {% if password_reset %}<div class="success-message">Temporary password saved. Existing sessions were closed and the user must change it after signing in.</div>{% endif %}
     {% if vip_updated %}<div class="success-message">VIP access updated.</div>{% endif %}
     {% if edited_user.id == current_user_id %}<div class="notice-message">Your own roles and status cannot be changed from this screen.</div>{% endif %}
     <form method="post" action="/admin/users/{{ edited_user.id }}">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
-        <label class="field-label">Account status
-            <select name="status" {% if edited_user.id == current_user_id %}disabled{% endif %}>
-                <option value="active" {% if edited_user.status == 'active' %}selected{% endif %}>Active</option>
-                <option value="suspended" {% if edited_user.status == 'suspended' %}selected{% endif %}>Suspended</option>
-            </select>
-        </label>
-        <h2>Roles</h2>
-        <div class="permission-grid">
-            {% for role in roles %}
-            <label class="toggle-row">
-                <input type="checkbox" name="roles[]" value="{{ role.id }}" {% if role.id in assigned_roles %}checked{% endif %} {% if edited_user.id == current_user_id %}disabled{% endif %}>
-                <span><strong>{{ role.name }}</strong><code>{{ role.slug }}</code><small>{{ role.description }}</small></span>
-            </label>
-            {% endfor %}
-        </div>
+        <label class="field-label">Account status<select name="status" {% if edited_user.id == current_user_id %}disabled{% endif %}><option value="active" {% if edited_user.status == 'active' %}selected{% endif %}>Active</option><option value="suspended" {% if edited_user.status == 'suspended' %}selected{% endif %}>Suspended</option></select></label>
+        <h2>Roles</h2><div class="permission-grid">{% for role in roles %}<label class="toggle-row"><input type="checkbox" name="roles[]" value="{{ role.id }}" {% if role.id in assigned_roles %}checked{% endif %} {% if edited_user.id == current_user_id %}disabled{% endif %}><span><strong>{{ role.name }}</strong><code>{{ role.slug }}</code><small>{{ role.description }}</small></span></label>{% endfor %}</div>
         {% if edited_user.id != current_user_id %}<button class="install-button" type="submit">Save user</button>{% endif %}
     </form>
-    <h2>VIP access</h2>
-    {% if vip and vip.active %}<p><span class="badge badge-active">Active</span> Expires {{ vip.expires_at }} UTC.</p>{% elseif vip %}<p><span class="badge">Inactive</span> Last expiration: {{ vip.expires_at }} UTC.</p>{% else %}<p>This user has never received VIP access.</p>{% endif %}
-    <form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/vip">
-        <input type="hidden" name="_token" value="{{ csrf_token }}">
-        <label>Days to add<input type="number" name="days" min="1" max="3650" value="30" required></label>
-        <button type="submit">{{ vip and vip.active ? 'Extend VIP' : 'Grant VIP' }}</button>
-    </form>
-    {% if vip and vip.active %}<form method="post" action="/admin/users/{{ edited_user.id }}/vip/revoke" onsubmit="return confirm('Revoke VIP access now?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="secondary-button">Revoke VIP</button></form>{% endif %}
-    {% if edited_user.id != current_user_id %}
-    <h2>Temporary password</h2>
-    {% if password_error %}<div class="alert alert-error">{{ password_error }}</div>{% endif %}
-    <form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/password">
-        <input type="hidden" name="_token" value="{{ csrf_token }}">
-        <label>New temporary password<input type="password" name="password" minlength="12" maxlength="255" required autocomplete="new-password"></label>
-        <label>Confirm temporary password<input type="password" name="password_confirmation" minlength="12" maxlength="255" required autocomplete="new-password"></label>
-        <button type="submit">Reset password</button>
-    </form>
+    <h2>Membership</h2>
+    {% if membership and membership.vip %}
+        <p><span class="badge badge-active">{{ membership.plan_key|default('vip-custom')|replace({'-': ' '})|title }}</span> {% if membership.lifetime %}Lifetime access{% else %}Expires {{ membership.expires_at }} UTC{% endif %}.</p>
+    {% elseif membership %}
+        <p><span class="badge">Inactive</span> Previous plan: {{ membership.plan_key|default('vip-custom')|replace({'-': ' '})|title }}{% if membership.expires_at %}; last expiration {{ membership.expires_at }} UTC{% endif %}.</p>
+    {% else %}
+        <p><span class="badge">Free</span> Registered member.</p>
     {% endif %}
-    <p><a class="auth-link" href="/admin/users">Return to users</a></p>
+    <form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/membership">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>Plan
+            <select name="plan" required>
+                {% for key, plan in membership_plans %}<option value="{{ key }}">{{ plan.name }}</option>{% endfor %}
+            </select>
+        </label>
+        <label>Admin note <input type="text" name="note" maxlength="255" placeholder="Optional reason or reference"></label>
+        <button type="submit">Assign membership</button>
+    </form>
+    {% if membership and membership.vip %}<form method="post" action="/admin/users/{{ edited_user.id }}/vip/revoke" onsubmit="return confirm('Revoke VIP access now?')"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="secondary-button">Revoke VIP</button></form>{% endif %}
+    {% if edited_user.id != current_user_id %}<h2>Temporary password</h2>{% if password_error %}<div class="alert alert-error">{{ password_error }}</div>{% endif %}<form class="settings-form" method="post" action="/admin/users/{{ edited_user.id }}/password"><input type="hidden" name="_token" value="{{ csrf_token }}"><label>New temporary password<input type="password" name="password" minlength="12" maxlength="255" required autocomplete="new-password"></label><label>Confirm temporary password<input type="password" name="password_confirmation" minlength="12" maxlength="255" required autocomplete="new-password"></label><button type="submit">Reset password</button></form>{% endif %}
 </section>
 {% endblock %}

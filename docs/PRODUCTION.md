@@ -68,17 +68,18 @@ If the hosting plan cannot point a domain at `public/`, ask the host to change t
 
 ## Release procedure
 
-1. Put the site in maintenance mode from `/admin/settings`.
-2. Create database and file backups with `backup:database` and `backup:files`, then move encrypted copies off-server.
-3. Preserve `.env`, `composer.lock`, `storage/installed.lock` and all of `storage/private/`.
-4. Replace application files and run `composer install --no-dev --optimize-autoloader`.
-5. Run `php bin/cms migrate:status`, then `php bin/cms migrate`.
-6. Apply module updates from `/admin/modules` and run `php bin/cms migrate:status` again.
-7. Clear generated caches if instructed by the release notes.
-8. Run `php bin/cms release:check`.
-9. Run `php bin/cms security:audit` and correct every failed authorization check.
-10. Run `php bin/cms production:check` and correct every required failure.
-11. Visit `/admin/system`, resolve warnings and smoke-test authentication, permissions, uploads and module routes.
+1. Run `php bin/cms release:smoke` against the release package/source tree before deployment.
+3. Put the site in maintenance mode from `/admin/settings`.
+3. Create database and file backups with `backup:database` and `backup:files`, then move encrypted copies off-server.
+4. Preserve `.env`, `composer.lock`, `storage/installed.lock` and all of `storage/private/`.
+5. Replace application files and run `composer install --no-dev --optimize-autoloader`.
+6. Run `php bin/cms migrate:status`, then `php bin/cms migrate`.
+7. Apply module updates from `/admin/modules` and run `php bin/cms migrate:status` again.
+8. Clear generated caches if instructed by the release notes.
+9. Run `php bin/cms release:check`.
+10. Run `php bin/cms security:audit` and correct every failed authorization check.
+11. Run `php bin/cms production:check` and correct every required failure.
+12. Visit `/admin/system`, resolve warnings and smoke-test authentication, permissions, uploads and module routes.
 
 ## Maintenance and cache
 

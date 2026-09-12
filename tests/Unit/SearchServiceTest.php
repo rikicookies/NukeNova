@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace NovaNuke\Tests\Unit;
 
 use Modules\Search\src\SafeHighlighter;
-use Modules\Search\src\SearchProviderInterface;
+use NovaNuke\Core\Search\SearchProviderInterface;
 use Modules\Search\src\SearchProviderRegistry;
-use Modules\Search\src\SearchProviderResult;
-use Modules\Search\src\SearchQuery;
-use Modules\Search\src\SearchResultItem;
+use NovaNuke\Core\Search\SearchProviderResult;
+use NovaNuke\Core\Search\SearchQuery;
+use NovaNuke\Core\Search\SearchResultItem;
 use Modules\Search\src\SearchService;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

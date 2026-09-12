@@ -20,7 +20,12 @@ final class UpgradeReadiness
     /** @param array<string,mixed> $migrationStatus
      *  @return list<array{name:string,passed:bool,required:bool,detail:string}>
      */
-    public function check(string $sourceVersion, array $migrationStatus, ?int $now = null): array
+    public function check(
+        string $sourceVersion,
+        array $migrationStatus,
+        ?int $now = null,
+        ?string $recordedVersion = null,
+    ): array
     {
         $now ??= time();
         $supported = in_array($sourceVersion, $this->supportedSources, true);
@@ -36,10 +41,15 @@ final class UpgradeReadiness
         $missing = (int) ($migrationStatus['missing_total'] ?? -1);
         $pending = (int) ($migrationStatus['pending_total'] ?? -1);
         $moduleUpdates = (int) ($migrationStatus['module_updates_total'] ?? -1);
+        $recordedKnown = is_string($recordedVersion) && $recordedVersion !== '';
+        $recordedValid = ! $recordedKnown
+            || preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/', $recordedVersion) === 1;
+        $recordedMatches = ! $recordedKnown || ($recordedValid && $recordedVersion === $sourceVersion);
 
         return [
             $this->result('Supported source release', $supported, true, $supported ? $sourceVersion : 'Direct upgrade is not documented from ' . $sourceVersion . '.'),
             $this->result('No downgrade', $forward, true, $forward ? "Target {$this->targetVersion}." : "Installed source {$sourceVersion} is newer than this package."),
+            $this->result('Recorded source version', $recordedKnown && $recordedMatches, $recordedKnown, $recordedKnown ? "Recorded {$recordedVersion}; declared {$sourceVersion}." : 'Legacy installation has no recorded current version.'),
             $this->result('Installation lock', $installationLock !== null, true, $installationLock ?? 'storage/installed.lock is missing or invalid.'),
             $this->result('Environment file', is_file($this->rootPath . '/.env') && ! is_link($this->rootPath . '/.env'), true, '.env must be preserved.'),
             $this->result('Verified database backup', $databaseBackup['passed'], true, $databaseBackup['detail']),

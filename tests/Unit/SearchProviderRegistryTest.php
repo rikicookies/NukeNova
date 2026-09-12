@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace NovaNuke\Tests\Unit;
 
-use Modules\Search\src\SearchProviderInterface;
+use NovaNuke\Core\Search\SearchProviderInterface;
 use Modules\Search\src\SearchProviderRegistry;
-use Modules\Search\src\SearchProviderResult;
-use Modules\Search\src\SearchQuery;
+use NovaNuke\Core\Search\SearchProviderResult;
+use NovaNuke\Core\Search\SearchQuery;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

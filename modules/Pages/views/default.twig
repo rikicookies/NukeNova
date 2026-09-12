@@ -3,9 +3,12 @@
 {% block meta %}{% set seo_title = page.seo_title|default(page.title, true) %}{% set canonical = cms_url ~ '/pages/' ~ page.slug %}{% if page.seo_description %}<meta name="description" content="{{ page.seo_description }}">{% endif %}<link rel="canonical" href="{{ canonical }}"><meta property="og:type" content="website"><meta property="og:title" content="{{ seo_title }}"><meta property="og:url" content="{{ canonical }}">{% if page.seo_description %}<meta property="og:description" content="{{ page.seo_description }}">{% endif %}{% if page.image_path %}<meta property="og:image" content="{{ cms_url ~ page.image_path }}">{% endif %}<meta name="twitter:card" content="{{ page.image_path ? 'summary_large_image' : 'summary' }}">{% if page.access_type != 'public' %}<meta name="robots" content="noindex,nofollow">{% endif %}{% endblock %}
 {% block content %}
 <article class="content-page">
+    {% set page_trail = [{label: 'Pages', url: '/pages'}] %}
+    {% if page.parent_slug %}{% set page_trail = page_trail|merge([{label: page.parent_title, url: '/pages/' ~ page.parent_slug}]) %}{% endif %}
+    {% set page_trail = page_trail|merge([{label: page.title}]) %}
+    {% include 'components/breadcrumbs.twig' with {items: page_trail} only %}
     <header>
         {% include 'components/content-actions.twig' with {edit_url: edit_url|default(null), delete_url: delete_url|default(null), csrf_token: content_csrf_token|default(null), return_to: delete_return_to|default(null)} only %}
-        {% if page.parent_slug %}<p><a href="/pages/{{ page.parent_slug }}">{{ page.parent_title }}</a></p>{% endif %}
         <h1>{{ page.title }}</h1>
         <small>Published {{ page.published_at|date(cms_date_format, cms_timezone) }} · {{ page.username }}</small>
     </header>

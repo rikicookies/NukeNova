@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Http\Routing;
 
 use Closure;
+use InvalidArgumentException;
 use NovaNuke\Core\Http\Request;
 
 final class Router
@@ -30,7 +31,23 @@ final class Router
     public function add(array $methods, string $path, Closure $handler, ?string $name = null): void
     {
         $normalized = '/' . trim($path, '/');
-        $this->routes[] = new Route($methods, $normalized === '/' ? '/' : $normalized, $handler, $name, $this->owner);
+        $normalized = $normalized === '/' ? '/' : $normalized;
+        $methods = array_values(array_unique(array_map(static fn (string $method): string => strtoupper($method), $methods)));
+        if ($methods === []) {
+            throw new InvalidArgumentException('A route must declare at least one HTTP method.');
+        }
+
+        foreach ($this->routes as $route) {
+            if ($name !== null && $route->name === $name) {
+                throw new InvalidArgumentException("Duplicate route name: {$name}");
+            }
+            if ($route->path === $normalized && array_intersect($route->methods, $methods) !== []) {
+                $owner = $this->owner === null ? 'core' : "module {$this->owner}";
+                throw new InvalidArgumentException("Route collision for {$normalized} while registering {$owner}.");
+            }
+        }
+
+        $this->routes[] = new Route($methods, $normalized, $handler, $name, $this->owner);
     }
 
     public function match(Request $request): RouteMatch

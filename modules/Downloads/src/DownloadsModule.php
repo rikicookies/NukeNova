@@ -14,7 +14,7 @@ use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\Security\DatabaseRateLimiter;
 use NovaNuke\Core\Content\ContentRendererInterface;
 use NovaNuke\Core\View\ViewRenderer;
-use Modules\Search\src\SearchProvidersRegistering;
+use NovaNuke\Core\Search\SearchProvidersRegistering;
 
 final class DownloadsModule implements ModuleInterface
 {
@@ -23,7 +23,7 @@ final class DownloadsModule implements ModuleInterface
         $context->container->get(ViewRenderer::class)->addNamespace('downloads', $context->basePath . '/views');
         $context->container->bind(DownloadRepository::class, static fn (Container $c) => new DownloadRepository(
             $c->get(\PDO::class),
-            $c->get(\NovaNuke\Core\Access\EntitlementService::class),
+            $c->get(\NovaNuke\Core\Membership\MembershipManagerInterface::class),
             $c->get(\NovaNuke\Core\Settings\SettingsRepository::class)->integer('site.per_page', 10, 5, 100),
         ));
         $context->container->bind(DownloadInput::class, static fn () => new DownloadInput());
@@ -41,10 +41,10 @@ final class DownloadsModule implements ModuleInterface
 
     public function boot(ModuleContext $context): void
     {
-        $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::SEARCH_PROVIDERS_REGISTERING, static function (object $event) use ($context): void {
             if ($event instanceof SearchProvidersRegistering) $event->registry->add(new DownloadsSearchProvider($context->container->get(\PDO::class)));
         });
-        $context->events->listen('admin.menu.building', static function (object $event): void { if ($event instanceof AdminMenuBuilding) $event->add('Downloads', '/admin/downloads', 'downloads.manage'); });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, static function (object $event): void { if ($event instanceof AdminMenuBuilding) $event->add('Downloads', '/admin/downloads', 'downloads.manage'); });
         $public = static fn (Container $c) => new PublicDownloadsController(
             $c->get(DownloadRepository::class), $c->get(DownloadManager::class), $c->get(\NovaNuke\Auth\AuthManager::class),
             $c->get(\NovaNuke\Core\Events\EventDispatcher::class), $c->get(\NovaNuke\Core\Security\CsrfTokenManager::class),

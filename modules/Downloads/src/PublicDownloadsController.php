@@ -46,6 +46,9 @@ final class PublicDownloadsController
         return Response::html($this->views->render('@downloads/index.twig', [
             'result' => $result,
             'categories' => $this->downloads->categories(), 'selected_category' => $category, 'search' => $search, 'order' => $order,
+            'manage_url' => $user !== null && $this->authorization->allows((int) $user['id'], 'downloads.manage')
+                ? '/admin/downloads'
+                : null,
         ]));
     }
 

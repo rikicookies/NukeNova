@@ -23,7 +23,7 @@ final class VipEntitlementTest extends TestCase
     public function testVipStatusAndAudienceLabelsAreExposedWithoutWeakeningAuthorization():void
     {
         $root=dirname(__DIR__,2);$account=file_get_contents($root.'/app/Auth/AccountController.php');$public=file_get_contents($root.'/app/Auth/PublicProfileController.php');
-        self::assertStringContainsString('EntitlementService::VIP',$account);self::assertStringContainsString("'vip_active'",$public);
+        self::assertStringContainsString('MembershipManagerInterface',$account);self::assertStringContainsString("'membership'",$public);
         foreach(['News','Pages','Downloads','WebLinks'] as $module){$view=file_get_contents($root.'/modules/'.$module.'/views/admin/index.twig');self::assertStringContainsString('Active VIP members',$view);}
         foreach(['News','Pages','Downloads','WebLinks'] as $module){$controller=file_get_contents($root.'/modules/'.$module.'/src/Public'.$module.'Controller.php');self::assertStringNotContainsString("Response::html('Forbidden'",$controller);}
     }

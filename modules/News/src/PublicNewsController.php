@@ -9,7 +9,7 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\View\ViewRenderer;
-use Modules\Comments\src\CommentService;
+use NovaNuke\Core\Comments\CommentProviderInterface;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Content\ContentFormat;
@@ -22,7 +22,7 @@ final class PublicNewsController
     public function __construct(
         private readonly NewsRepository $news, private readonly SessionManager $session,
         private readonly ViewRenderer $views, private readonly ContentRendererInterface $contentRenderer,
-        private readonly ?CommentService $comments = null,
+        private readonly ?CommentProviderInterface $comments = null,
         private readonly ?CsrfTokenManager $csrf = null, private readonly ?AuthManager $auth = null,
         private readonly ?AuthorizationService $authorization = null,
     )
@@ -43,6 +43,9 @@ final class PublicNewsController
         return Response::html($this->views->render('@news/index.twig', [
             'result' => $result,
             'categories' => $this->news->categories(), 'selected_category' => $category,
+            'manage_url' => $user !== null && $this->authorization?->allows((int) $user['id'], 'news.edit')
+                ? '/admin/news'
+                : null,
         ]));
     }
 

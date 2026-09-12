@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Modules\News\src;
 
-final readonly class ContentChanged
+/** @deprecated Use NovaNuke\Core\Content\ContentChanged for cross-module listeners. */
+final readonly class ContentChanged extends \NovaNuke\Core\Content\ContentChanged
 {
-    public function __construct(public string $type, public int $id, public int $actorId)
-    {
-    }
 }

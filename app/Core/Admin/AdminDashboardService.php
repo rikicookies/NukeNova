@@ -13,6 +13,7 @@ final class AdminDashboardService
         private readonly PDO $database,
         private readonly ModuleManager $modules,
         private readonly DashboardContentMerger $contentMerger = new DashboardContentMerger(),
+        private readonly DashboardPrioritySorter $prioritySorter = new DashboardPrioritySorter(),
     ) {
     }
 
@@ -27,6 +28,8 @@ final class AdminDashboardService
         $recentUsers = [];
         $recentActivity = [];
         $contentGroups = [];
+        $attention = [];
+        $quickActions = [];
 
         if ($permissions['users.view'] ?? false) {
             $cards[] = ['label' => 'Registered users', 'value' => $this->count("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL"), 'url' => '/admin/users'];
@@ -34,21 +37,99 @@ final class AdminDashboardService
             $recentUsers = $this->database->query(
                 'SELECT id, username, status, created_at FROM users WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 5'
             )->fetchAll();
+            if ($permissions['users.create'] ?? false) {
+                $quickActions[] = ['label' => 'Create user account', 'url' => '/admin/users/create'];
+            }
+        }
+        if (($permissions['memberships.manage'] ?? false) && $this->tableExists('user_entitlements')) {
+            $activeVip=$this->count(
+                "SELECT COUNT(DISTINCT user_id) FROM user_entitlements WHERE entitlement='vip' "
+                . "AND revoked_at IS NULL AND starts_at<=UTC_TIMESTAMP() AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP())"
+            );
+            $expiringVip=$this->count(
+                "SELECT COUNT(DISTINCT user_id) FROM user_entitlements WHERE entitlement='vip' "
+                . "AND revoked_at IS NULL AND starts_at<=UTC_TIMESTAMP() AND expires_at IS NOT NULL "
+                . "AND expires_at>UTC_TIMESTAMP() AND expires_at<=DATE_ADD(UTC_TIMESTAMP(),INTERVAL 7 DAY)"
+            );
+            $lifetimeVip=$this->count(
+                "SELECT COUNT(DISTINCT user_id) FROM user_entitlements WHERE entitlement='vip' "
+                . "AND revoked_at IS NULL AND starts_at<=UTC_TIMESTAMP() AND expires_at IS NULL"
+            );
+            $scheduledVip=$this->count(
+                "SELECT COUNT(DISTINCT user_id) FROM user_entitlements WHERE entitlement='vip' "
+                . "AND revoked_at IS NULL AND starts_at>UTC_TIMESTAMP()"
+            );
+            $cards[]=['label'=>'Active VIP memberships','value'=>$activeVip,'url'=>'/admin/memberships?status=active'];
+            $cards[]=['label'=>'Lifetime VIP','value'=>$lifetimeVip,'url'=>'/admin/memberships?status=lifetime'];
+            $cards[]=['label'=>'Scheduled VIP','value'=>$scheduledVip,'url'=>'/admin/memberships?status=scheduled'];
+            $quickActions[]=['label'=>'Manage memberships','url'=>'/admin/memberships'];
+            if($expiringVip>0){
+                $attention[]=$this->attention('VIP memberships expiring within 7 days',$expiringVip,'/admin/memberships?status=expiring',80);
+            }
         }
         if (($permissions['news.edit'] ?? false) && $enabled('news') && $this->tableExists('news_articles')) {
-            $cards[] = ['label' => 'Published news', 'value' => $this->count("SELECT COUNT(*) FROM news_articles WHERE status = 'published' AND deleted_at IS NULL"), 'url' => '/admin/news'];
+            $published = $this->count("SELECT COUNT(*) FROM news_articles WHERE status = 'published' AND deleted_at IS NULL");
+            $unpublished = $this->count("SELECT COUNT(*) FROM news_articles WHERE status <> 'published' AND deleted_at IS NULL");
+            $cards[] = ['label' => 'Published news', 'value' => $published, 'url' => '/admin/news'];
             $contentGroups[] = $this->content('news_articles', 'title', 'News', '/admin/news/%d/edit');
+            $quickActions[] = ['label' => 'Create news article', 'url' => '/admin/news/new'];
+            if ($unpublished > 0) {
+                $attention[] = $this->attention('Unpublished news', $unpublished, '/admin/news', 60);
+            }
         }
         if (($permissions['pages.edit'] ?? false) && $enabled('pages') && $this->tableExists('pages')) {
-            $cards[] = ['label' => 'Published pages', 'value' => $this->count("SELECT COUNT(*) FROM pages WHERE status = 'published' AND deleted_at IS NULL"), 'url' => '/admin/pages'];
+            $published = $this->count("SELECT COUNT(*) FROM pages WHERE status = 'published' AND deleted_at IS NULL");
+            $unpublished = $this->count("SELECT COUNT(*) FROM pages WHERE status <> 'published' AND deleted_at IS NULL");
+            $cards[] = ['label' => 'Published pages', 'value' => $published, 'url' => '/admin/pages'];
             $contentGroups[] = $this->content('pages', 'title', 'Page', '/admin/pages/%d/edit');
+            $quickActions[] = ['label' => 'Create page', 'url' => '/admin/pages/new'];
+            if ($unpublished > 0) {
+                $attention[] = $this->attention('Unpublished pages', $unpublished, '/admin/pages', 60);
+            }
         }
         if (($permissions['downloads.manage'] ?? false) && $enabled('downloads') && $this->tableExists('downloads')) {
-            $cards[] = ['label' => 'Published downloads', 'value' => $this->count("SELECT COUNT(*) FROM downloads WHERE status = 'published' AND deleted_at IS NULL"), 'url' => '/admin/downloads'];
+            $published = $this->count("SELECT COUNT(*) FROM downloads WHERE status = 'published' AND deleted_at IS NULL");
+            $unpublished = $this->count("SELECT COUNT(*) FROM downloads WHERE status <> 'published' AND deleted_at IS NULL");
+            $cards[] = ['label' => 'Published downloads', 'value' => $published, 'url' => '/admin/downloads'];
             $contentGroups[] = $this->content('downloads', 'name', 'Download', '/admin/downloads/%d/edit');
+            $quickActions[] = ['label' => 'Create download', 'url' => '/admin/downloads/new'];
+            if ($unpublished > 0) {
+                $attention[] = $this->attention('Unpublished downloads', $unpublished, '/admin/downloads', 60);
+            }
+            if ($this->tableExists('download_reports')) {
+                $reports = $this->count("SELECT COUNT(*) FROM download_reports WHERE status = 'open'");
+                if ($reports > 0) {
+                    $attention[] = $this->attention('Broken download reports', $reports, '/admin/downloads', 85);
+                }
+            }
         }
         if (($permissions['comments.moderate'] ?? false) && $enabled('comments') && $this->tableExists('comments')) {
-            $cards[] = ['label' => 'Pending comments', 'value' => $this->count("SELECT COUNT(*) FROM comments WHERE status = 'pending'"), 'url' => '/admin/comments'];
+            $pending = $this->count("SELECT COUNT(*) FROM comments WHERE status = 'pending'");
+            $cards[] = ['label' => 'Pending comments', 'value' => $pending, 'url' => '/admin/comments'];
+            if ($pending > 0) {
+                $attention[] = $this->attention('Comments awaiting moderation', $pending, '/admin/comments', 90);
+            }
+            if ($this->tableExists('comment_reports')) {
+                $reports = $this->count("SELECT COUNT(*) FROM comment_reports WHERE status = 'open'");
+                if ($reports > 0) {
+                    $attention[] = $this->attention('Reported comments', $reports, '/admin/comments', 95);
+                }
+            }
+        }
+        if (($permissions['web-links.manage'] ?? false) && $enabled('web-links') && $this->tableExists('web_links')) {
+            $quickActions[] = ['label' => 'Create web link', 'url' => '/admin/web-links/new'];
+            if ($this->tableExists('web_link_reports')) {
+                $reports = $this->count("SELECT COUNT(*) FROM web_link_reports WHERE status = 'open'");
+                if ($reports > 0) {
+                    $attention[] = $this->attention('Broken web-link reports', $reports, '/admin/web-links', 85);
+                }
+            }
+        }
+        if (($permissions['private-messages.moderate'] ?? false) && $enabled('private-messages') && $this->tableExists('private_message_reports')) {
+            $reports = $this->count("SELECT COUNT(*) FROM private_message_reports WHERE status = 'open'");
+            if ($reports > 0) {
+                $attention[] = $this->attention('Private-message abuse reports', $reports, '/admin/private-messages', 95);
+            }
         }
         if ($permissions['logs.view'] ?? false) {
             $recentActivity = $this->database->query(
@@ -59,11 +140,15 @@ final class AdminDashboardService
 
         $moduleStatus = null;
         if ($permissions['modules.manage'] ?? false) {
+            $issues = count(array_filter($inventory, static fn (array $module): bool => ! $module['compatible'] || $module['last_error'] !== null));
             $moduleStatus = [
                 'detected' => count($inventory),
                 'enabled' => count(array_filter($inventory, static fn (array $module): bool => $module['enabled'])),
-                'issues' => count(array_filter($inventory, static fn (array $module): bool => ! $module['compatible'] || $module['last_error'] !== null)),
+                'issues' => $issues,
             ];
+            if ($issues > 0) {
+                $attention[] = $this->attention('Module issues', $issues, '/admin/modules', 100);
+            }
         }
 
         return [
@@ -72,12 +157,20 @@ final class AdminDashboardService
             'recent_activity' => $recentActivity,
             'recent_content' => $this->contentMerger->merge($contentGroups),
             'module_status' => $moduleStatus,
+            'attention' => $this->prioritySorter->sort($attention),
+            'quick_actions' => $quickActions,
         ];
     }
 
     private function count(string $sql): int
     {
         return (int) $this->database->query($sql)->fetchColumn();
+    }
+
+    /** @return array{label:string,count:int,url:string,priority:int} */
+    private function attention(string $label, int $count, string $url, int $priority): array
+    {
+        return compact('label', 'count', 'url', 'priority');
     }
 
     private function tableExists(string $table): bool

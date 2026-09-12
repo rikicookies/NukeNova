@@ -2,10 +2,10 @@
 {% block title %}Wiki administration — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Content</p><h1>Wiki</h1><p>Manage Markdown documentation organized with colon-separated namespaces.</p>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Wiki'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Content', title: 'Wiki', description: 'Manage Markdown documentation organized with colon-separated namespaces.', actions: [{label: 'Create wiki page', url: '/admin/wiki/new'}, {label: 'Export all .md', url: '/admin/wiki/export-all'}]} only %}
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if import_error %}<div class="form-errors"><ul><li>{{ import_error }}</li></ul></div>{% endif %}
-    <nav class="context-actions"><a class="install-button" href="/admin/wiki/new">Create wiki page</a><a class="content-action" href="/admin/wiki/export-all">Export all .md</a></nav>
     <form class="settings-form" method="post" action="/admin/wiki/import" enctype="multipart/form-data">
         <input type="hidden" name="_token" value="{{ csrf_token }}">
         <label>Import Markdown draft<input type="file" name="markdown_file" accept=".md,text/markdown,text/plain" required><small>Maximum 1 MB. The file opens in the editor and is not saved or published automatically.</small></label>

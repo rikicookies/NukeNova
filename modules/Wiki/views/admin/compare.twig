@@ -2,8 +2,8 @@
 {% block title %}Compare revisions — {{ page.title }} — NovaNuke{% endblock %}
 {% block content %}
 <section class="admin-page">
-    <p class="eyebrow">Wiki comparison</p><h1>{{ page.title }}</h1>
-    <p>Revision <strong>#{{ from.revision_number }}</strong> to <strong>#{{ to.revision_number }}</strong></p>
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Wiki', url: '/admin/wiki'}, {label: page.title, url: '/admin/wiki/' ~ page.id ~ '/edit'}, {label: 'Revision history', url: '/admin/wiki/' ~ page.id ~ '/history'}, {label: 'Compare'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Wiki comparison', title: page.title, description: 'Compare revision #' ~ from.revision_number ~ ' with revision #' ~ to.revision_number ~ '.'} only %}
     <div class="table-wrap"><table class="admin-table"><thead><tr><th>Field</th><th>#{{ from.revision_number }}</th><th>#{{ to.revision_number }}</th></tr></thead><tbody>
         <tr><th>Title</th><td>{{ from.title }}</td><td>{{ to.title }}</td></tr>
         <tr><th>Path</th><td><code>{{ from.namespace ? from.namespace ~ ':' : '' }}{{ from.slug }}</code></td><td><code>{{ to.namespace ? to.namespace ~ ':' : '' }}{{ to.slug }}</code></td></tr>
@@ -17,6 +17,5 @@
     <div class="table-wrap"><table class="admin-table wiki-diff"><thead><tr><th>Old</th><th>New</th></tr></thead><tbody>
         {% for row in diff %}<tr class="diff-{{ row.kind }}"><td><pre>{% if row.kind == 'removed' %}<del>{{ row.old }}</del>{% else %}{{ row.old ?? '' }}{% endif %}</pre></td><td><pre>{% if row.kind == 'added' %}<ins>{{ row.new }}</ins>{% else %}{{ row.new ?? '' }}{% endif %}</pre></td></tr>{% endfor %}
     </tbody></table></div>
-    <p><a href="/admin/wiki/{{ page.id }}/history">Return to revision history</a></p>
 </section>
 {% endblock %}

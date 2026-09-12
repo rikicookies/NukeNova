@@ -35,23 +35,27 @@ final class InstallerService
             throw new RuntimeException('The environment file already exists and will not be overwritten.');
         }
 
+        (new StorageProvisioner())->provision($this->rootPath);
+
         $database = $this->connectAndCreateDatabase($data);
         $this->assertDatabaseIsEmpty($database);
-        $migrations = (new Migrator($database))->run($this->rootPath . '/database/migrations');
 
-        $database->beginTransaction();
         try {
-            $this->createAdministrator($database, $data);
-            $this->saveInitialSettings($database, $data);
-            $database->commit();
-        } catch (Throwable $error) {
-            if ($database->inTransaction()) {
-                $database->rollBack();
-            }
-            throw $error;
-        }
+            $migrations = (new Migrator($database))->run($this->rootPath . '/database/migrations');
 
-        $this->envWriter->write($envPath, [
+            $database->beginTransaction();
+            try {
+                $this->createAdministrator($database, $data);
+                $this->saveInitialSettings($database, $data);
+                $database->commit();
+            } catch (Throwable $error) {
+                if ($database->inTransaction()) {
+                    $database->rollBack();
+                }
+                throw $error;
+            }
+
+            $this->envWriter->write($envPath, [
             'APP_NAME' => $data->siteName,
             'APP_ENV' => 'production',
             'APP_DEBUG' => false,
@@ -68,6 +72,9 @@ final class InstallerService
             'DB_PASSWORD' => $data->databasePassword,
             'DB_CHARSET' => 'utf8mb4',
             'SESSION_NAME' => 'novanuke_session',
+            'SESSION_LIFETIME' => 7200,
+            'SESSION_IDLE_TIMEOUT' => 1800,
+            'SESSION_ROTATION_INTERVAL' => 900,
             'SESSION_SECURE' => str_starts_with(strtolower($data->siteUrl), 'https://'),
             'SESSION_SAME_SITE' => 'Lax',
             'SECURITY_HEADERS_ENABLED' => true,
@@ -76,11 +83,43 @@ final class InstallerService
             'MAIL_MAILER' => 'log',
             'MAIL_FROM_ADDRESS' => 'noreply@localhost',
             'MAIL_FROM_NAME' => $data->siteName,
-        ]);
+            ]);
 
-        $this->installationLock->create($lockPath, Version::CURRENT);
+            $this->installationLock->create($lockPath, Version::CURRENT);
 
-        return $migrations;
+            return $migrations;
+        } catch (Throwable $error) {
+            if (is_file($envPath) && ! is_link($envPath)) {
+                @unlink($envPath);
+            }
+            $this->rollbackOwnedSchema($database);
+            throw $error;
+        }
+    }
+
+    private function rollbackOwnedSchema(PDO $database): void
+    {
+        try {
+            $database->exec('SET FOREIGN_KEY_CHECKS=0');
+            $tables = $database->query(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema=DATABASE() AND table_type='BASE TABLE'"
+            )->fetchAll(PDO::FETCH_COLUMN);
+
+            foreach ($tables as $table) {
+                if (! is_string($table) || preg_match('/^[A-Za-z0-9_]+$/', $table) !== 1) {
+                    continue;
+                }
+                $database->exec('DROP TABLE IF EXISTS `' . $table . '`');
+            }
+        } catch (Throwable) {
+            // Preserve the original installer failure. A retry will report any
+            // remaining schema through the normal empty-database guard.
+        } finally {
+            try {
+                $database->exec('SET FOREIGN_KEY_CHECKS=1');
+            } catch (Throwable) {
+            }
+        }
     }
 
     private function connectAndCreateDatabase(InstallationData $data): PDO
@@ -186,6 +225,8 @@ final class InstallerService
             ['site.per_page', '10', 'integer', 'site'],
             ['site.homepage', 'home', 'string', 'site'],
             ['system.maintenance', '0', 'boolean', 'system'],
+            ['system.core_version', Version::CURRENT, 'string', 'system'],
+            ['system.core_updated_at', gmdate(DATE_ATOM), 'string', 'system'],
             ['users.registration_open', '0', 'boolean', 'users'],
         ] as [$key, $value, $type, $group]) {
             $statement->execute([

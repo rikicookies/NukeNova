@@ -16,7 +16,7 @@ final class WikiSearchProviderContractTest extends TestCase
         $manifest = json_decode((string) file_get_contents($root . '/modules/Wiki/module.json'), true, 32, JSON_THROW_ON_ERROR);
 
         self::assertSame([], $manifest['dependencies']);
-        self::assertStringContainsString("listen('search.providers.registering'", $module);
+        self::assertStringContainsString('EventName::SEARCH_PROVIDERS_REGISTERING', $module);
         self::assertStringContainsString('implements SearchProviderInterface', $provider);
         self::assertStringContainsString("return 'wiki'", $provider);
     }
@@ -30,6 +30,6 @@ final class WikiSearchProviderContractTest extends TestCase
         self::assertStringContainsString('audience IN ({$audiencePlaceholders})', $provider);
         self::assertStringContainsString("allows('vip'", $provider);
         self::assertStringContainsString('LikePattern::contains($query->term)', $provider);
-        self::assertStringContainsString("'/wiki/' . $path", $provider);
+        self::assertStringContainsString("'/wiki/' . \$path", $provider);
     }
 }

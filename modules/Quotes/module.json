@@ -1,0 +1,13 @@
+{
+  "name": "Quotes",
+  "slug": "quotes",
+  "version": "1.0.0",
+  "api_version": "1.0",
+  "description": "Official example module demonstrating a small public/admin CRUD integration.",
+  "author": "NovaNuke Project",
+  "provider": "Modules\\Quotes\\src\\QuotesModule",
+  "cms_min_version": "0.2.0-alpha.58",
+  "php_min_version": "8.3.0",
+  "dependencies": {},
+  "permissions": ["quotes.manage"]
+}

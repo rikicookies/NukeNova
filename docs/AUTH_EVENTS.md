@@ -13,7 +13,7 @@ NovaNuke dispatches small synchronous authentication events after the associated
 Modules register listeners in `boot()`:
 
 ```php
-$context->events->listen('user.registered', static function (object $event): void {
+$context->events->listen(\NovaNuke\Core\Events\EventName::USER_REGISTERED, static function (object $event): void {
     if (! $event instanceof \NovaNuke\Auth\UserRegistered) return;
     // Queue or record module-owned work using $event->userId.
 });

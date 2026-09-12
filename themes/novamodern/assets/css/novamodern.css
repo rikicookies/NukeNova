@@ -53,6 +53,12 @@ body.nova-modern { --nova-sidebar: 270px; --nova-sidebar-collapsed: 72px; --nova
 .nova-admin .dashboard-grid article a { align-self: end; color: #456fbf; font-size: .8rem; font-weight: 700; text-decoration: none; }
 .nova-admin .dashboard-sections { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 1rem; margin-top: 1.25rem; }
 .nova-admin .dashboard-sections > section { min-width: 0; padding: 1rem; border: 1px solid #dfe3ea; border-radius: .65rem; background: #fff; }
+.nova-admin :is(.dashboard-health, .dashboard-attention, .dashboard-quick-actions) { border-color: #dfe3ea; background: #fff; color: var(--nova-text); box-shadow: 0 1px 3px rgb(27 35 52 / 7%); }
+.nova-admin :is(.dashboard-health-check, .dashboard-attention-list a) { border-color: #dfe3ea; background: #f8fafc; color: var(--nova-text); }
+.nova-admin .dashboard-health-ok { color: #18794e; }
+.nova-admin :is(.dashboard-health-attention, .dashboard-health-warning) { color: #8a5a12; }
+.nova-admin .dashboard-health-error { color: #a12b35; }
+.nova-admin .dashboard-attention-list strong { background: #e8edf5; color: #394557; }
 .nova-admin .admin-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: .6rem; }
 .nova-admin .admin-links a { padding: .8rem; border: 1px solid #dfe3ea; border-radius: .5rem; background: #fff; text-decoration: none; }
 .nova-admin .admin-table-wrap, .nova-admin .table-wrap { max-width: 100%; overflow-x: auto; }

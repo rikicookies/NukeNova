@@ -25,7 +25,7 @@ final class WelcomeModule implements ModuleInterface
             $database = $container->get(\PDO::class);
             $message = $database->query('SELECT message FROM welcome_messages ORDER BY id LIMIT 1')->fetchColumn();
             $event = new WelcomePageEvent(is_string($message) ? $message : 'Welcome to NovaNuke.');
-            $events->dispatch('welcome.page.rendering', $event);
+            $events->dispatch(\NovaNuke\Core\Events\EventName::WELCOME_PAGE_RENDERING, $event);
 
             return Response::html($container->get(ViewRenderer::class)->render('@welcome/index.twig', [
                 'message' => $event->message,

@@ -14,6 +14,59 @@
         </div>
     {% endif %}
 
+    {% if system_health %}
+        <section class="dashboard-health" aria-labelledby="dashboard-health-title">
+            <div class="dashboard-section-heading">
+                <div>
+                    <p class="eyebrow">Operations</p>
+                    <h2 id="dashboard-health-title">Site health</h2>
+                </div>
+                <span class="dashboard-health-summary dashboard-health-{{ system_health.status }}">
+                    {{ system_health.status == 'healthy' ? 'All checks healthy' : 'Review recommended' }}
+                </span>
+            </div>
+            <div class="dashboard-health-grid">
+                {% for check in system_health.checks %}
+                    <a class="dashboard-health-check dashboard-health-{{ check.status }}" href="{{ check.url }}">
+                        <span>{{ check.label }}</span>
+                        <strong>{{ check.value }}</strong>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if dashboard.attention %}
+        <section class="dashboard-attention" aria-labelledby="dashboard-attention-title">
+            <div class="dashboard-section-heading">
+                <div>
+                    <p class="eyebrow">Priority queue</p>
+                    <h2 id="dashboard-attention-title">Needs attention</h2>
+                </div>
+                <p>Items that may require an administrator decision.</p>
+            </div>
+            <div class="dashboard-attention-list">
+                {% for item in dashboard.attention %}
+                    <a href="{{ item.url }}">
+                        <span>{{ item.label }}</span>
+                        <strong aria-label="{{ item.count }} items">{{ item.count }}</strong>
+                    </a>
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+    {% if dashboard.quick_actions %}
+        <section class="dashboard-quick-actions" aria-labelledby="dashboard-quick-actions-title">
+            <h2 id="dashboard-quick-actions-title">Quick actions</h2>
+            <nav aria-label="Quick actions">
+                {% for action in dashboard.quick_actions %}
+                    <a class="content-action" href="{{ action.url }}">{{ action.label }}</a>
+                {% endfor %}
+            </nav>
+        </section>
+    {% endif %}
+
     <div class="dashboard-grid dashboard-metrics">
         {% for card in dashboard.cards %}
             <article><strong>{{ card.value }}</strong><span>{{ card.label }}</span><a href="{{ card.url }}">Manage</a></article>

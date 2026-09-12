@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Modules\Comments\src;
 
 use NovaNuke\Core\Admin\AdminMenuBuilding;
+use NovaNuke\Core\Comments\CommentProviderInterface;
 use NovaNuke\Core\Config\ConfigRepository;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
@@ -28,12 +29,13 @@ final class CommentsModule implements ModuleInterface
             (string) $c->get(ConfigRepository::class)->get('app.key', ''),
             $c->get(ContentRendererInterface::class),
         ));
+        $context->container->bind(CommentProviderInterface::class, static fn (Container $c) => $c->get(CommentService::class));
     }
 
     public function boot(ModuleContext $context): void
     {
-        $context->events->listen('profile.statistics.building',static function(object$event)use($context):void{if($event instanceof \NovaNuke\Auth\ProfileStatisticsBuilding)$event->add('Approved comments',$context->container->get(CommentRepository::class)->approvedCountByUser($event->profileId));});
-        $context->events->listen('admin.menu.building', static function (object $event): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::PROFILE_STATISTICS_BUILDING,static function(object$event)use($context):void{if($event instanceof \NovaNuke\Core\Profile\ProfileStatisticsBuilding)$event->add('Approved comments',$context->container->get(CommentRepository::class)->approvedCountByUser($event->profileId));});
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Comments', '/admin/comments', 'comments.moderate');
         });
         $public = static fn (Container $c) => new PublicCommentsController(

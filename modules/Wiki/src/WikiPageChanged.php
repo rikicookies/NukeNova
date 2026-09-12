@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Modules\Wiki\src;
 
-final readonly class WikiPageChanged
+/** @deprecated Use NovaNuke\Core\Content\ContentChanged for cross-module listeners. */
+final readonly class WikiPageChanged extends \NovaNuke\Core\Content\ContentChanged
 {
-    public function __construct(public int $id, public string $path, public int $actorId)
+    public function __construct(int $id, public string $path, int $actorId)
     {
+        parent::__construct('wiki', $id, $actorId, $path);
     }
 }

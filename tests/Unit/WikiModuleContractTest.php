@@ -43,8 +43,8 @@ final class WikiModuleContractTest extends TestCase
 
         self::assertStringContainsString('WikiLinkIndexer $links', $repository);
         self::assertStringContainsString('! $this->canView($page, $userId)', $repository);
-        self::assertStringContainsString("'backlinks' => $this->pages->backlinks", $public);
-        self::assertStringContainsString("'missing_links' => $this->pages->missingLinks()", $admin);
+        self::assertStringContainsString("'backlinks' => \$this->pages->backlinks", $public);
+        self::assertStringContainsString("'missing_links' => \$this->pages->missingLinks()", $admin);
     }
 
     public function testMarkdownImportAndExportAreAuthorizedAndImportUsesCsrf(): void
@@ -221,9 +221,9 @@ final class WikiModuleContractTest extends TestCase
         $repository = (string) file_get_contents($root . '/modules/Wiki/src/WikiRepository.php');
 
         self::assertContains('sitemap.collecting', $manifest['events']);
-        self::assertStringContainsString("listen('sitemap.collecting'", $module);
+        self::assertStringContainsString('EventName::SITEMAP_COLLECTING', $module);
         self::assertStringContainsString("event->add('/wiki'", $module);
-        self::assertStringContainsString("event->add('/wiki/' . $path", $module);
+        self::assertStringContainsString("event->add('/wiki/' . \$path", $module);
         self::assertStringContainsString("audience='public'", $repository);
         self::assertStringContainsString("status='published'", $repository);
         self::assertStringContainsString('published_at<=UTC_TIMESTAMP()', $repository);

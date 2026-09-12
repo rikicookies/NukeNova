@@ -4,9 +4,4 @@ declare(strict_types=1);
 
 namespace Modules\Search\src;
 
-final readonly class SearchProvidersRegistering
-{
-    public function __construct(public SearchProviderRegistry $registry)
-    {
-    }
-}
+class_alias(\NovaNuke\Core\Search\SearchProvidersRegistering::class, __NAMESPACE__ . '\\SearchProvidersRegistering');

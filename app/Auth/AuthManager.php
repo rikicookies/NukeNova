@@ -48,7 +48,7 @@ final class AuthManager
         $this->session->put(self::USER_KEY, (int) $user['id']);
         $this->session->put(self::VERSION_KEY, (int) $user['auth_version']);
         $this->recordLogin((int) $user['id'], $ip, $userAgent);
-        $this->dispatchSafely('user.logged_in', new UserLoggedIn((int) $user['id']));
+        $this->dispatchSafely(\NovaNuke\Core\Events\EventName::USER_LOGGED_IN, new UserLoggedIn((int) $user['id']));
         unset($user['password_hash']);
 
         return $user;

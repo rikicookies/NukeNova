@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Modules\Search\src;
 
+use NovaNuke\Core\Search\SearchQuery;
+use NovaNuke\Core\Search\SearchResultItem;
 use RuntimeException;
 
 final class SearchService

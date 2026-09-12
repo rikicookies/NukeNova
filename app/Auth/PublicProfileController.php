@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Auth;
 
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\View\ViewRenderer;
@@ -26,7 +26,7 @@ final class PublicProfileController
         private readonly ContentRendererInterface $contentRenderer,
         private readonly EventDispatcher $events,
         private readonly CsrfTokenManager $csrf,
-        private readonly EntitlementService $entitlements,
+        private readonly MembershipManagerInterface $memberships,
     ) {
     }
 
@@ -50,14 +50,14 @@ final class PublicProfileController
             (string) ($profile['bio'] ?? ''), ContentFormat::fromInput($profile['bio_format'] ?? null, ContentFormat::Markdown), ContentProfile::Profile,
         ), 'UTF-8');
         $statisticsEvent = new ProfileStatisticsBuilding((int) $profile['id']);
-        $this->events->dispatch('profile.statistics.building', $statisticsEvent);
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::PROFILE_STATISTICS_BUILDING, $statisticsEvent);
         $actions = [];
         if ($viewer !== null && (int) $viewer['id'] !== (int) $profile['id']) {
             $event = new ProfileActionsBuilding((int) $profile['id'], (string) $profile['username'], (int) $viewer['id']);
-            $this->events->dispatch('profile.actions.building', $event);
+            $this->events->dispatch(\NovaNuke\Core\Events\EventName::PROFILE_ACTIONS_BUILDING, $event);
             $actions = $event->actions();
         }
-        return Response::html($this->views->render('auth/profile-public.twig', ['profile' => $profile, 'viewer' => $viewer, 'profile_actions' => $actions, 'profile_statistics' => $statisticsEvent->statistics(), 'csrf_token' => $this->csrf->token(), 'vip_active' => $this->entitlements->has((int) $profile['id'], EntitlementService::VIP)]));
+        return Response::html($this->views->render('auth/profile-public.twig', ['profile' => $profile, 'viewer' => $viewer, 'profile_actions' => $actions, 'profile_statistics' => $statisticsEvent->statistics(), 'csrf_token' => $this->csrf->token(), 'membership' => $this->memberships->status((int) $profile['id'])]));
     }
 
     public function avatar(Request $request): Response

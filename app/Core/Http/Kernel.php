@@ -39,7 +39,7 @@ final class Kernel
         try {
             $this->container->get(Application::class)->boot();
             if ($this->maintenance->blocks($request)) {
-                return $this->securityHeaders->apply(Response::html(
+                return $this->secure($request, Response::html(
                     '<!doctype html><html lang="en"><meta charset="utf-8"><title>Maintenance</title>'
                     . '<main><h1>We will be back shortly.</h1><p>The site is undergoing scheduled maintenance.</p></main>',
                     503,
@@ -52,10 +52,10 @@ final class Kernel
                 $this->container->get(SettingsRepository::class)->boolean('users.private_site', false),
                 $authenticatedUser !== null,
             )) {
-                return $this->securityHeaders->apply(Response::redirect('/login?private=1'));
+                return $this->secure($request, Response::redirect('/login?private=1'));
             }
             if ($authenticatedUser !== null && $this->passwordChange->blocks($request->path(), (bool) ($authenticatedUser['must_change_password'] ?? false))) {
-                return $this->securityHeaders->apply(Response::redirect('/account/profile?password_required=1'));
+                return $this->secure($request, Response::redirect('/account/profile?password_required=1'));
             }
             $user = null;
             $allowed = false;
@@ -70,11 +70,11 @@ final class Kernel
                 $allowed,
             );
             if ($adminGuard !== null) {
-                return $this->securityHeaders->apply($adminGuard);
+                return $this->secure($request, $adminGuard);
             }
             $match = $this->router->match($request);
             if ($this->moduleAccess !== null && ($moduleGuard = $this->moduleAccess->guard($match->route, $request)) !== null) {
-                return $this->securityHeaders->apply($moduleGuard);
+                return $this->secure($request, $moduleGuard);
             }
             $request = $request->withAttributes($match->parameters);
             $response = ($match->route->handler)($request, $this->container);
@@ -83,9 +83,26 @@ final class Kernel
                 throw new \LogicException('Route handlers must return a Response.');
             }
 
-            return $this->securityHeaders->apply($response);
+            return $this->secure($request, $response);
         } catch (Throwable $error) {
-            return $this->securityHeaders->apply($this->errors->render($error));
+            return $this->secure($request, $this->errors->render($error));
         }
     }
+    private function secure(Request $request, Response $response): Response
+    {
+        $path = $request->path();
+        $sensitive = $response->status() >= 400
+            || str_starts_with($path, '/admin')
+            || str_starts_with($path, '/account')
+            || str_starts_with($path, '/login')
+            || str_starts_with($path, '/register')
+            || str_starts_with($path, '/password');
+
+        if ($sensitive && $response->header('Cache-Control') === null) {
+            $response = $response->withHeader('Cache-Control', 'no-store, private');
+        }
+
+        return $this->securityHeaders->apply($response);
+    }
+
 }

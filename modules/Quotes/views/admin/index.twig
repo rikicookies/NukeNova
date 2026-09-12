@@ -1,0 +1,23 @@
+{% extends "layouts/default.twig" %}
+{% block title %}Quotes administration — NovaNuke{% endblock %}
+{% block content %}
+<section class="admin-page">
+  {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Quotes'}]} only %}
+  {% include 'components/page-header.twig' with {eyebrow: 'Example module', title: 'Quotes', description: 'Reference CRUD showing permissions, CSRF, migrations, activity logging and an admin menu extension.', actions: [{label: 'View quotes', url: '/quotes'}]} only %}
+  {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
+  {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/admin/quotes" class="stack-form">
+    <input type="hidden" name="_token" value="{{ csrf_token }}">
+    <label>Quote<textarea name="quote_text" maxlength="500" required></textarea></label>
+    <label>Attribution<input name="attribution" maxlength="120"></label>
+    <label><input type="checkbox" name="is_published" value="1" checked> Published</label>
+    <button type="submit">Create quote</button>
+  </form>
+
+  <div class="table-wrap"><table class="admin-table"><thead><tr><th>Quote</th><th>Attribution</th><th>Status</th><th>Action</th></tr></thead><tbody>
+    {% for quote in quotes %}<tr><td>{{ quote.quote_text }}</td><td>{{ quote.attribution|default('—', true) }}</td><td>{{ quote.is_published ? 'Published' : 'Draft' }}</td><td><form method="post" action="/admin/quotes/{{ quote.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Delete</button></form></td></tr>
+    {% else %}{% include 'components/admin-table-empty.twig' with {colspan: 4, title: 'No quotes yet', message: 'Use the form above to create the first quote.'} only %}{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

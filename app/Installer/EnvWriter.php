@@ -38,6 +38,13 @@ final class EnvWriter
             @unlink($temporary);
             throw new RuntimeException('Could not activate the environment file.');
         }
+
+        @chmod($path, 0600);
+        clearstatcache(true, $path);
+        if (! is_file($path) || is_link($path)) {
+            @unlink($path);
+            throw new RuntimeException('The environment file could not be secured.');
+        }
     }
 
     private function encode(string|int|bool $value): string

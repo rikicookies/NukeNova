@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Modules\Search\src;
 
-use Modules\Search\src\SearchProvidersRegistering;
 use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
+use NovaNuke\Core\Search\SearchProviderInterface;
+use NovaNuke\Core\Search\SearchProvidersRegistering;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Settings\SettingsRepository;
@@ -30,7 +31,7 @@ final class PublicSearchController
         $type = trim((string) $request->query('type', ''));
         $page = filter_var($request->query('page', 1), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 1;
         $registry = new SearchProviderRegistry();
-        $this->events->dispatch('search.providers.registering', new SearchProvidersRegistering($registry));
+        $this->events->dispatch(\NovaNuke\Core\Events\EventName::SEARCH_PROVIDERS_REGISTERING, new SearchProvidersRegistering($registry));
         $types = array_map(static fn (SearchProviderInterface $provider): array => [
             'value' => $provider->type(), 'label' => $provider->label(),
         ], array_values($registry->all()));

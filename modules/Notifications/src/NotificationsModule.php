@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Modules\Notifications\src;
 
-use Modules\Comments\src\CommentCreated;
-use Modules\Friends\src\FriendAccepted;
-use Modules\Friends\src\FriendRequested;
-use Modules\PrivateMessages\src\PrivateMessageSent;
+use NovaNuke\Core\Comments\CommentCreated;
+use NovaNuke\Core\Messaging\PrivateMessageSent;
+use NovaNuke\Core\Social\FriendAccepted;
+use NovaNuke\Core\Social\FriendRequested;
 use NovaNuke\Core\Container\Container;
 use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Maintenance\MaintenancePruning;
+use NovaNuke\Core\Membership\MembershipAssigned;
+use NovaNuke\Core\Membership\MembershipActivated;
+use NovaNuke\Core\Membership\MembershipRevoked;
+use NovaNuke\Core\Membership\MembershipExpired;
+use NovaNuke\Core\Membership\MembershipScheduled;
+use NovaNuke\Core\Membership\MembershipScheduleCancelled;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\View\ViewRenderer;
@@ -36,7 +42,7 @@ final class NotificationsModule implements ModuleInterface
             $user === null ? 0 : $repository->unreadCount((int) $user['id']),
         );
 
-        $context->events->listen('private-message.sent', static function (object $event) use ($publisher): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::PRIVATE_MESSAGE_SENT, static function (object $event) use ($publisher): void {
             if (! $event instanceof PrivateMessageSent) return;
             try {
                 $publisher->toUser(
@@ -51,7 +57,7 @@ final class NotificationsModule implements ModuleInterface
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }
         });
-        $context->events->listen('comment.created', static function (object $event) use ($publisher): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::COMMENT_CREATED, static function (object $event) use ($publisher): void {
             if (! $event instanceof CommentCreated || $event->status !== 'pending') return;
             try {
                 $publisher->toPermission(
@@ -66,23 +72,120 @@ final class NotificationsModule implements ModuleInterface
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }
         });
-        $context->events->listen('friend.requested', static function (object $event) use ($publisher): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::FRIEND_REQUESTED, static function (object $event) use ($publisher): void {
             if (! $event instanceof FriendRequested) return;
             try {
-                $publisher->toUser($event->recipientId, 'friend.requested', 'New friend request', 'You received a friend request.', '/friends');
+                $publisher->toUser($event->recipientId, \NovaNuke\Core\Events\EventName::FRIEND_REQUESTED, 'New friend request', 'You received a friend request.', '/friends');
             } catch (Throwable $error) {
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }
         });
-        $context->events->listen('friend.accepted', static function (object $event) use ($publisher): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::FRIEND_ACCEPTED, static function (object $event) use ($publisher): void {
             if (! $event instanceof FriendAccepted) return;
             try {
-                $publisher->toUser($event->recipientId, 'friend.accepted', 'Friend request accepted', 'Your friend request was accepted.', '/friends');
+                $publisher->toUser($event->recipientId, \NovaNuke\Core\Events\EventName::FRIEND_ACCEPTED, 'Friend request accepted', 'Your friend request was accepted.', '/friends');
             } catch (Throwable $error) {
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }
         });
-        $context->events->listen('maintenance.pruning', static function (object $event) use ($repository): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_ACTIVATED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipActivated) return;
+            try {
+                $message=$event->lifetime
+                    ? 'Your scheduled VIP membership is now active with lifetime access.'
+                    : 'Your scheduled VIP membership is now active until ' . ($event->expiresAt ?? 'its configured expiration') . ' UTC.';
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.activated',
+                    'Scheduled VIP is now active',
+                    $message,
+                    '/account/profile',
+                    'membership-activated:' . $event->entitlementId,
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_ASSIGNED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipAssigned) return;
+            try {
+                $message=$event->lifetime
+                    ? 'Your VIP membership is now active with lifetime access.'
+                    : 'Your VIP membership is active until ' . ($event->expiresAt ?? 'its configured expiration') . ' UTC.';
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.assigned',
+                    'VIP membership active',
+                    $message,
+                    '/account/profile',
+                    'membership-assigned:' . $event->userId . ':' . md5($event->planKey . ':' . ($event->expiresAt ?? 'lifetime')),
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_REVOKED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipRevoked) return;
+            try {
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.revoked',
+                    'VIP membership ended',
+                    'Your account now has Free membership access.',
+                    '/account/profile',
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_EXPIRED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipExpired) return;
+            try {
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.expired',
+                    'VIP membership expired',
+                    'Your VIP membership expired and your account now has Free membership access.',
+                    '/account/profile',
+                    'membership-expired:' . $event->entitlementId,
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_SCHEDULED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipScheduled) return;
+            try {
+                $message='Your ' . $event->planKey . ' membership is scheduled to begin ' . $event->startsAt . ' UTC.';
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.scheduled',
+                    'VIP membership scheduled',
+                    $message,
+                    '/account/profile',
+                    'membership-scheduled:' . $event->userId . ':' . md5($event->planKey . ':' . $event->startsAt),
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_SCHEDULE_CANCELLED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipScheduleCancelled) return;
+            try {
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.schedule-cancelled',
+                    'Scheduled VIP cancelled',
+                    'Your scheduled VIP membership was cancelled before activation.',
+                    '/account/profile',
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MAINTENANCE_PRUNING, static function (object $event) use ($repository): void {
             if ($event instanceof MaintenancePruning) $event->add('notifications.read', $repository->prune($event->dryRun));
         });
 

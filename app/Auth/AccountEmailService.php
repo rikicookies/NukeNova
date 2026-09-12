@@ -89,7 +89,7 @@ final class AccountEmailService
             if ($this->database->inTransaction()) $this->database->rollBack();
             throw $error;
         }
-        try { $this->events->dispatch('user.email_changed', new UserEmailChanged((int) $change['user_id'])); }
+        try { $this->events->dispatch(\NovaNuke\Core\Events\EventName::USER_EMAIL_CHANGED, new UserEmailChanged((int) $change['user_id'])); }
         catch (\Throwable $error) { error_log('A user.email_changed listener failed: ' . $error->getMessage()); }
         return (int) $change['user_id'];
     }

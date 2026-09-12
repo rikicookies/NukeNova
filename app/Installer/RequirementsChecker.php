@@ -9,6 +9,9 @@ final class RequirementsChecker
     /** @return list<array{name: string, passed: bool, detail: string}> */
     public function check(string $rootPath): array
     {
+        $storage = new StorageProvisioner();
+        $storage->provision($rootPath);
+
         $checks = [[
             'name' => 'PHP 8.3+',
             'passed' => version_compare(PHP_VERSION, '8.3.0', '>='),
@@ -23,7 +26,7 @@ final class RequirementsChecker
             ];
         }
 
-        foreach (['storage', 'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private', 'storage/private/downloads', 'storage/private/backups'] as $directory) {
+        foreach ($storage->requiredDirectories() as $directory) {
             $path = $rootPath . '/' . $directory;
             $checks[] = [
                 'name' => "Writable {$directory}",

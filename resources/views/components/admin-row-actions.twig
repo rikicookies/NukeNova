@@ -1,0 +1,8 @@
+{% set row_actions = actions|default([]) %}
+{% if row_actions %}
+<nav class="admin-row-actions" aria-label="{{ label|default('Row actions') }}">
+    {% for action in row_actions %}
+        <a class="content-action" href="{{ action.url }}">{{ action.label }}</a>
+    {% endfor %}
+</nav>
+{% endif %}

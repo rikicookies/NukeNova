@@ -82,6 +82,7 @@ final class SystemInspector
             'cms_version' => Application::VERSION,
             'php_version' => PHP_VERSION,
             'environment' => $environment,
+            'maintenance' => $this->settings->boolean('system.maintenance', false),
             'debug' => $debug,
             'https_url' => strtolower((string) parse_url($url, PHP_URL_SCHEME)) === 'https',
             'secure_session' => (bool) $this->config->get('session.secure', false),

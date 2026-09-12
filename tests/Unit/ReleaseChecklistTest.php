@@ -14,15 +14,24 @@ final class ReleaseChecklistTest extends TestCase
     protected function setUp(): void
     {
         $this->root = sys_get_temp_dir() . '/novanuke-release-' . bin2hex(random_bytes(5));
-        foreach (['public', 'bootstrap', 'app', 'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private'] as $directory) {
+        foreach ([
+            'public/uploads', 'bootstrap', 'app',
+            'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private',
+            'docs',
+        ] as $directory) {
             mkdir($this->root . '/' . $directory, 0750, true);
         }
         file_put_contents($this->root . '/public/index.php', '<?php');
         file_put_contents($this->root . '/public/.htaccess', 'Options -Indexes');
         file_put_contents($this->root . '/public/.user.ini', "display_errors=Off\nsession.use_strict_mode=1\n");
+        file_put_contents($this->root . '/public/uploads/.htaccess', 'Options -Indexes -ExecCGI');
+        file_put_contents($this->root . '/storage/private/.htaccess', "Require all denied\nDeny from all\n");
         file_put_contents($this->root . '/bootstrap/app.php', '<?php');
         file_put_contents($this->root . '/composer.json', '{}');
         file_put_contents($this->root . '/.env.example', "APP_KEY=\nDB_PASSWORD=\nMAIL_PASSWORD=\n");
+        foreach (['INSTALLATION.md', 'PRODUCTION.md', 'PRODUCTION_HARDENING.md'] as $doc) {
+            file_put_contents($this->root . '/docs/' . $doc, '# test');
+        }
     }
 
     protected function tearDown(): void
@@ -52,4 +61,14 @@ final class ReleaseChecklistTest extends TestCase
         file_put_contents($this->root . '/.env.example', "APP_KEY=secret\nDB_PASSWORD=secret\nMAIL_PASSWORD=secret\n");
         self::assertFalse((new ReleaseChecklist($this->root))->passed());
     }
+
+    public function testDistributionRequiresPrivateAndUploadHardeningFiles(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/Core/System/ReleaseChecklist.php');
+
+        self::assertStringContainsString("'public/uploads/.htaccess'", $source);
+        self::assertStringContainsString("'storage/private/.htaccess'", $source);
+        self::assertStringContainsString("'docs/PRODUCTION_HARDENING.md'", $source);
+    }
+
 }

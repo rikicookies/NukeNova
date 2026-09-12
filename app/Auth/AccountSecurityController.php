@@ -39,7 +39,11 @@ final class AccountSecurityController
         if (! $this->csrf->validate($request->input('_token'))) return Response::html('Invalid or expired CSRF token.', 419);
         $errors = $this->input->validate((string) $user['username'], $request->input('confirmation'), $request->input('password'));
         $key = (string) $user['id'];
-        if ($this->limiter->tooManyAttempts($key)) $errors['password'] = 'Too many attempts. Try again later.';
+        if ($this->limiter->tooManyAttempts($key)) {
+            $errors['password'] = 'Too many attempts. Try again later.';
+            return $this->view($user, $errors, 429)
+                ->withHeader('Retry-After', (string) max(1, $this->limiter->retryAfter($key)));
+        }
         if ($errors !== []) return $this->view($user, $errors, 422);
         $profile = $this->profiles->byUserId((int) $user['id']);
         $error = $this->lifecycle->anonymize((int) $user['id'], (string) $request->input('password'));

@@ -9,7 +9,23 @@
     {% if message|default(null) %}<div class="alert alert-success">{{ message }}</div>{% endif %}
     {% if profile.username|default('') %}<p><a href="/users/{{ profile.username|default('') }}">{{ trans('account.profile.public') }}</a></p>{% endif %}
     <p><a href="/account/security">{{ trans('account.security.link') }}</a></p>
-    {% if vip.active|default(false) %}<div class="alert alert-success"><strong>VIP access active.</strong> Expires {{ vip.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.</div>{% elseif vip.expires_at|default(null) %}<div class="notice-message">Your VIP access is inactive. The latest period ended {{ vip.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.</div>{% else %}<div class="notice-message">Account access: registered member.</div>{% endif %}
+    {% if membership.vip|default(false) %}
+    <div class="alert alert-success">
+        <strong>{{ membership.name|default('VIP') }} active.</strong>
+        {% if membership.lifetime|default(false) %}Lifetime membership.
+        {% else %}Expires {{ membership.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.{% endif %}
+    </div>
+    {% else %}
+    <div class="notice-message"><strong>Free membership.</strong> Standard registered-member access.</div>
+    {% endif %}
+    {% if scheduled_membership|default(null) %}
+    <div class="notice-message">
+        <strong>{{ scheduled_membership.name|default('VIP') }} scheduled.</strong>
+        Starts {{ scheduled_membership.starts_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.
+        {% if scheduled_membership.lifetime|default(false) %}Lifetime access after activation.
+        {% elseif scheduled_membership.expires_at|default(null) %}Ends {{ scheduled_membership.expires_at|date(cms_date_format ~ ' H:i', cms_timezone) }}.{% endif %}
+    </div>
+    {% endif %}
 
     <form method="post" action="/account/profile" class="settings-form">
         <input type="hidden" name="_token" value="{{ csrf_token }}">

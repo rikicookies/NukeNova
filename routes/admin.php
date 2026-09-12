@@ -6,6 +6,7 @@ use NovaNuke\Auth\AuthManager;
 use NovaNuke\Admin\UserSettingsController;
 use NovaNuke\Admin\RolesController;
 use NovaNuke\Admin\UsersController;
+use NovaNuke\Admin\MembershipsController;
 use NovaNuke\Admin\ActivityLogsController;
 use NovaNuke\Admin\ModulesController;
 use NovaNuke\Admin\ThemesController;
@@ -34,7 +35,10 @@ use NovaNuke\Core\Settings\GeneralSettingsInput;
 use NovaNuke\Core\I18n\LocaleRegistry;
 use NovaNuke\Auth\RegistrationValidator;
 use NovaNuke\Auth\PasswordPolicy;
-use NovaNuke\Core\Access\EntitlementService;
+use NovaNuke\Core\Membership\MembershipRepository;
+use NovaNuke\Core\Membership\MembershipService;
+use NovaNuke\Core\Membership\MembershipManagerInterface;
+use NovaNuke\Core\Membership\MembershipStatusPresenter;
 
 $dashboardController = static fn (Container $container): AdminDashboardController => new AdminDashboardController(
     $container->get(AuthManager::class),
@@ -109,7 +113,7 @@ $usersController = static fn (Container $container): UsersController => new User
     $container->get(ViewRenderer::class),
     new RegistrationValidator(new PasswordPolicy()),
     new PasswordPolicy(),
-    $container->get(EntitlementService::class),
+    $container->get(MembershipManagerInterface::class),
 );
 $router->get('/admin/users', static fn (Request $request, Container $container): Response =>
     $usersController($container)->index($request)
@@ -129,11 +133,47 @@ $router->post('/admin/users/{id}', static fn (Request $request, Container $conta
 $router->post('/admin/users/{id}/password', static fn (Request $request, Container $container): Response =>
     $usersController($container)->resetPassword($request)
 );
+$router->post('/admin/users/{id}/membership', static fn (Request $request, Container $container): Response =>
+    $usersController($container)->assignMembership($request)
+);
 $router->post('/admin/users/{id}/vip', static fn (Request $request, Container $container): Response =>
     $usersController($container)->grantVip($request)
 );
 $router->post('/admin/users/{id}/vip/revoke', static fn (Request $request, Container $container): Response =>
     $usersController($container)->revokeVip($request)
+);
+
+
+$membershipsController = static fn (Container $container): MembershipsController => new MembershipsController(
+    $container->get(AuthManager::class),
+    $container->get(AuthorizationService::class),
+    $container->get(MembershipRepository::class),
+    $container->get(MembershipService::class),
+    $container->get(MembershipStatusPresenter::class),
+    $container->get(ActivityLogger::class),
+    $container->get(CsrfTokenManager::class),
+    $container->get(ViewRenderer::class),
+);
+$router->get('/admin/memberships', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->index($request)
+);
+$router->get('/admin/memberships/{id}', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->show($request)
+);
+$router->post('/admin/memberships/{id}/assign', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->assign($request)
+);
+$router->post('/admin/memberships/{id}/extend', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->extend($request)
+);
+$router->post('/admin/memberships/{id}/schedule', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->schedule($request)
+);
+$router->post('/admin/memberships/{id}/schedule/cancel', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->cancelScheduled($request)
+);
+$router->post('/admin/memberships/{id}/revoke', static fn (Request $request, Container $container): Response =>
+    $membershipsController($container)->revoke($request)
 );
 
 $logsController = static fn (Container $container): ActivityLogsController => new ActivityLogsController(

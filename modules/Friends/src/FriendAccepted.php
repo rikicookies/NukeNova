@@ -1,4 +1,7 @@
 <?php
+
 declare(strict_types=1);
+
 namespace Modules\Friends\src;
-final readonly class FriendAccepted { public function __construct(public int $recipientId,public int $acceptedById) {} }
+
+class_alias(\NovaNuke\Core\Social\FriendAccepted::class, __NAMESPACE__ . '\\FriendAccepted');

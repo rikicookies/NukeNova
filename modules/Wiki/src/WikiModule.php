@@ -12,10 +12,10 @@ use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Modules\ModuleContext;
 use NovaNuke\Core\Modules\ModuleInterface;
 use NovaNuke\Core\View\ViewRenderer;
-use Modules\Search\src\SearchProvidersRegistering;
-use Modules\Comments\src\CommentService;
-use Modules\Comments\src\CommentTargetChecking;
-use Modules\Seo\src\SitemapCollecting;
+use NovaNuke\Core\Search\SearchProvidersRegistering;
+use NovaNuke\Core\Comments\CommentProviderInterface;
+use NovaNuke\Core\Comments\CommentTargetChecking;
+use NovaNuke\Core\Sitemap\SitemapCollecting;
 
 final class WikiModule implements ModuleInterface
 {
@@ -45,14 +45,14 @@ final class WikiModule implements ModuleInterface
         ));
         $context->container->bind(WikiRepository::class, static fn (Container $container): WikiRepository => new WikiRepository(
             $container->get(\PDO::class),
-            $container->get(\NovaNuke\Core\Access\EntitlementService::class),
+            $container->get(\NovaNuke\Core\Membership\MembershipManagerInterface::class),
             $container->get(WikiLinkIndexer::class),
         ));
     }
 
     public function boot(ModuleContext $context): void
     {
-        $context->events->listen('sitemap.collecting', static function (object $event) use ($context): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::SITEMAP_COLLECTING, static function (object $event) use ($context): void {
             if (! $event instanceof SitemapCollecting) return;
             $event->add('/wiki', null, 'weekly', 0.6);
             foreach ($context->container->get(WikiRepository::class)->sitemapEntries() as $page) {
@@ -60,7 +60,7 @@ final class WikiModule implements ModuleInterface
                 $event->add('/wiki/' . $path, $page['updated_at'], 'weekly', 0.7);
             }
         });
-        $context->events->listen('comments.content.checking', static function (object $event) use ($context): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::COMMENTS_CONTENT_CHECKING, static function (object $event) use ($context): void {
             if (! ($event instanceof CommentTargetChecking) || $event->type !== 'wiki') return;
             $user = $context->container->get(\NovaNuke\Auth\AuthManager::class)->user();
             if ($context->container->get(WikiRepository::class)->acceptsComments(
@@ -68,7 +68,7 @@ final class WikiModule implements ModuleInterface
                 $user ? (int) $user['id'] : null,
             )) $event->accept();
         });
-        $context->events->listen('search.providers.registering', static function (object $event) use ($context): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::SEARCH_PROVIDERS_REGISTERING, static function (object $event) use ($context): void {
             if ($event instanceof SearchProvidersRegistering) {
                 $event->registry->add(new WikiSearchProvider(
                     $context->container->get(\PDO::class),
@@ -76,7 +76,7 @@ final class WikiModule implements ModuleInterface
                 ));
             }
         });
-        $context->events->listen('admin.menu.building', static function (object $event): void {
+        $context->events->listen(\NovaNuke\Core\Events\EventName::ADMIN_MENU_BUILDING, static function (object $event): void {
             if ($event instanceof AdminMenuBuilding) $event->add('Wiki', '/admin/wiki', 'wiki.edit');
         });
         $public = static fn (Container $container): PublicWikiController => new PublicWikiController(
@@ -91,7 +91,7 @@ final class WikiModule implements ModuleInterface
             $container->get(ViewRenderer::class),
             $container->get(\NovaNuke\Core\Security\SessionManager::class),
             $container->get(\NovaNuke\Core\Security\CsrfTokenManager::class),
-            $container->has(CommentService::class) ? $container->get(CommentService::class) : null,
+            $container->has(CommentProviderInterface::class) ? $container->get(CommentProviderInterface::class) : null,
         );
         $admin = static fn (Container $container): AdminWikiController => new AdminWikiController(
             $container->get(WikiRepository::class),

@@ -28,6 +28,9 @@ final class SecurityHeaders
             'X-Frame-Options' => 'SAMEORIGIN',
             'Referrer-Policy' => 'strict-origin-when-cross-origin',
             'Permissions-Policy' => 'camera=(), microphone=(), geolocation=()',
+            'Cross-Origin-Opener-Policy' => 'same-origin',
+            'Cross-Origin-Resource-Policy' => 'same-origin',
+            'X-Permitted-Cross-Domain-Policies' => 'none',
             'Content-Security-Policy' => "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'",
         ];
 
