@@ -1,5 +1,9 @@
 # Known Issues and Technical Debt
 
+## RC.4 reliability remediation
+
+NN-MIG-01 is resolved in the RC.4 working tree: Core and module DDL now use durable operation states, checksums, a shared MySQL advisory lock, explicit postconditions, idempotent steps, and operator-driven reconciliation. Existing classic migration history remains valid. The other authorized RC.4 audit findings remain open until their own batches complete; RC.4 must not be promoted before all six are re-evaluated.
+
 ## Dynamic blocks are postponed
 
 Dynamic Polls and Statistics blocks are treated as provisional in the `0.2.0-alpha` line. The core now registers mutable block regions before provider templates render and isolates provider exceptions, but the complete matrix of dynamic providers, page types and both bundled themes has not completed acceptance testing.

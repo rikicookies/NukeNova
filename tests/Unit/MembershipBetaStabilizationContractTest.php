@@ -57,10 +57,19 @@ final class MembershipBetaStabilizationContractTest extends TestCase
         $root=dirname(__DIR__,2);
         $source=(string)file_get_contents($root.'/app/Core/Access/EntitlementService.php');
 
-        self::assertGreaterThanOrEqual(2, substr_count($source, 'activated_event_at'));
-        $scheduleStart=strpos($source, 'public function schedule(');
+        $grantStart=strpos($source,'public function grant(');
+        $replaceStart=strpos($source,'public function replace(',$grantStart);
+        $scheduleStart=strpos($source,'public function schedule(',$replaceStart);
+        self::assertNotFalse($grantStart);
+        self::assertNotFalse($replaceStart);
         self::assertNotFalse($scheduleStart);
-        $schedule=substr($source,$scheduleStart,6500);
-        self::assertStringNotContainsString('activated_event_at,created_at', $schedule);
+
+        $grantSource=substr($source,$grantStart,$replaceStart-$grantStart);
+        $replaceSource=substr($source,$replaceStart,$scheduleStart-$replaceStart);
+        $scheduleSource=substr($source,$scheduleStart);
+
+        self::assertStringContainsString('activated_event_at',$grantSource);
+        self::assertStringContainsString('activated_event_at',$replaceSource);
+        self::assertStringNotContainsString('activated_event_at,created_at',$scheduleSource);
     }
 }

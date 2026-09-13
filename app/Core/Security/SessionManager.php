@@ -20,6 +20,8 @@ final class SessionManager
         private readonly int $lifetime = 7200,
         private readonly int $idleTimeout = 1800,
         private readonly int $rotationInterval = 900,
+        private readonly string $cookiePath = '/',
+        private readonly string $cookieDomain = '',
     ) {
         if (! in_array($this->sameSite, ['Lax', 'Strict', 'None'], true)) {
             throw new InvalidArgumentException('SESSION_SAME_SITE must be Lax, Strict or None.');
@@ -29,6 +31,17 @@ final class SessionManager
         }
         if ($this->lifetime < 300 || $this->idleTimeout < 60 || $this->rotationInterval < 60) {
             throw new InvalidArgumentException('Session lifetime, idle timeout and rotation interval are below safe minimums.');
+        }
+        if ($this->cookiePath === '' || ! str_starts_with($this->cookiePath, '/')
+            || preg_match('/[\r\n;]/', $this->cookiePath) === 1) {
+            throw new InvalidArgumentException('SESSION_PATH must be an absolute cookie path without control or separator characters.');
+        }
+        if (preg_match('/[\r\n;\/]/', $this->cookieDomain) === 1) {
+            throw new InvalidArgumentException('SESSION_DOMAIN contains unsafe cookie characters.');
+        }
+        if (str_starts_with($this->name, '__Host-')
+            && (! $this->secure || $this->cookiePath !== '/' || $this->cookieDomain !== '')) {
+            throw new InvalidArgumentException('__Host- session cookies require Secure, path=/ and no Domain.');
         }
     }
 
@@ -45,7 +58,8 @@ final class SessionManager
         session_name($this->name);
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/',
+            'path' => $this->cookiePath,
+            'domain' => $this->cookieDomain,
             'secure' => $this->secure,
             'httponly' => true,
             'samesite' => $this->sameSite,

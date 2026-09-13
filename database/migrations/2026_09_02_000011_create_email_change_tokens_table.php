@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['email_change_tokens'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE email_change_tokens (
+CREATE TABLE IF NOT EXISTS email_change_tokens (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     pending_email VARCHAR(254) NOT NULL,

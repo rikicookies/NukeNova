@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.4.0-beta.10**. Beta 1 begins production hardening with stronger session lifetime/idle/rotation controls, stricter sensitive-response caching, additional browser security headers, shared-hosting Apache guards and expanded production readiness checks. Use 0.1.4 for the stable line until this beta completes acceptance testing.
+Current development release: **0.4.0-rc.3**. This is the third Release Candidate for the 0.4.0 line, focused on NovaModern mobile hardening and administration navigation ordering. The code is feature-frozen; remaining work is limited to acceptance failures, security/reliability corrections, packaging and documentation. The currently published stable line remains separate until RC acceptance completes.
 
 ## Included in 0.1.0
 
@@ -42,9 +42,8 @@ The server document root must point to `public/`.
 
 ```bash
 composer install
-composer test
-php bin/cms release:check
-composer test:integration
+composer test:checkpoint
+php bin/cms rc:check
 ```
 
 Create a Laragon site whose document root is `C:\\dev\\www\\novanuke\\public`, then open its URL. An unconfigured copy redirects to `/install`.
@@ -112,6 +111,7 @@ For production SMTP and Bluehost guidance, see [docs/MAIL.md](docs/MAIL.md).
 - [Scheduled maintenance](docs/MAINTENANCE.md)
 - [Recovery](docs/RECOVERY.md)
 - [Release verification](docs/RELEASE.md)
+- [Release Candidate acceptance](docs/RC_ACCEPTANCE.md)
 - [Unit and integration testing](docs/TESTING.md)
 - [Known issues and technical debt](docs/KNOWN_ISSUES.md)
 - [NovaModern theme](docs/NOVAMODERN.md)
@@ -137,6 +137,6 @@ composer test
 
 For the isolated Laragon database suite, configure `.env.testing` and run `composer test:integration`. See [docs/TESTING.md](docs/TESTING.md).
 
-Never report a test as passing unless it was actually executed under PHP 8.3 or newer. This package remains alpha until its installer, update, permissions, SMTP and restore smoke-test matrix has been completed on the target environment.
+Never report a test as passing unless it was actually executed under PHP 8.3 or newer. A Release Candidate must also complete the documented fresh-install, upgrade, permissions, SMTP, backup/restore and production-readiness acceptance matrix on the target environment.
 
 Production deployment hardening: `docs/PRODUCTION_HARDENING.md`

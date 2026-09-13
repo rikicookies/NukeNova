@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['settings'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE settings (
+CREATE TABLE IF NOT EXISTS settings (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `key` VARCHAR(190) NOT NULL,
     `value` LONGTEXT NULL,

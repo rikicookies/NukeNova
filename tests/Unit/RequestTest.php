@@ -39,4 +39,26 @@ final class RequestTest extends TestCase
         self::assertSame('file.zip', $request->file('package')['name']);
         self::assertNull($request->file('missing'));
     }
+
+    public function testItCollapsesDotSegmentsBeforeRouting(): void
+    {
+        self::assertSame('/admin/users', Request::create('GET', '/news/../admin/./users')->path());
+    }
+
+    #[DataProvider('unsafeEncodedPaths')]
+    public function testItRejectsEncodedSeparatorsAndNullBytes(string $uri): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        Request::create('GET', $uri)->path();
+    }
+
+    public static function unsafeEncodedPaths(): array
+    {
+        return [
+            'encoded slash' => ['/admin%2Fusers'],
+            'encoded backslash' => ['/admin%5Cusers'],
+            'encoded null' => ['/admin%00/users'],
+        ];
+    }
+
 }

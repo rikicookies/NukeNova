@@ -2,16 +2,20 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+use NovaNuke\Core\Database\MigrationSchema;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_COLUMNS = ['pages'=>['content_format']];
     public function up(PDO $database): void
     {
-        $database->exec("ALTER TABLE pages ADD COLUMN content_format VARCHAR(20) NOT NULL DEFAULT 'html' AFTER content");
+        MigrationSchema::addColumn($database,'pages','content_format',"VARCHAR(20) NOT NULL DEFAULT 'html' AFTER content");
     }
 
     public function down(PDO $database): void
     {
-        $database->exec('ALTER TABLE pages DROP COLUMN content_format');
+        MigrationSchema::dropColumn($database,'pages','content_format');
     }
 };

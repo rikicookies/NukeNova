@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['wiki_attachments'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE wiki_attachments (
+CREATE TABLE IF NOT EXISTS wiki_attachments (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     wiki_page_id BIGINT UNSIGNED NOT NULL,
     uploaded_by BIGINT UNSIGNED NULL,

@@ -7,17 +7,25 @@ use NovaNuke\Core\Database\Migrator;
 use NovaNuke\Core\Database\MigrationStatus;
 use NovaNuke\Core\Backup\DatabaseBackup;
 use NovaNuke\Core\Backup\FileBackup;
+use NovaNuke\Core\Backup\FileBackupRestorer;
 use NovaNuke\Core\Backup\BackupVerifier;
+use NovaNuke\Core\Backup\BackupRecoveryCheck;
 use Modules\Downloads\src\DownloadOrphanCleaner;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
 use NovaNuke\Core\System\ProductionReadiness;
+use NovaNuke\Core\System\ReleaseCandidateDeploymentCheck;
 use NovaNuke\Core\System\DistributionSmokeCheck;
+use NovaNuke\Core\System\InstalledSiteHealthCheck;
+use NovaNuke\Core\System\ReleaseCandidateChecklist;
 use NovaNuke\Core\Maintenance\DataPruner;
 use NovaNuke\Core\Security\AuthorizationAudit;
 use NovaNuke\Core\Version;
+use NovaNuke\Core\Mail\MailConfigurationCheck;
+use NovaNuke\Core\Themes\ThemeDistributionCheck;
 use NovaNuke\Core\I18n\CatalogueAuditor;
 use NovaNuke\Installer\RequirementsChecker;
+use NovaNuke\Installer\StorageProvisioner;
 use NovaNuke\Core\Update\UpgradeReadiness;
 use NovaNuke\Core\Update\UpgradeCompletion;
 use NovaNuke\Core\Settings\SettingsRepository;
@@ -25,13 +33,26 @@ use NovaNuke\Core\Developer\ModuleScaffolder;
 use NovaNuke\Core\Developer\ModuleDiagnostic;
 use NovaNuke\Core\Developer\ModuleInspector;
 use NovaNuke\Core\Membership\MembershipHealthCheck;
+use NovaNuke\Core\Billing\PaymentHealthCheck;
 $command = $argv[1] ?? 'help';
 $rootPath = dirname(__DIR__);
 require_once $rootPath . '/vendor/autoload.php';
 $supportedUpgradeSources = [
     '0.2.0-alpha.33', '0.2.0-alpha.34', '0.2.0-alpha.35', '0.2.0-alpha.36',
-    '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9', Version::CURRENT,
+    '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9', '0.4.0-beta.10', '0.4.0-beta.11', '0.4.0-beta.12', '0.4.0-beta.13', '0.4.0-beta.14', '0.4.0-beta.15', '0.4.0-beta.16', '0.4.0-beta.17', '0.4.0-beta.18', '0.4.0-beta.19', '0.4.0-beta.20', '0.4.0-beta.21', '0.4.0-beta.22', '0.4.0-beta.23', '0.4.0-beta.24', '0.4.0-beta.25', '0.4.0-beta.26', '0.4.0-beta.27', '0.4.0-beta.28', '0.4.0-rc.1', '0.4.0-rc.2', Version::CURRENT,
 ];
+
+
+if ($command === 'rc:check') {
+    $checks=(new ReleaseCandidateChecklist($rootPath))->run();
+    $passed=true;
+    fwrite(STDOUT,'NovaNuke '.Version::CURRENT." release-candidate check\n\n");
+    foreach($checks as $check){
+        $passed=$passed&&$check['passed'];
+        fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+    }
+    exit($passed?0:1);
+}
 
 if ($command === 'release:check') {
     $checklist = new ReleaseChecklist($rootPath);
@@ -124,6 +145,57 @@ if ($command === 'backup:verify') {
     exit($passed ? 0 : 1);
 }
 
+
+if ($command === 'backup:restore-check') {
+    try{
+        $directory=$rootPath.'/storage/private/backups';
+        $verifier=new BackupVerifier($directory);
+        $checks=(new BackupRecoveryCheck($directory,$verifier,new FileBackupRestorer($verifier)))->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." backup recovery check\n\n");
+        foreach($checks as $check){
+            $passed=$passed&&$check['passed'];
+            fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+        }
+        exit($passed?0:1);
+    }catch(Throwable $error){
+        fwrite(STDERR,"Backup recovery check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'backup:restore-files') {
+    $arguments=array_slice($argv,2);
+    if(count($arguments)!==2){
+        fwrite(STDERR,"Usage: php bin/cms backup:restore-files --archive=PATH --destination=PATH\n");
+        exit(2);
+    }
+    $archive=null;
+    $destination=null;
+    foreach($arguments as $argument){
+        if(str_starts_with($argument,'--archive=')) $archive=substr($argument,10);
+        elseif(str_starts_with($argument,'--destination=')) $destination=substr($argument,14);
+        else{
+            fwrite(STDERR,"Usage: php bin/cms backup:restore-files --archive=PATH --destination=PATH\n");
+            exit(2);
+        }
+    }
+    if(!is_string($archive)||$archive===''||!is_string($destination)||$destination===''){
+        fwrite(STDERR,"Usage: php bin/cms backup:restore-files --archive=PATH --destination=PATH\n");
+        exit(2);
+    }
+    try{
+        $result=(new FileBackupRestorer(new BackupVerifier($rootPath.'/storage/private/backups')))
+            ->restore($archive,$destination);
+        fwrite(STDOUT,"File restore completed: {$destination}\n");
+        fwrite(STDOUT,"Files: {$result['files']}; restored bytes: {$result['bytes']}\n");
+        fwrite(STDOUT,"Restore target was required to be empty; source archive was verified before extraction.\n");
+        exit(0);
+    }catch(Throwable $error){
+        fwrite(STDERR,"File restore failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
 
 if ($command === 'module:inspect') {
     $arguments = array_slice($argv, 2);
@@ -244,11 +316,39 @@ if ($command === 'module:make') {
 }
 
 if ($command === 'help') {
-    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  install:check              Check requirements before web installation\n  upgrade:check --from=VER   Audit a supported upgrade before migration\n  upgrade:complete --from=VER  Record a successfully completed upgrade\n  migrate                    Run pending core database migrations\n  migrate:status             Inspect core and installed-module migrations\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  backup:verify              Verify the latest database and file backups\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  security:audit             Audit roles and authorization configuration\n  release:check              Audit distribution safety\n  release:smoke              Run release-package smoke checks\n  module:make NAME           Generate a safe Module API 1.0 scaffold\n  module:check MODULE        Statically inspect a module before installation\n  module:inspect MODULE      Show a module contract/extension inventory\n  module:list                List bundled/on-disk modules and contract counts\n  membership:check           Audit membership schema and grant integrity\n");
+    fwrite(STDOUT, 'NovaNuke ' . Version::CURRENT . " CLI\n\nAvailable commands:\n  install:check              Check requirements before web installation\n  site:check                 Audit an existing installed site\n  upgrade:check --from=VER   Audit a supported upgrade before migration\n  upgrade:complete --from=VER  Record a successfully completed upgrade\n  migrate                    Run pending core database migrations\n  migrate:recover [--module=SLUG]  Reconcile an interrupted Core or module migration\n  migrate:status             Inspect migrations and recovery state\n  backup:database            Create a private SQL database backup\n  backup:files               Back up modules, themes and uploaded files\n  backup:verify              Verify the latest database and file backups\n  backup:restore-check       Verify the latest pair and perform a disposable file restore\n  backup:restore-files --archive=PATH --destination=PATH  Restore a verified file archive into an empty directory\n  cache:clear                Remove generated cache files safely\n  cache:status               Inspect cache availability\n  i18n:check                 Validate English/Spanish catalogue parity\n  maintenance:prune          Remove expired and retained operational data\n  maintenance:prune --dry-run  Count eligible records without deleting them\n  downloads:orphans          Inspect unreferenced local download files\n  downloads:orphans --delete Remove eligible files after a 24-hour grace period\n  production:check           Audit the current production environment\n  rc:deployment              Aggregate production, auth, membership, payment, mail and theme RC checks\n  security:audit             Audit roles and authorization configuration\n  theme:check                Audit bundled theme package structure\n  mail:check                 Audit mail/SMTP configuration without sending mail\n  release:check              Audit distribution safety\n  release:smoke              Run release-package smoke checks\n  module:make NAME           Generate a safe Module API 1.0 scaffold\n  module:check MODULE        Statically inspect a module before installation\n  module:inspect MODULE      Show a module contract/extension inventory\n  module:list                List bundled/on-disk modules and contract counts\n  membership:check           Audit membership schema and grant integrity\n  payment:check              Audit optional payment receipt integrity\n");
     exit(0);
 }
 
+if ($command === 'theme:check') {
+    $checks=(new ThemeDistributionCheck($rootPath.'/themes'))->run();
+    $passed=true;
+    fwrite(STDOUT,'NovaNuke '.Version::CURRENT." theme distribution check\n\n");
+    foreach($checks as $check){
+        $passed=$passed&&$check['passed'];
+        fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+    }
+    exit($passed?0:1);
+}
+
 $application = require $rootPath . '/bootstrap/app.php';
+
+if ($command === 'mail:check') {
+    try{
+        $checks=$application->container()->get(MailConfigurationCheck::class)->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." mail configuration check\n\n");
+        foreach($checks as $check){
+            if($check['required']) $passed=$passed&&$check['passed'];
+            $label=$check['passed']?'PASS':($check['required']?'FAIL':'WARN');
+            fwrite($check['required']&&!$check['passed']?STDERR:STDOUT,"[{$label}] {$check['name']}: {$check['detail']}\n");
+        }
+        exit($passed?0:1);
+    }catch(Throwable $error){
+        fwrite(STDERR,"Mail configuration check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
 
 if ($command === 'upgrade:check') {
     $arguments = array_slice($argv, 2);
@@ -312,6 +412,9 @@ if ($command === 'upgrade:complete') {
             fwrite($check['required'] && ! $check['passed'] ? STDERR : STDOUT, "[{$label}] {$check['name']}: {$check['detail']}\n");
         }
         if (! $passed) exit(1);
+        // Upgrades from older releases may predate newer runtime directories.
+        // Provision the complete current storage contract before recording success.
+        (new StorageProvisioner())->provision($rootPath);
         $settings->setMany([
             'system.core_version' => ['value' => Version::CURRENT, 'type' => 'string', 'group' => 'system'],
             'system.core_updated_at' => ['value' => gmdate(DATE_ATOM), 'type' => 'string', 'group' => 'system'],
@@ -334,6 +437,40 @@ if (in_array($command, ['downloads:orphans', 'maintenance:prune'], true)) {
 }
 
 
+
+
+if ($command === 'site:check') {
+    try {
+        $checks=$application->container()->get(InstalledSiteHealthCheck::class)->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." installed-site check\n\n");
+        foreach($checks as $check){
+            $passed=$passed&&$check['passed'];
+            fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+        }
+        exit($passed?0:1);
+    } catch (Throwable $error) {
+        fwrite(STDERR,"Installed-site check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'payment:check') {
+    try {
+        $checks=$application->container()->get(PaymentHealthCheck::class)->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." payment check\n\n");
+        foreach($checks as $check){
+            $passed=$passed&&$check['passed'];
+            fwrite($check['passed']?STDOUT:STDERR,($check['passed']?'[PASS] ':'[FAIL] ').$check['name'].': '.$check['detail']."\n");
+        }
+        exit($passed?0:1);
+    } catch (Throwable $error) {
+        fwrite(STDERR,"Payment check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
 if ($command === 'membership:check') {
     try {
         $checks=$application->container()->get(MembershipHealthCheck::class)->run();
@@ -346,6 +483,28 @@ if ($command === 'membership:check') {
         exit($passed?0:1);
     } catch (Throwable $error) {
         fwrite(STDERR,"Membership check failed: {$error->getMessage()}\n");
+        exit(1);
+    }
+}
+
+if ($command === 'rc:deployment') {
+    try{
+        $checks=$application->container()->get(ReleaseCandidateDeploymentCheck::class)->run();
+        $passed=true;
+        fwrite(STDOUT,'NovaNuke '.Version::CURRENT." RC deployment preflight\n\n");
+        $currentGroup=null;
+        foreach($checks as $check){
+            if($currentGroup!==$check['group']){
+                $currentGroup=$check['group'];
+                fwrite(STDOUT,"\n[".strtoupper($currentGroup)."]\n");
+            }
+            if($check['required']) $passed=$passed&&$check['passed'];
+            $status=$check['passed']?'PASS':($check['required']?'FAIL':'WARN');
+            fwrite($check['required']&&!$check['passed']?STDERR:STDOUT,"[{$status}] {$check['name']}: {$check['detail']}\n");
+        }
+        exit($passed?0:1);
+    }catch(Throwable $error){
+        fwrite(STDERR,"RC deployment preflight failed: {$error->getMessage()}\n");
         exit(1);
     }
 }
@@ -366,7 +525,7 @@ if ($command === 'migrate') {
             $cause = preg_replace('/[\r\n]+/', ' ', $error->getPrevious()->getMessage()) ?? 'Unknown migration error.';
             fwrite(STDERR, "Cause: {$cause}\n");
         }
-        fwrite(STDERR, "Do not retry blindly. Restore the matching pre-upgrade database and files, then inspect migrate:status.\n");
+        fwrite(STDERR, "Inspect migrate:status, then run migrate:recover for an interrupted recoverable migration.\n");
         exit(1);
     }
 
@@ -379,6 +538,36 @@ if ($command === 'migrate') {
         fwrite(STDOUT, "Migrated: {$migration}\n");
     }
     exit(0);
+}
+
+if ($command === 'migrate:recover') {
+    $arguments = array_slice($argv, 2);
+    if (count($arguments) > 1 || ($arguments !== [] && ! str_starts_with($arguments[0], '--module='))) {
+        fwrite(STDERR, "Usage: php bin/cms migrate:recover [--module=SLUG]\n");
+        exit(2);
+    }
+    try {
+        if ($arguments === []) {
+            $completed = (new Migrator($application->container()->get(\PDO::class)))
+                ->recover(NOVANUKE_ROOT . '/database/migrations');
+            $scope = 'core';
+        } else {
+            $slug = substr($arguments[0], strlen('--module='));
+            if (preg_match('/^[a-z][a-z0-9-]{0,99}$/', $slug) !== 1) {
+                fwrite(STDERR, "Invalid module slug.\n");
+                exit(2);
+            }
+            $completed = $application->container()->get(\NovaNuke\Core\Modules\ModuleManager::class)->recover($slug);
+            $scope = 'module ' . $slug;
+        }
+        if ($completed === []) fwrite(STDOUT, "No interrupted {$scope} migration requires recovery.\n");
+        foreach ($completed as $migration) fwrite(STDOUT, "Recovered: {$scope}.{$migration}\n");
+        exit(0);
+    } catch (Throwable $error) {
+        fwrite(STDERR, "Migration recovery failed: {$error->getMessage()}\n");
+        if ($error->getPrevious() !== null) fwrite(STDERR, "Cause: " . preg_replace('/[\r\n]+/', ' ', $error->getPrevious()->getMessage()) . "\n");
+        exit(1);
+    }
 }
 
 if ($command === 'migrate:status') {
@@ -394,8 +583,11 @@ if ($command === 'migrate:status') {
             foreach ($module['pending'] as $name) fwrite(STDOUT, "  [PENDING] {$slug}.{$name}\n");
             foreach ($module['missing_files'] as $name) fwrite(STDOUT, "  [MISSING] {$slug}.{$name}\n");
         }
-        fwrite(STDOUT, "Pending: {$status['pending_total']}; missing files: {$status['missing_total']}; module updates: {$status['module_updates_total']}.\n");
-        exit($status['pending_total'] === 0 && $status['missing_total'] === 0 && $status['module_updates_total'] === 0 ? 0 : 1);
+        foreach ($status['recovery'] ?? [] as $operation) {
+            fwrite(STDOUT, "  [" . strtoupper((string)$operation['state']) . "] {$operation['scope']}.{$operation['migration']} ({$operation['direction']}); attempts {$operation['attempts']}\n");
+        }
+        fwrite(STDOUT, "Pending: {$status['pending_total']}; missing files: {$status['missing_total']}; recovery: " . (int)($status['recovery_total']??0) . "; module updates: {$status['module_updates_total']}.\n");
+        exit($status['pending_total'] === 0 && $status['missing_total'] === 0 && (int)($status['recovery_total']??0) === 0 && $status['module_updates_total'] === 0 ? 0 : 1);
     } catch (Throwable $error) {
         fwrite(STDERR, "Migration status failed: {$error->getMessage()}\n");
         exit(1);

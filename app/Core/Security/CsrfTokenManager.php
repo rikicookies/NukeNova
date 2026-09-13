@@ -26,7 +26,12 @@ final class CsrfTokenManager
 
     public function validate(mixed $provided): bool
     {
-        return is_string($provided) && hash_equals($this->token(), $provided);
+        if (! is_string($provided) || strlen($provided) !== 64 || ! ctype_xdigit($provided)) {
+            return false;
+        }
+        $stored = $this->session->get(self::SESSION_KEY);
+        return is_string($stored) && strlen($stored) === 64 && ctype_xdigit($stored)
+            && hash_equals($stored, $provided);
     }
 
     public function rotate(): string

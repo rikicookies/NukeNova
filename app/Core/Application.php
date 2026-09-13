@@ -27,6 +27,7 @@ use NovaNuke\Core\Http\Routing\Router;
 use NovaNuke\Core\Mail\LogMailer;
 use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Mail\SmtpConfiguration;
+use NovaNuke\Core\Mail\MailConfigurationCheck;
 use NovaNuke\Core\Mail\SmtpMailer;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\Security\AuthorizationService;
@@ -45,6 +46,7 @@ use NovaNuke\Core\Modules\ModuleMigrator;
 use NovaNuke\Core\Modules\ModuleRepository;
 use NovaNuke\Core\Themes\ThemeAssetPublisher;
 use NovaNuke\Core\Themes\ThemeDetector;
+use NovaNuke\Core\Themes\ThemeDistributionCheck;
 use NovaNuke\Core\Themes\ThemeManager;
 use NovaNuke\Core\Themes\ThemeRepository;
 use NovaNuke\Core\Blocks\BlockManager;
@@ -61,6 +63,9 @@ use NovaNuke\Core\Menus\MenuUrlResolver;
 use NovaNuke\Core\System\SystemInspector;
 use NovaNuke\Core\Backup\DatabaseBackup;
 use NovaNuke\Core\Backup\FileBackup;
+use NovaNuke\Core\Backup\BackupVerifier;
+use NovaNuke\Core\Backup\FileBackupRestorer;
+use NovaNuke\Core\Backup\BackupRecoveryCheck;
 use NovaNuke\Core\System\MaintenanceMode;
 use NovaNuke\Core\System\PrivateSiteAccessPolicy;
 use NovaNuke\Core\System\PasswordChangeAccessPolicy;
@@ -69,7 +74,10 @@ use NovaNuke\Core\Security\AdminAccessGate;
 use NovaNuke\Core\Cache\CacheManager;
 use NovaNuke\Core\System\ReleaseChecklist;
 use NovaNuke\Core\System\ProductionReadiness;
+use NovaNuke\Core\System\DeploymentSecretCheck;
+use NovaNuke\Core\System\ReleaseCandidateDeploymentCheck;
 use NovaNuke\Core\System\DistributionSmokeCheck;
+use NovaNuke\Core\System\InstalledSiteHealthCheck;
 use NovaNuke\Core\Admin\AdminDashboardService;
 use NovaNuke\Core\Admin\AdminNavigationManager;
 use NovaNuke\Core\I18n\Translator;
@@ -86,6 +94,11 @@ use NovaNuke\Core\Membership\MembershipHealthCheck;
 use NovaNuke\Core\Membership\MembershipPlanCatalog;
 use NovaNuke\Core\Membership\MembershipExpirationProcessor;
 use NovaNuke\Core\Membership\MembershipActivationProcessor;
+use NovaNuke\Core\Billing\PaymentProviderRegistry;
+use NovaNuke\Core\Billing\PaymentReceiptRepository;
+use NovaNuke\Core\Billing\MembershipPaymentProvisioner;
+use NovaNuke\Core\Billing\PaymentHealthCheck;
+use NovaNuke\Core\Membership\MembershipProvisionerInterface;
 use NovaNuke\Core\Access\AccessAudience;
 use NovaNuke\Core\Modules\ModuleRouteAccess;
 use PDO;
@@ -105,6 +118,7 @@ final class Application
     {
         $container = new Container();
         $config = (new ConfigLoader($rootPath . '/config'))->load();
+        $installed = is_file($rootPath . '/storage/installed.lock');
 
         date_default_timezone_set((string) $config->get('app.timezone', 'UTC'));
 
@@ -121,6 +135,8 @@ final class Application
                 (int) $config->get('session.lifetime', 7200),
                 (int) $config->get('session.idle_timeout', 1800),
                 (int) $config->get('session.rotation_interval', 900),
+                (string) $config->get('session.path', '/'),
+                (string) $config->get('session.domain', ''),
             );
             $session->start();
 
@@ -162,6 +178,9 @@ final class Application
             }
             throw new \RuntimeException("Unsupported mailer: {$mailer}");
         });
+        $container->bind(MailConfigurationCheck::class, static fn (Container $c) => new MailConfigurationCheck(
+            $c->get(ConfigRepository::class),
+        ));
         $container->bind(PasswordResetService::class, static fn (Container $c) => new PasswordResetService(
             $c->get(PDO::class),
             $c->get(Mailer::class),
@@ -212,6 +231,21 @@ final class Application
         $container->bind(MembershipActivationProcessor::class, static fn (Container $c) => new MembershipActivationProcessor($c->get(PDO::class), $c->get(EventDispatcher::class)));
         $container->bind(MembershipExpirationProcessor::class, static fn (Container $c) => new MembershipExpirationProcessor($c->get(PDO::class), $c->get(EventDispatcher::class)));
         $container->bind(MembershipManagerInterface::class, static fn (Container $c) => $c->get(MembershipService::class));
+        $container->bind(MembershipProvisionerInterface::class, static fn (Container $c) => $c->get(MembershipService::class));
+        $container->instance(PaymentProviderRegistry::class, new PaymentProviderRegistry());
+        $container->bind(PaymentReceiptRepository::class, static fn (Container $c) => new PaymentReceiptRepository($c->get(PDO::class)));
+        $container->bind(MembershipPaymentProvisioner::class, static fn (Container $c) => new MembershipPaymentProvisioner(
+            $c->get(PDO::class),
+            $c->get(PaymentProviderRegistry::class),
+            $c->get(PaymentReceiptRepository::class),
+            $c->get(MembershipProvisionerInterface::class),
+        ));
+        $container->bind(PaymentHealthCheck::class, static fn (Container $c) => new PaymentHealthCheck(
+            $c->get(PDO::class),
+            $c->get(MembershipPlanCatalog::class),
+            $c->get(PaymentProviderRegistry::class),
+        ));
+
         $container->bind(AccessAudience::class, static fn (Container $c) => new AccessAudience($c->get(MembershipManagerInterface::class)));
         $container->bind(ModuleRouteAccess::class, static fn (Container $c) => new ModuleRouteAccess(new ModuleRepository($c->get(PDO::class)), $c->get(AccessAudience::class), $c->get(AuthManager::class)));
         $container->bind(ContentRendererInterface::class, static fn () => new ContentRenderer(
@@ -306,12 +340,38 @@ final class Application
             $rootPath,
             $rootPath . '/storage/private/backups',
         ));
+        $container->bind(BackupVerifier::class, static fn () => new BackupVerifier($rootPath . '/storage/private/backups'));
+        $container->bind(FileBackupRestorer::class, static fn (Container $c) => new FileBackupRestorer($c->get(BackupVerifier::class)));
+        $container->bind(BackupRecoveryCheck::class, static fn (Container $c) => new BackupRecoveryCheck(
+            $rootPath . '/storage/private/backups',
+            $c->get(BackupVerifier::class),
+            $c->get(FileBackupRestorer::class),
+        ));
         $container->bind(CacheManager::class, static fn () => new CacheManager(
             $rootPath . '/storage/cache',
         ));
         $container->bind(ReleaseChecklist::class, static fn () => new ReleaseChecklist($rootPath));
         $container->bind(ProductionReadiness::class, static fn (Container $c) => new ProductionReadiness($c->get(ConfigRepository::class), $rootPath));
+        $container->bind(ThemeDistributionCheck::class, static fn () => new ThemeDistributionCheck($rootPath . '/themes'));
+        $container->bind(DeploymentSecretCheck::class, static fn (Container $c) => new DeploymentSecretCheck($c->get(ConfigRepository::class)));
+        $container->bind(ReleaseCandidateDeploymentCheck::class, static fn (Container $c) => new ReleaseCandidateDeploymentCheck(
+            $c->get(InstalledSiteHealthCheck::class),
+            $c->get(ProductionReadiness::class),
+            $c->get(BackupRecoveryCheck::class),
+            $c->get(AuthorizationAudit::class),
+            $c->get(MembershipHealthCheck::class),
+            $c->get(PaymentHealthCheck::class),
+            $c->get(MailConfigurationCheck::class),
+            $c->get(ThemeDistributionCheck::class),
+            $c->get(DeploymentSecretCheck::class),
+        ));
+
         $container->bind(DistributionSmokeCheck::class, static fn () => new DistributionSmokeCheck($rootPath));
+        $container->bind(InstalledSiteHealthCheck::class, static fn (Container $c) => new InstalledSiteHealthCheck(
+            $rootPath,
+            $c->get(SettingsRepository::class),
+            $c->get(MigrationStatus::class),
+        ));
         $container->bind(DataPruner::class, static fn (Container $c) => new DataPruner(
             $c->get(PDO::class), $c->get(EventDispatcher::class),
             $c->get(MembershipActivationProcessor::class), $c->get(MembershipExpirationProcessor::class),
@@ -325,6 +385,7 @@ final class Application
             $c->get(AuthorizationService::class),
             $c->get(EventDispatcher::class),
             $c->get(ViewRenderer::class),
+            $c->get(SettingsRepository::class),
         ));
         $container->bind(MaintenanceMode::class, static fn (Container $c) => new MaintenanceMode(
             $c->get(SettingsRepository::class),
@@ -336,11 +397,12 @@ final class Application
             $c->get(Router::class),
             $c->get(ErrorHandler::class),
             $c->get(SecurityHeaders::class),
-            $c->get(MaintenanceMode::class),
-            $c->get(AdminAccessGate::class),
+            $installed ? $c->get(MaintenanceMode::class) : null,
+            $installed ? $c->get(AdminAccessGate::class) : null,
             new PrivateSiteAccessPolicy(),
             new PasswordChangeAccessPolicy(),
-            $c->get(ModuleRouteAccess::class),
+            $installed ? $c->get(ModuleRouteAccess::class) : null,
+            $installed,
         ));
 
         $container->get(ViewRenderer::class)->addGlobal('cms_version', self::VERSION);

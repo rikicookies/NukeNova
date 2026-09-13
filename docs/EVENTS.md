@@ -62,3 +62,5 @@ The Event API does not make delivery asynchronous and does not turn notification
 - `membership.schedule_cancelled` → `NovaNuke\Core\Membership\MembershipScheduleCancelled`
 
 - `membership.activated` → `NovaNuke\Core\Membership\MembershipActivated`
+
+- `membership.extended` → `NovaNuke\Core\Membership\MembershipExtended`

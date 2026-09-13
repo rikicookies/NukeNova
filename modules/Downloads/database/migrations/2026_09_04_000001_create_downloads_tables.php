@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['download_categories','downloads','download_role_access','download_events','download_reports'];
+    private const MIGRATION_VALUES = [['download_categories','slug','general']];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
@@ -90,7 +94,7 @@ CREATE TABLE IF NOT EXISTS download_reports (
     CONSTRAINT download_reports_user_fk FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
-        $category = $database->prepare('INSERT INTO download_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP())');
+        $category = $database->prepare('INSERT INTO download_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE name=VALUES(name),description=VALUES(description)');
         $category->execute(['name' => 'General', 'slug' => 'general', 'description' => 'General downloads.']);
     }
 

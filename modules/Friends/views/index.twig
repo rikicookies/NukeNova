@@ -1,26 +1,35 @@
 {% extends "layouts/default.twig" %}
 {% block title %}Friends — NovaNuke{% endblock %}
 {% block content %}
-<section class="friends-page">
-    <p class="eyebrow">Contacts</p><h1>Friends</h1>
+<section class="friends-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Friends'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Contacts', title: 'Friends', description: 'Manage accepted friends, incoming requests, sent requests and blocked users.'} only %}
     {% include "auth/_social-nav.twig" %}
     {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
     {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
     {% set groups={'Friend requests':received,'Friends':friends,'Sent requests':sent,'Blocked users':blocked} %}
     {% for title,people in groups %}
-        <h2>{{ title }}</h2><div class="user-grid">
-        {% for person in people %}
+    <section class="module-section">
+        <div class="module-section-heading"><div><h2>{{ title }}</h2><p>{{ people|length }} {{ people|length == 1 ? 'person' : 'people' }}</p></div></div>
+        {% if people %}
+        <div class="user-grid">
+            {% for person in people %}
             <article class="dashboard-card">
                 {% if person.avatar_path %}<img class="profile-avatar" src="{{ person.avatar_path }}" alt="">{% endif %}
-                <h3><a href="/users/{{ person.username }}">{{ person.display_name|default(person.username,true) }}</a></h3><p>@{{ person.username }}</p>
+                <h3><a href="/users/{{ person.username }}">{{ person.display_name|default(person.username,true) }}</a></h3>
+                <p>@{{ person.username }}</p>
                 <div class="profile-actions">
-                    {% if title == 'Friend requests' %}<form method="post" action="/friends/accept/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Accept</button></form><form method="post" action="/friends/decline/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Decline</button></form>
-                    {% elseif title == 'Friends' %}<form method="post" action="/friends/remove/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Remove</button></form>
+                    {% if title == 'Friend requests' %}<form method="post" action="/friends/accept/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Accept</button></form><form method="post" action="/friends/decline/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Decline</button></form>
+                    {% elseif title == 'Friends' %}<a class="module-link-button" href="/messages/compose?recipient={{ person.username|url_encode }}">Message</a><form method="post" action="/friends/remove/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Remove</button></form>
                     {% elseif title == 'Blocked users' %}<form method="post" action="/friends/unblock/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Unblock</button></form>{% endif %}
                 </div>
             </article>
-        {% else %}<p>None.</p>{% endfor %}
+            {% endfor %}
         </div>
+        {% else %}
+            {% include 'components/empty-state.twig' with {title: 'Nothing here yet', message: title == 'Friends' ? 'Accepted friends will appear here.' : 'There are no users in this section.'} only %}
+        {% endif %}
+    </section>
     {% endfor %}
 </section>
 {% endblock %}

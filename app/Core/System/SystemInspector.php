@@ -76,6 +76,7 @@ final class SystemInspector
         $migrationStatus = $this->migrations->inspect();
         if ($migrationStatus['pending_total'] > 0) $warnings[] = 'Database migrations are pending.';
         if ($migrationStatus['missing_total'] > 0) $warnings[] = 'Executed migration files are missing from this release.';
+        if (($migrationStatus['recovery_total'] ?? 0) > 0) $warnings[] = 'An interrupted migration requires explicit recovery.';
         if ($migrationStatus['module_updates_total'] > 0) $warnings[] = 'Installed module updates are available.';
 
         return [

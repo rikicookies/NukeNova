@@ -125,6 +125,78 @@ final class MenuRepository
         }
     }
 
+
+    /** @param list<array{id:int,children:list<mixed>}> $tree */
+    public function reorderItems(int $menuId, array $tree): void
+    {
+        $this->assertMenu($menuId);
+
+        $statement = $this->database->prepare(
+            'SELECT id,parent_id FROM menu_items WHERE menu_id=:menu ORDER BY id'
+        );
+        $statement->execute(['menu' => $menuId]);
+        $rows = $statement->fetchAll();
+
+        $expected = [];
+        $parents = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            $expected[$id] = true;
+            $parents[$id] = $row['parent_id'] === null ? null : (int) $row['parent_id'];
+        }
+
+        $orders = [];
+        $seen = [];
+        $walk = function (array $nodes, ?int $parentId) use (&$walk, &$orders, &$seen, $expected, $parents): void {
+            foreach ($nodes as $index => $node) {
+                if (! is_array($node)) {
+                    throw new RuntimeException('Invalid menu order payload.');
+                }
+                $id = filter_var($node['id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                if ($id === false || ! isset($expected[(int) $id]) || isset($seen[(int) $id])) {
+                    throw new RuntimeException('Invalid menu order payload.');
+                }
+                if (($parents[(int) $id] ?? null) !== $parentId) {
+                    throw new RuntimeException('Menu items can only be reordered within their existing parent level.');
+                }
+
+                $seen[(int) $id] = true;
+                $orders[] = ['id' => (int) $id, 'sort_order' => ($index + 1) * 10];
+                $children = $node['children'] ?? [];
+                if (! is_array($children)) {
+                    throw new RuntimeException('Invalid menu order payload.');
+                }
+                $walk($children, (int) $id);
+            }
+        };
+        $walk($tree, null);
+
+        if (count($seen) !== count($expected)) {
+            throw new RuntimeException('The submitted menu order does not match the menu items.');
+        }
+
+        $this->database->beginTransaction();
+        try {
+            $update = $this->database->prepare(
+                'UPDATE menu_items SET sort_order=:sort_order,updated_at=UTC_TIMESTAMP() '
+                . 'WHERE id=:id AND menu_id=:menu'
+            );
+            foreach ($orders as $order) {
+                $update->execute([
+                    'sort_order' => $order['sort_order'],
+                    'id' => $order['id'],
+                    'menu' => $menuId,
+                ]);
+            }
+            $this->database->commit();
+        } catch (\Throwable $error) {
+            if ($this->database->inTransaction()) {
+                $this->database->rollBack();
+            }
+            throw $error;
+        }
+    }
+
     public function deleteMenu(int $id): void
     {
         $statement = $this->database->prepare('DELETE FROM menus WHERE id=:id');

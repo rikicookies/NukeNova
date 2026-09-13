@@ -1,1 +1,10 @@
-{% extends "layouts/default.twig" %}{% block title %}Sent messages — NovaNuke{% endblock %}{% block content %}<section class="messages-page"><p class="eyebrow">Account</p><h1>Sent</h1>{% include "@private-messages/_nav.twig" %}<div class="message-list">{% for item in messages %}<a class="message-row" href="/messages/{{ item.conversation_id }}"><strong>{{ item.subject }}</strong><span>To {{ item.recipient }}</span><small>{{ item.body_text|slice(0,120) }} · {{ item.created_at }}</small></a>{% else %}<p>No sent messages.</p>{% endfor %}</div></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}Sent messages — NovaNuke{% endblock %}
+{% block content %}
+<section class="messages-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Messages', url: '/messages'}, {label: 'Sent'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Account', title: 'Sent messages', description: 'Messages you have sent to other members.'} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if messages %}<div class="message-list surface-list">{% for item in messages %}<a class="message-row" href="/messages/{{ item.conversation_id }}"><strong>{{ item.subject }}</strong><span>To {{ item.recipient }}</span><small>{{ item.created_at }}</small></a>{% endfor %}</div>{% else %}{% include 'components/empty-state.twig' with {title: 'No sent messages', message: 'Messages you send will be listed here.', action_url: '/messages/compose', action_label: 'Write a message'} only %}{% endif %}
+</section>
+{% endblock %}

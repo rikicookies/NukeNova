@@ -9,4 +9,6 @@ return [
     'lifetime' => (int) env('SESSION_LIFETIME', '7200'),
     'idle_timeout' => (int) env('SESSION_IDLE_TIMEOUT', '1800'),
     'rotation_interval' => (int) env('SESSION_ROTATION_INTERVAL', '900'),
+    'path' => env('SESSION_PATH', '/'),
+    'domain' => env('SESSION_DOMAIN', ''),
 ];

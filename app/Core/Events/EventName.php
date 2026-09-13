@@ -25,6 +25,7 @@ final class EventName
     public const MAINTENANCE_PRUNING = 'maintenance.pruning';
     public const MEDIA_USAGE_CHECKING = 'media.usage.checking';
     public const MEMBERSHIP_ASSIGNED = 'membership.assigned';
+    public const MEMBERSHIP_EXTENDED = 'membership.extended';
     public const MEMBERSHIP_ACTIVATED = 'membership.activated';
     public const MEMBERSHIP_REVOKED = 'membership.revoked';
     public const MEMBERSHIP_SCHEDULED = 'membership.scheduled';

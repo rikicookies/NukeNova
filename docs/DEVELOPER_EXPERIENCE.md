@@ -15,7 +15,7 @@ The command refuses invalid names and refuses to overwrite an existing module di
 After generation:
 
 1. inspect `module.json` and replace the placeholder author/description;
-2. implement services in `src/` and schema changes in `database/migrations/`;
+2. implement services in `src/` and repeat-safe, postcondition-verified schema changes in `database/migrations/`;
 3. keep route names, permissions, translations and event names namespaced;
 4. install and enable the module from Admin only after its migrations and permissions are ready;
 5. add unit/contract tests before distributing it.

@@ -26,16 +26,45 @@ final class MigrationSafetyContractTest extends TestCase
         self::assertStringContainsString('No later migration was run.', $source);
     }
 
-    public function testCliReportsRecoveryWithoutAttemptingAutomaticRollback(): void
+    public function testCliExposesExplicitRecoveryAndNeverAttemptsAutomaticCoreRollback(): void
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/cms');
         $start = strpos($source, "if (\$command === 'migrate')");
         $end = strpos($source, "if (\$command === 'migrate:status')", $start);
         $section = substr($source, $start, $end - $start);
 
-        self::assertStringContainsString('Do not retry blindly.', $section);
+        self::assertStringContainsString('migrate:recover', $section);
         self::assertStringContainsString('getPrevious()', $section);
-        self::assertStringContainsString('matching pre-upgrade database and files', $section);
         self::assertStringNotContainsString('->down(', $section);
+    }
+
+    public function testRecoveryUsesDurableStatesChecksumsAndSharedMysqlLock(): void
+    {
+        $root=dirname(__DIR__,2);
+        $store=(string)file_get_contents($root.'/app/Core/Database/MigrationOperationStore.php');
+        $executor=(string)file_get_contents($root.'/app/Core/Database/MigrationExecutor.php');
+        $lock=(string)file_get_contents($root.'/app/Core/Database/MigrationLock.php');
+
+        self::assertStringContainsString('migration_operations',$store);
+        self::assertStringContainsString("'running'",$store);
+        self::assertStringContainsString("'dirty'",$store);
+        self::assertStringContainsString("'completed'",$store);
+        self::assertStringContainsString("hash_file('sha256'",$executor);
+        self::assertStringContainsString('GET_LOCK',$lock);
+        self::assertStringContainsString('RELEASE_LOCK',$lock);
+    }
+
+    public function testEveryBundledMigrationDeclaresRecoverablePostconditions(): void
+    {
+        $root=dirname(__DIR__,2);
+        $files=array_merge(
+            glob($root.'/database/migrations/*.php')?:[],
+            glob($root.'/modules/*/database/migrations/*.php')?:[],
+        );
+        self::assertNotEmpty($files);
+        foreach($files as$file){
+            $migration=require$file;
+            self::assertInstanceOf(\NovaNuke\Core\Database\RecoverableMigration::class,$migration,$file);
+        }
     }
 }

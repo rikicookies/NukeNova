@@ -4,26 +4,20 @@
 <section class="admin-page">
     {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Demo Content'}]} only %}
     {% include 'components/page-header.twig' with {eyebrow: 'System', title: 'NovaTech Community Demo', description: 'Development and demonstration dataset for visual review and manual QA.'} only %}
-    <p><strong>Development / demonstration only.</strong> Installs fictional users and realistic technology content for visual review and manual QA.</p>
+    <div class="notice-message"><strong>Development / demonstration only.</strong> Installs fictional users and realistic technology content for visual review and manual QA.</div>
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
     <dl class="system-list">
         <div><dt>Dataset</dt><dd><code>{{ dataset }}</code></dd></div>
-        <div><dt>Status</dt><dd>{{ state ? state.status : 'Not installed' }}</dd></div>
+        <div><dt>Status</dt><dd><span class="badge {{ state ? 'badge-active' : '' }}">{{ state ? state.status : 'Not installed' }}</span></dd></div>
         {% if state and state.installed_at %}<div><dt>Installed</dt><dd>{{ state.installed_at }}</dd></div>{% endif %}
     </dl>
     {% if state %}
-        <h2>Installed content</h2>
-        <ul>{% for type, count in state.counts %}<li>{{ type }}: {{ count }}</li>{% else %}<li>No counts recorded.</li>{% endfor %}</ul>
+        <section class="module-section"><div class="module-section-heading"><div><h2>Installed content</h2><p>Counts recorded when the demonstration dataset was installed.</p></div></div><div class="module-metric-grid">{% for type, count in state.counts %}<article class="module-metric"><strong>{{ count }}</strong><span>{{ type|replace({'_':' '})|title }}</span></article>{% else %}{% include 'components/empty-state.twig' with {title: 'No counts recorded', message: 'The demo state exists but no item counts were stored.'} only %}{% endfor %}</div></section>
     {% else %}
-        <h2>Module coverage</h2>
-        <ul>{% for module, available in available_modules %}<li>{{ module }}: {{ available ? 'Available' : 'Skipped (module inactive)' }}</li>{% endfor %}</ul>
-        <p>All 12 fictional accounts use the temporary password <code>{{ demo_password }}</code> and must change it after sign-in.</p>
-        <form class="settings-form" method="post" action="/admin/system/demo-content/install">
-            <input type="hidden" name="_token" value="{{ csrf_token }}">
-            <label><input type="checkbox" name="confirm_install" value="1" required> I understand this creates demonstration accounts and content.</label>
-            <button type="submit">Install Demo Content</button>
-        </form>
+        <section class="module-section"><div class="module-section-heading"><div><h2>Module coverage</h2><p>Only active compatible modules receive demonstration content.</p></div></div><div class="surface-list">{% for module, available in available_modules %}<div class="surface-card"><div class="surface-card-meta"><span class="badge {{ available ? 'badge-active' : '' }}">{{ available ? 'Available' : 'Skipped' }}</span></div><strong>{{ module }}</strong></div>{% endfor %}</div></section>
+        <div class="notice-message">All 12 fictional accounts use the temporary password <code>{{ demo_password }}</code> and must change it after sign-in.</div>
+        <form class="settings-form" method="post" action="/admin/system/demo-content/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><label class="toggle-row"><input type="checkbox" name="confirm_install" value="1" required><span><strong>Confirm demo installation</strong><small>I understand this creates demonstration accounts and content.</small></span></label><button type="submit">Install Demo Content</button></form>
     {% endif %}
 </section>
 {% endblock %}

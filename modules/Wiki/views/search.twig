@@ -9,6 +9,6 @@
         <button type="submit">{{ trans('wiki::action.search') }}</button>
     </form>
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
-    {% if searched %}<div class="page-directory-grid">{% for page in results %}<article><h2><a href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}">{{ page.title }}</a></h2><small>{{ page.updated_at|date(cms_date_format, cms_timezone) }}{% if page.audience != 'public' %} · {{ page.audience == 'vip' ? 'VIP' : 'Members' }}{% endif %}</small></article>{% else %}<p>{{ trans('wiki::search.empty') }}</p>{% endfor %}</div>{% endif %}
+    {% if searched %}<div class="page-directory-grid">{% for page in results %}<article><h2><a href="/wiki/{{ page.namespace ? page.namespace ~ ':' : '' }}{{ page.slug }}">{{ page.title }}</a></h2><small>{{ page.updated_at|date(cms_date_format, cms_timezone) }}{% if page.audience != 'public' %} · {{ page.audience == 'vip' ? 'VIP' : 'Members' }}{% endif %}</small></article>{% else %}{% include 'components/empty-state.twig' with {title: trans('wiki::search.empty'), message: 'Try broader words or return to the wiki directory.'} only %}{% endfor %}</div>{% endif %}
 </section>
 {% endblock %}

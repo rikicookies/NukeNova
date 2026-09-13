@@ -30,4 +30,20 @@ final class DownloadUploadValidatorTest extends TestCase
             (new DownloadUploadValidator())->validate(['error' => UPLOAD_ERR_OK, 'tmp_name' => $path, 'name' => 'payload.php', 'size' => filesize($path)]);
         } finally { @unlink($path); }
     }
+
+    public function testItRejectsFakeZipContentEvenWhenNamedZip(): void
+    {
+        $path = tempnam(sys_get_temp_dir(), 'nova-upload-');
+        file_put_contents($path, 'not a zip archive');
+        try {
+            $this->expectException(RuntimeException::class);
+            (new DownloadUploadValidator())->validate([
+                'error' => UPLOAD_ERR_OK,
+                'tmp_name' => $path,
+                'name' => 'archive.zip',
+                'size' => filesize($path),
+            ]);
+        } finally { @unlink($path); }
+    }
+
 }

@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['demo_content_datasets','demo_content_items'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE demo_content_datasets (
+CREATE TABLE IF NOT EXISTS demo_content_datasets (
     dataset_id VARCHAR(100) PRIMARY KEY,
     status VARCHAR(20) NOT NULL,
     counts JSON NULL,
@@ -21,7 +24,7 @@ CREATE TABLE demo_content_datasets (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
         $database->exec(<<<'SQL'
-CREATE TABLE demo_content_items (
+CREATE TABLE IF NOT EXISTS demo_content_items (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     dataset_id VARCHAR(100) NOT NULL,
     resource_type VARCHAR(80) NOT NULL,

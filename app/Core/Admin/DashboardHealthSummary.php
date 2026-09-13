@@ -14,6 +14,7 @@ final class DashboardHealthSummary
         $migrations = is_array($system['migrations'] ?? null) ? $system['migrations'] : [];
         $pending = (int) ($migrations['pending_total'] ?? 0);
         $missing = (int) ($migrations['missing_total'] ?? 0);
+        $recovery = (int) ($migrations['recovery_total'] ?? 0);
         $updates = (int) ($migrations['module_updates_total'] ?? 0);
         $unwritable = count(array_filter(
             is_array($system['writable'] ?? null) ? $system['writable'] : [],
@@ -30,8 +31,8 @@ final class DashboardHealthSummary
             ),
             $this->check(
                 'Database state',
-                $missing > 0 ? "{$missing} missing migration file(s)" : ($pending + $updates > 0 ? ($pending + $updates) . ' pending change(s)' : 'Up to date'),
-                $missing > 0 ? 'error' : ($pending + $updates > 0 ? 'warning' : 'ok'),
+                $recovery > 0 ? "{$recovery} migration recovery operation(s)" : ($missing > 0 ? "{$missing} missing migration file(s)" : ($pending + $updates > 0 ? ($pending + $updates) . ' pending change(s)' : 'Up to date')),
+                $recovery + $missing > 0 ? 'error' : ($pending + $updates > 0 ? 'warning' : 'ok'),
                 '/admin/system',
             ),
             $this->check(

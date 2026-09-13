@@ -39,4 +39,13 @@ final class SecurityHeadersTest extends TestCase
 
         self::assertNull($response->header('Content-Security-Policy'));
     }
+
+    public function testProductionHttpsCspUpgradesInsecureRequests(): void
+    {
+        $response=(new SecurityHeaders(true,false,31536000,'https://example.test','production'))
+            ->apply(Response::html('ok'));
+
+        self::assertStringContainsString('upgrade-insecure-requests',(string)$response->header('Content-Security-Policy'));
+    }
+
 }

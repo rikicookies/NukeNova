@@ -34,14 +34,15 @@ final class ProductionHardeningContractTest extends TestCase
         self::assertStringContainsString('Cross-Origin-Resource-Policy', $uploads);
     }
 
-    public function testBetaOneIntroducesNoDatabaseMigration(): void
+    public function testBetaOneMigrationContractDoesNotRejectLaterBetaTwoMigrations(): void
     {
         $root = dirname(__DIR__, 2);
         $migrationNames = array_map('basename', glob($root . '/database/migrations/*.php') ?: []);
 
         foreach ($migrationNames as $name) {
             self::assertStringNotContainsString('beta', strtolower($name));
-            self::assertStringNotContainsString('2026_09_10', $name);
         }
-    }
-}
+
+        self::assertContains('2026_09_08_000015_create_user_entitlements.php', $migrationNames);
+        self::assertContains('2026_09_10_000018_add_membership_metadata.php', $migrationNames);
+    }}

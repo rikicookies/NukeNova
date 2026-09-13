@@ -4,9 +4,9 @@
 
 ```bash
 composer validate
-composer test
-composer test:integration
-php bin/cms release:check
+composer test:checkpoint
+composer check:rc-source
+composer check:site
 php bin/cms cache:status
 php bin/cms security:audit
 php bin/cms migrate:status
@@ -68,3 +68,7 @@ php bin/cms release:smoke
 This command executes before application bootstrap and does not require a database. It checks distribution completeness, release/version metadata, bundled module manifests, migration file safety and private-storage guards. A release archive that fails this command should not be deployed.
 
 After extraction, continue with `release:check`, `migrate:status`, `production:check`, `security:audit` and the normal upgrade completion workflow.
+
+`rc:check` is a database-independent source-package gate that rejects local `.env`, installation locks, runtime logs/cache/backups, stale release metadata and incomplete RC documentation.
+
+The complete Release Candidate acceptance matrix is in `docs/RC_ACCEPTANCE.md`. PHPUnit/distribution checks are necessary but do not replace fresh-install, real-upgrade, restore, SMTP and production-host acceptance.

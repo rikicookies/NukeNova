@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['welcome_messages'];
+    private const MIGRATION_VALUES = [['welcome_messages','message','The Welcome module is installed, enabled and rendering its own Twig view.']];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'

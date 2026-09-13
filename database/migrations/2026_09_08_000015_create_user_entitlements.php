@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
-use NovaNuke\Core\Database\Migration;
-return new class implements Migration {
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['user_entitlements'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE user_entitlements (
+CREATE TABLE IF NOT EXISTS user_entitlements (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
  user_id BIGINT UNSIGNED NOT NULL,
  entitlement VARCHAR(64) NOT NULL,

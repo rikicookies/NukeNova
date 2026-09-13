@@ -25,12 +25,13 @@ final class UpgradeCompletion
         $pending = (int) ($migrationStatus['pending_total'] ?? -1);
         $missing = (int) ($migrationStatus['missing_total'] ?? -1);
         $moduleUpdates = (int) ($migrationStatus['module_updates_total'] ?? -1);
+        $recovery = (int) ($migrationStatus['recovery_total'] ?? 0);
 
         return [
             $this->result('Version syntax', $validSource && $validTarget, true, $validSource && $validTarget ? "{$sourceVersion} -> {$targetVersion}" : 'Source or target version is invalid.'),
             $this->result('No downgrade', $validSource && $validTarget && version_compare($targetVersion, $sourceVersion, '>='), true, "Target {$targetVersion}."),
             $this->result('Recorded source version', $recordedKnown && $recordedMatches, $recordedKnown, $recordedKnown ? "Recorded {$recordedVersion}; declared {$sourceVersion}." : 'Legacy installation has no recorded current version; this completion will initialize it.'),
-            $this->result('Core and module migrations', $pending === 0 && $missing === 0, true, "Pending {$pending}; missing files {$missing}."),
+            $this->result('Core and module migrations', $pending === 0 && $missing === 0 && $recovery === 0, true, "Pending {$pending}; missing files {$missing}; recovery required {$recovery}."),
             $this->result('Module versions', $moduleUpdates === 0, true, "{$moduleUpdates} installed module update(s) remain."),
             $this->result('Distribution release check', $releasePassed, true, $releasePassed ? 'Distribution checks passed.' : 'Resolve release:check failures first.'),
         ];

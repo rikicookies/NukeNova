@@ -43,7 +43,7 @@ final class InterModuleDependencyContractTest extends TestCase
         foreach (glob($root . '/modules/*/src/*.php') ?: [] as $file) {
             if (str_contains(str_replace('\\', '/', $file), '/modules/DemoContent/')) continue;
             $source = (string) file_get_contents($file);
-            self::assertDoesNotMatchRegularExpression('/^use Modules\\(?!' . preg_quote(basename(dirname(dirname($file))), '/') . '\\)[^;]+\\src\\/m', $source, $file);
+            self::assertDoesNotMatchRegularExpression('~^use Modules\\\\(?!' . preg_quote(basename(dirname(dirname($file))), '~') . '\\\\)[^;]+\\\\src\\\\~m', $source, $file);
         }
     }
 

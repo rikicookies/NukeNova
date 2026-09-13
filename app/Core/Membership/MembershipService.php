@@ -8,7 +8,7 @@ use NovaNuke\Core\Access\EntitlementService;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Events\EventName;
 
-final class MembershipService implements MembershipManagerInterface
+final class MembershipService implements MembershipManagerInterface, MembershipProvisionerInterface
 {
     public function __construct(
         private readonly EntitlementService $entitlements,
@@ -118,9 +118,60 @@ final class MembershipService implements MembershipManagerInterface
     }
 
     /** @return array<string,mixed> */
+    public function provision(
+        int $userId,
+        string $planKey,
+        string $source,
+        ?string $reference = null,
+    ): array {
+        if($source==='manual') throw new \InvalidArgumentException('External provisioning source cannot be manual.');
+        $plan=$this->plans->get($planKey);
+        if($plan['entitlement']===null) throw new \InvalidArgumentException('Free cannot be externally provisioned.');
+        if($reference!==null&&mb_strlen($reference)>191) throw new \InvalidArgumentException('Provisioning reference is too long.');
+
+        $scheduledBefore=$this->nextScheduled($userId);
+        $this->entitlements->replace(
+            $userId,
+            EntitlementService::VIP,
+            $plan['days'],
+            null,
+            $planKey,
+            $source,
+            $reference,
+        );
+
+        $status=$this->status($userId);
+        if($scheduledBefore!==null&&$this->events!==null){
+            $this->events->dispatch(EventName::MEMBERSHIP_SCHEDULE_CANCELLED,new MembershipScheduleCancelled(
+                $userId,(string)($scheduledBefore['plan_key']??'vip-custom'),(string)($scheduledBefore['starts_at']??''),null
+            ));
+        }
+        if($this->events!==null){
+            $this->events->dispatch(EventName::MEMBERSHIP_ASSIGNED,new MembershipAssigned(
+                $userId,$planKey,$status['expires_at']??null,(bool)($status['lifetime']??false),null,$source
+            ));
+        }
+        return $status;
+    }
+
+    /** @return array<string,mixed> */
     public function grantDays(int $userId, int $days, int $actorId, ?string $note = null): array
     {
+        $scheduledBefore=$this->nextScheduled($userId);
         $this->entitlements->grant($userId, EntitlementService::VIP, $days, $actorId);
+
+        if($scheduledBefore!==null){
+            $cancelled=$this->entitlements->cancelScheduled($userId,EntitlementService::VIP);
+            if($cancelled&&$this->events!==null){
+                $this->events->dispatch(EventName::MEMBERSHIP_SCHEDULE_CANCELLED,new MembershipScheduleCancelled(
+                    $userId,
+                    (string)($scheduledBefore['plan_key']??'vip-custom'),
+                    (string)($scheduledBefore['starts_at']??''),
+                    $actorId,
+                ));
+            }
+        }
+
         $status=$this->status($userId);
         if($this->events!==null){
             $this->events->dispatch(EventName::MEMBERSHIP_ASSIGNED,new MembershipAssigned(
@@ -140,9 +191,13 @@ final class MembershipService implements MembershipManagerInterface
     {
         $this->entitlements->extend($userId,EntitlementService::VIP,$days,$actorId,$note);
         $status=$this->status($userId);
-        if($this->events!==null){
-            $this->events->dispatch(EventName::MEMBERSHIP_ASSIGNED,new MembershipAssigned(
-                $userId,(string)($status['plan_key']??'vip-custom'),$status['expires_at']??null,(bool)($status['lifetime']??false),$actorId,'manual'
+        if($this->events!==null&&is_string($status['expires_at']??null)){
+            $this->events->dispatch(EventName::MEMBERSHIP_EXTENDED,new MembershipExtended(
+                $userId,
+                (string)($status['plan_key']??'vip-custom'),
+                $days,
+                (string)$status['expires_at'],
+                $actorId,
             ));
         }
         return $status;

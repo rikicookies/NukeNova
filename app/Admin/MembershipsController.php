@@ -78,7 +78,8 @@ final class MembershipsController
         } catch (InvalidArgumentException $error) {
             return Response::html(htmlspecialchars($error->getMessage(),ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8'),422);
         }
-        $this->activity->log((int)$actor['id'],'membership.assigned','user',(int)$userId,[
+        $action=$plan==='free'?'membership.revoked':'membership.assigned';
+        $this->activity->log((int)$actor['id'],$action,'user',(int)$userId,[
             'plan'=>$plan,'expires_at'=>$status['expires_at']??null,
         ],$request->ip());
         return Response::redirect('/admin/memberships/'.(int)$userId,303);

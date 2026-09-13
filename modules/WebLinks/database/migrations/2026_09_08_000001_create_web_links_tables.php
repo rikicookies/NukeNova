@@ -2,20 +2,24 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['web_link_categories','web_links','web_link_visits','web_link_reports'];
+    private const MIGRATION_VALUES = [['web_link_categories','slug','general']];
     public function up(PDO $database):void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE web_link_categories (
+CREATE TABLE IF NOT EXISTS web_link_categories (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(120) NOT NULL, slug VARCHAR(120) NOT NULL,
  description VARCHAR(500) NULL, created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  UNIQUE KEY web_link_categories_slug_unique (slug)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
         $database->exec(<<<'SQL'
-CREATE TABLE web_links (
+CREATE TABLE IF NOT EXISTS web_links (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, category_id BIGINT UNSIGNED NULL,
  submitted_by BIGINT UNSIGNED NULL, title VARCHAR(200) NOT NULL, slug VARCHAR(200) NOT NULL,
  url VARCHAR(2048) NOT NULL, description TEXT NOT NULL, image_path VARCHAR(255) NULL,
@@ -28,7 +32,7 @@ CREATE TABLE web_links (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
         $database->exec(<<<'SQL'
-CREATE TABLE web_link_visits (
+CREATE TABLE IF NOT EXISTS web_link_visits (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, link_id BIGINT UNSIGNED NOT NULL,
  visitor_key CHAR(64) NOT NULL, visited_at DATETIME NOT NULL,
  KEY web_link_visits_lookup_index (link_id,visitor_key,visited_at),
@@ -36,7 +40,7 @@ CREATE TABLE web_link_visits (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
         $database->exec(<<<'SQL'
-CREATE TABLE web_link_reports (
+CREATE TABLE IF NOT EXISTS web_link_reports (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, link_id BIGINT UNSIGNED NOT NULL,
  reporter_user_id BIGINT UNSIGNED NULL, reporter_key CHAR(64) NOT NULL, reason VARCHAR(500) NOT NULL,
  status VARCHAR(20) NOT NULL DEFAULT 'open', created_at DATETIME NOT NULL, resolved_at DATETIME NULL,
@@ -45,7 +49,7 @@ CREATE TABLE web_link_reports (
  CONSTRAINT web_link_reports_user_fk FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
-        $database->prepare('INSERT INTO web_link_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP())')->execute(['name'=>'General','slug'=>'general','description'=>'General recommended links.']);
+        $database->prepare('INSERT INTO web_link_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE name=VALUES(name),description=VALUES(description)')->execute(['name'=>'General','slug'=>'general','description'=>'General recommended links.']);
     }
     public function down(PDO $database):void{$database->exec('DROP TABLE IF EXISTS web_link_reports');$database->exec('DROP TABLE IF EXISTS web_link_visits');$database->exec('DROP TABLE IF EXISTS web_links');$database->exec('DROP TABLE IF EXISTS web_link_categories');}
 };

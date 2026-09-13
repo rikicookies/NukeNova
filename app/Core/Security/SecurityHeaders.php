@@ -34,6 +34,11 @@ final class SecurityHeaders
             'Content-Security-Policy' => "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'",
         ];
 
+        if ($this->environment === 'production'
+            && strtolower((string) parse_url($this->appUrl, PHP_URL_SCHEME)) === 'https') {
+            $defaults['Content-Security-Policy'] .= '; upgrade-insecure-requests';
+        }
+
         foreach ($defaults as $name => $value) {
             if ($response->header($name) === null) {
                 $response = $response->withHeader($name, $value);

@@ -39,4 +39,13 @@ final class CsrfTokenManagerTest extends TestCase
         $second = new CsrfTokenManager(new SessionManager('second_test_session', false));
         self::assertFalse($second->validate($rotated));
     }
+
+    public function testValidationDoesNotCreateATokenForMalformedInput(): void
+    {
+        $session=new SessionManager('csrf_validation_test_session', false);
+        $csrf=new CsrfTokenManager($session);
+        self::assertFalse($csrf->validate('bad'));
+        self::assertNull($session->get('_csrf_token'));
+    }
+
 }

@@ -30,9 +30,15 @@ final class RequirementsCheckerTest extends TestCase
             self::assertFalse($blocked['No installation lock']['passed']);
         } finally {
             foreach ([$root . '/.env', $root . '/storage/installed.lock'] as $file) if (is_file($file)) unlink($file);
-            $paths = glob($root . '/storage/private/*', GLOB_ONLYDIR) ?: [];
-            foreach ($paths as $path) rmdir($path);
-            foreach ([$root . '/storage/private', $root . '/storage/cache', $root . '/storage/logs', $root . '/storage/sessions', $root . '/storage', $root] as $path) if (is_dir($path)) rmdir($path);
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::CHILD_FIRST,
+            );
+            foreach ($iterator as $item) {
+                if ($item->isDir()) rmdir($item->getPathname());
+                else unlink($item->getPathname());
+            }
+            if (is_dir($root)) rmdir($root);
         }
     }
 

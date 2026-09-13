@@ -25,11 +25,12 @@ final class Kernel
         private readonly Router $router,
         private readonly ErrorHandler $errors,
         private readonly SecurityHeaders $securityHeaders,
-        private readonly MaintenanceMode $maintenance,
-        private readonly AdminAccessGate $adminAccess,
+        private readonly ?MaintenanceMode $maintenance,
+        private readonly ?AdminAccessGate $adminAccess,
         private readonly PrivateSiteAccessPolicy $privateSite = new PrivateSiteAccessPolicy(),
         private readonly PasswordChangeAccessPolicy $passwordChange = new PasswordChangeAccessPolicy(),
         private readonly ?ModuleRouteAccess $moduleAccess = null,
+        private readonly bool $installed = true,
     ) {
         $this->errors->register();
     }
@@ -38,7 +39,15 @@ final class Kernel
     {
         try {
             $this->container->get(Application::class)->boot();
-            if ($this->maintenance->blocks($request)) {
+
+            // Installer mode must remain database-independent. Before installation
+            // there is no trusted DB configuration yet, so do not resolve auth,
+            // settings, maintenance, authorization or module services.
+            if (! $this->installed) {
+                return $this->dispatch($request);
+            }
+
+            if ($this->maintenance?->blocks($request)) {
                 return $this->secure($request, Response::html(
                     '<!doctype html><html lang="en"><meta charset="utf-8"><title>Maintenance</title>'
                     . '<main><h1>We will be back shortly.</h1><p>The site is undergoing scheduled maintenance.</p></main>',
@@ -59,12 +68,12 @@ final class Kernel
             }
             $user = null;
             $allowed = false;
-            if ($this->adminAccess->protects($request)) {
+            if ($this->adminAccess?->protects($request)) {
                 $user = $authenticatedUser;
                 $allowed = $user !== null && $this->container->get(AuthorizationService::class)
                     ->allows((int) $user['id'], 'admin.access');
             }
-            $adminGuard = $this->adminAccess->guard(
+            $adminGuard = $this->adminAccess?->guard(
                 $request,
                 $user,
                 $allowed,
@@ -72,22 +81,29 @@ final class Kernel
             if ($adminGuard !== null) {
                 return $this->secure($request, $adminGuard);
             }
-            $match = $this->router->match($request);
-            if ($this->moduleAccess !== null && ($moduleGuard = $this->moduleAccess->guard($match->route, $request)) !== null) {
-                return $this->secure($request, $moduleGuard);
-            }
-            $request = $request->withAttributes($match->parameters);
-            $response = ($match->route->handler)($request, $this->container);
-
-            if (! $response instanceof Response) {
-                throw new \LogicException('Route handlers must return a Response.');
-            }
-
-            return $this->secure($request, $response);
+            return $this->dispatch($request);
         } catch (Throwable $error) {
             return $this->secure($request, $this->errors->render($error));
         }
     }
+    private function dispatch(Request $request): Response
+    {
+        $match = $this->router->match($request);
+        if ($this->installed && $this->moduleAccess !== null
+            && ($moduleGuard = $this->moduleAccess->guard($match->route, $request)) !== null) {
+            return $this->secure($request, $moduleGuard);
+        }
+
+        $request = $request->withAttributes($match->parameters);
+        $response = ($match->route->handler)($request, $this->container);
+
+        if (! $response instanceof Response) {
+            throw new \LogicException('Route handlers must return a Response.');
+        }
+
+        return $this->secure($request, $response);
+    }
+
     private function secure(Request $request, Response $response): Response
     {
         $path = $request->path();

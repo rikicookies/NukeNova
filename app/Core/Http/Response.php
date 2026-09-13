@@ -51,8 +51,14 @@ final class Response
     public static function externalRedirect(string $location, int $status = 302): self
     {
         $scheme = strtolower((string) parse_url($location, PHP_URL_SCHEME));
+        $host = parse_url($location, PHP_URL_HOST);
+        $port = parse_url($location, PHP_URL_PORT);
+        $expectedPort = $scheme === 'https' ? 443 : ($scheme === 'http' ? 80 : null);
         if (! filter_var($location, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)
-            || parse_url($location, PHP_URL_USER) !== null || preg_match('/[\x00-\x1F\x7F]/', $location)) {
+            || ! is_string($host) || $host === ''
+            || parse_url($location, PHP_URL_USER) !== null || parse_url($location, PHP_URL_PASS) !== null
+            || ($port !== null && $port !== $expectedPort)
+            || preg_match('/[\x00-\x1F\x7F]/', $location)) {
             throw new \InvalidArgumentException('External redirects require a safe HTTP or HTTPS URL.');
         }
         return new self('', $status, ['Location' => $location, 'Referrer-Policy' => 'no-referrer']);

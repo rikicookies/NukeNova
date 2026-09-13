@@ -8,6 +8,7 @@ use NovaNuke\Auth\AuthManager;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Settings\SettingsRepository;
 
 final class AdminNavigationManager
 {
@@ -16,6 +17,7 @@ final class AdminNavigationManager
         private readonly AuthorizationService $authorization,
         private readonly EventDispatcher $events,
         private readonly ViewRenderer $views,
+        private readonly SettingsRepository $settings,
     ) {
     }
 
@@ -76,7 +78,50 @@ final class AdminNavigationManager
         foreach ($groups as $slug => $group) {
             if ($group['items'] !== []) $result[] = ['slug' => $slug, 'label' => $group['label'], 'items' => $group['items']];
         }
-        return $result;
+        return $this->applySavedOrder($result);
+    }
+
+
+    /** @param list<array{slug:string,label:string,items:list<array<string,mixed>>}> $groups
+     *  @return list<array{slug:string,label:string,items:list<array<string,mixed>>}>
+     */
+    private function applySavedOrder(array $groups): array
+    {
+        $raw = $this->settings->string('admin.navigation.order', '');
+        if ($raw === '') return $groups;
+
+        $saved = json_decode($raw, true);
+        if (! is_array($saved)) return $groups;
+
+        $groupRanks = [];
+        $itemRanks = [];
+        foreach ($saved as $groupIndex => $entry) {
+            if (! is_array($entry) || ! isset($entry['slug']) || ! is_string($entry['slug'])) continue;
+            $groupRanks[$entry['slug']] = (int) $groupIndex;
+            foreach (($entry['items'] ?? []) as $itemIndex => $url) {
+                if (is_string($url) && str_starts_with($url, '/admin')) {
+                    $itemRanks[$entry['slug']][$url] = (int) $itemIndex;
+                }
+            }
+        }
+
+        foreach ($groups as &$group) {
+            $slug = (string) $group['slug'];
+            if (! isset($itemRanks[$slug])) continue;
+            usort($group['items'], static function (array $left, array $right) use ($itemRanks, $slug): int {
+                $leftRank = $itemRanks[$slug][(string) $left['url']] ?? PHP_INT_MAX;
+                $rightRank = $itemRanks[$slug][(string) $right['url']] ?? PHP_INT_MAX;
+                return $leftRank <=> $rightRank;
+            });
+        }
+        unset($group);
+
+        usort($groups, static function (array $left, array $right) use ($groupRanks): int {
+            $leftRank = $groupRanks[(string) $left['slug']] ?? PHP_INT_MAX;
+            $rightRank = $groupRanks[(string) $right['slug']] ?? PHP_INT_MAX;
+            return $leftRank <=> $rightRank;
+        });
+        return $groups;
     }
 
     /** @return array{label:string,url:string,permission:string,icon:string,group:string} */

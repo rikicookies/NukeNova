@@ -9,7 +9,7 @@ final class VipEntitlementTest extends TestCase
     public function testVipUsesExpiringEntitlementsAndProtectedAdminActions():void
     {
         $root=dirname(__DIR__,2);$service=file_get_contents($root.'/app/Core/Access/EntitlementService.php');$controller=file_get_contents($root.'/app/Admin/UsersController.php');$migration=file_get_contents($root.'/database/migrations/2026_09_08_000015_create_user_entitlements.php');
-        self::assertStringContainsString("public const VIP='vip'",$service);self::assertStringContainsString('expires_at>UTC_TIMESTAMP()',$service);self::assertStringContainsString('FOR UPDATE',$service);self::assertStringContainsString('user_entitlements',$migration);self::assertStringContainsString('creationGuard()',$controller);self::assertStringContainsString('csrf->validate',$controller);self::assertStringContainsString('user.vip.granted',$controller);self::assertStringContainsString('user.vip.revoked',$controller);
+        self::assertMatchesRegularExpression('/public\s+const\s+VIP\s*=\s*[\'"]vip[\'"]\s*;/', $service);self::assertStringContainsString('expires_at>UTC_TIMESTAMP()',$service);self::assertStringContainsString('FOR UPDATE',$service);self::assertStringContainsString('user_entitlements',$migration);self::assertStringContainsString('creationGuard()',$controller);self::assertStringContainsString('csrf->validate',$controller);self::assertStringContainsString('user.vip.granted',$controller);self::assertStringContainsString('user.vip.revoked',$controller);
     }
 
     public function testEntitlementIsActiveOnlyInsideItsUnrevokedPeriod():void

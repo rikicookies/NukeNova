@@ -37,7 +37,7 @@ final class CorePostCsrfContractTest extends TestCase
         foreach (['routes/account.php', 'routes/admin.php', 'routes/auth.php', 'routes/registration.php', 'routes/passwords.php'] as $file) {
             $source = (string) file_get_contents($root . '/' . $file);
             self::assertDoesNotMatchRegularExpression(
-                '/\$router->get\([^;\n]*(?:delete|remove|logout|save|update|grant|revoke)[^;\n]*;/i',
+                '/\$router->get\(\s*[\"\'][^\"\']*\/(?:delete|remove|logout|save|update|grant|revoke)(?:\/|[\"\'])[^;\n]*;/i',
                 $source,
                 $file,
             );

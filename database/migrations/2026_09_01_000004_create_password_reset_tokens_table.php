@@ -2,16 +2,19 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+use NovaNuke\Core\Database\MigrationSchema;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['password_reset_tokens'];
+    private const MIGRATION_COLUMNS = ['users'=>['auth_version']];
     public function up(PDO $database): void
     {
         $column = $database->query("SHOW COLUMNS FROM users LIKE 'auth_version'")->fetchColumn();
         if ($column === false) {
-            $database->exec(
-                'ALTER TABLE users ADD COLUMN auth_version INT UNSIGNED NOT NULL DEFAULT 1 AFTER password_hash'
-            );
+            MigrationSchema::addColumn($database,'users','auth_version','INT UNSIGNED NOT NULL DEFAULT 1 AFTER password_hash');
         }
         $database->exec(<<<'SQL'
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -33,6 +36,6 @@ SQL);
     public function down(PDO $database): void
     {
         $database->exec('DROP TABLE IF EXISTS password_reset_tokens');
-        $database->exec('ALTER TABLE users DROP COLUMN auth_version');
+        MigrationSchema::dropColumn($database,'users','auth_version');
     }
 };

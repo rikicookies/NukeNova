@@ -15,6 +15,8 @@ SESSION_SAME_SITE=Lax
 SESSION_LIFETIME=7200
 SESSION_IDLE_TIMEOUT=1800
 SESSION_ROTATION_INTERVAL=900
+SESSION_PATH=/
+SESSION_DOMAIN=
 SECURITY_HEADERS_ENABLED=true
 ```
 
@@ -43,6 +45,8 @@ Beta 1 uses three independent controls:
 
 Authentication still regenerates the session ID on successful login and invalidates it on logout.
 
+Production cookie scope should remain `SESSION_PATH=/` with an empty `SESSION_DOMAIN`. Once HTTPS is confirmed, a `__Host-` prefixed `SESSION_NAME` is recommended; NovaNuke rejects a `__Host-` session name unless Secure is enabled, path is `/` and Domain is empty.
+
 ## Browser caching
 
 Admin, account, authentication and error surfaces default to `Cache-Control: no-store, private`. Routes that intentionally provide a stronger explicit cache policy keep their own header.
@@ -59,6 +63,7 @@ Run:
 composer test
 composer test:integration
 php bin/cms production:check
+php bin/cms rc:deployment
 php bin/cms security:audit
 php bin/cms release:check
 php bin/cms migrate:status

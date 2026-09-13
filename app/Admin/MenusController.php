@@ -13,6 +13,7 @@ use NovaNuke\Core\Security\AuthorizationService;
 use NovaNuke\Core\Security\CsrfTokenManager;
 use NovaNuke\Core\Security\SessionManager;
 use NovaNuke\Core\View\ViewRenderer;
+use NovaNuke\Core\Settings\SettingsRepository;
 use RuntimeException;
 
 final class MenusController
@@ -25,6 +26,7 @@ final class MenusController
         private readonly CsrfTokenManager $csrf,
         private readonly SessionManager $session,
         private readonly ViewRenderer $views,
+        private readonly SettingsRepository $settings,
     ) {
     }
 
@@ -52,6 +54,87 @@ final class MenusController
             $id = $this->menus->saveItem($request->allInput());
             return ['menu_item.saved', 'menu_item', $id, 'Menu item saved successfully.'];
         });
+    }
+
+
+
+    public function savePublicMenuOrder(Request $request): Response
+    {
+        $guard = $this->guard();
+        if ($guard !== null) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) {
+            return Response::html('Invalid or expired CSRF token.', 419);
+        }
+
+        $menuId = $this->routeId($request);
+        $raw = (string) $request->input('item_order', '');
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded) || count($decoded) > 500) {
+            return $this->view(null, 'Invalid menu item order.', 422);
+        }
+
+        try {
+            $this->menus->reorderItems($menuId, $decoded);
+            $actor = $this->auth->user();
+            $this->activity->log(
+                (int) $actor['id'],
+                'menu_items.reordered',
+                'menu',
+                $menuId,
+                ['top_level_count' => count($decoded)],
+                $request->ip(),
+            );
+            $this->session->put('menus.message', 'Public menu order saved.');
+            return Response::redirect('/admin/menus', 303);
+        } catch (RuntimeException $error) {
+            return $this->view(null, $error->getMessage(), 422);
+        }
+    }
+
+    public function saveAdminNavigationOrder(Request $request): Response
+    {
+        $guard = $this->guard();
+        if ($guard !== null) return $guard;
+        if (! $this->csrf->validate($request->input('_token'))) {
+            return Response::html('Invalid or expired CSRF token.', 419);
+        }
+
+        $raw = (string) $request->input('navigation_order', '');
+        $decoded = json_decode($raw, true);
+        if (! is_array($decoded) || count($decoded) > 20) {
+            return $this->view(null, 'Invalid navigation order.', 422);
+        }
+
+        $clean = [];
+        $seenGroups = [];
+        $seenUrls = [];
+        foreach ($decoded as $entry) {
+            if (! is_array($entry)) continue;
+            $slug = strtolower(trim((string) ($entry['slug'] ?? '')));
+            if (! preg_match('/^[a-z][a-z0-9-]{0,49}$/', $slug) || isset($seenGroups[$slug])) continue;
+            $seenGroups[$slug] = true;
+
+            $urls = [];
+            foreach ((array) ($entry['items'] ?? []) as $url) {
+                $url = trim((string) $url);
+                if (! str_starts_with($url, '/admin') || strlen($url) > 255 || isset($seenUrls[$url])) continue;
+                $seenUrls[$url] = true;
+                $urls[] = $url;
+            }
+            $clean[] = ['slug' => $slug, 'items' => $urls];
+        }
+
+        if ($clean === []) return $this->view(null, 'Navigation order cannot be empty.', 422);
+
+        $this->settings->setString(
+            'admin.navigation.order',
+            json_encode($clean, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+            'admin',
+        );
+        $actor = $this->auth->user();
+        $this->activity->log((int) $actor['id'], 'admin_navigation.reordered', 'settings', null, [], $request->ip());
+        $this->session->put('menus.message', 'Administration navigation order saved.');
+        return Response::redirect('/admin/menus', 303);
     }
 
     public function deleteMenu(Request $request): Response

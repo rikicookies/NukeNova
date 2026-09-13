@@ -48,6 +48,7 @@ final class MigrationStatus
             $missing += count($module['missing_files']);
             $updates += $module['update_available'] ? 1 : 0;
         }
+        $recovery = $this->core->unresolvedOperations();
 
         return [
             'core' => $core,
@@ -55,6 +56,8 @@ final class MigrationStatus
             'pending_total' => $pending,
             'missing_total' => $missing,
             'module_updates_total' => $updates,
+            'recovery' => $recovery,
+            'recovery_total' => count($recovery),
         ];
     }
 }

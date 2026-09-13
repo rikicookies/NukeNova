@@ -77,10 +77,26 @@ final class Request
 
     public function path(): string
     {
-        $path = rawurldecode((string) parse_url($this->uri, PHP_URL_PATH));
-        $normalized = '/' . trim($path, '/');
+        $encodedPath = (string) parse_url($this->uri, PHP_URL_PATH);
+        if (preg_match('/%(?:2f|5c|00)/i', $encodedPath) === 1) {
+            throw new \InvalidArgumentException('Request path contains an unsafe encoded separator or null byte.');
+        }
+        $path = rawurldecode($encodedPath);
+        if (str_contains($path, "\0") || str_contains($path, '\\')) {
+            throw new \InvalidArgumentException('Request path contains unsafe characters.');
+        }
 
-        return $normalized === '/' ? '/' : rtrim($normalized, '/');
+        $segments = [];
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '' || $segment === '.') continue;
+            if ($segment === '..') {
+                array_pop($segments);
+                continue;
+            }
+            $segments[] = $segment;
+        }
+
+        return $segments === [] ? '/' : '/' . implode('/', $segments);
     }
 
     public function query(string $key, mixed $default = null): mixed

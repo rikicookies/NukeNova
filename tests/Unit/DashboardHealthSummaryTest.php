@@ -36,4 +36,17 @@ final class DashboardHealthSummaryTest extends TestCase
         self::assertSame('1 missing migration file(s)', $summary['checks'][1]['value']);
         self::assertStringNotContainsString('APP_DEBUG', implode(' ', array_column($summary['checks'], 'value')));
     }
+
+    public function testInterruptedMigrationIsAVisibleDatabaseError(): void
+    {
+        $summary = (new DashboardHealthSummary())->summarize([
+            'maintenance' => true,
+            'warnings' => ['An interrupted migration requires explicit recovery.'],
+            'writable' => ['storage/cache' => true],
+            'migrations' => ['pending_total' => 1, 'missing_total' => 0, 'recovery_total' => 1, 'module_updates_total' => 0],
+        ]);
+
+        self::assertSame('error', $summary['checks'][1]['status']);
+        self::assertSame('1 migration recovery operation(s)', $summary['checks'][1]['value']);
+    }
 }

@@ -113,6 +113,12 @@ final class ModuleManager
         $this->repository->install($manifest);
     }
 
+    /** @return list<string> */
+    public function recover(string $slug): array
+    {
+        return $this->migrator->recover($this->manifest($slug));
+    }
+
     public function enable(string $slug): void
     {
         $manifest = $this->manifest($slug);

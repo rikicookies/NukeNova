@@ -52,3 +52,50 @@ SMTP remains a separate manual smoke test because reliable delivery depends on t
 ## Failure cleanup
 
 If PHP or MySQL terminates abruptly, inspect local databases whose names match `novanuke_test_[a-f0-9]{16}`. Confirm the exact generated pattern before manually dropping an abandoned test database. Never automate wildcard deletion and never alter the normal `novanuke` database.
+
+
+## Development checkpoint validation
+
+During larger development batches, do not create a release for every small correction. Accumulate related work and validate it together.
+
+Use:
+
+```bash
+composer test:checkpoint
+```
+
+The checkpoint runs the normal PHPUnit suite followed by the isolated integration suite. Membership-only investigation can still use `composer test:membership`.
+
+A release checkpoint should be packaged only after the accumulated batch is internally consistent and ready for validation in the target Laragon/shared-hosting environment.
+
+
+Before packaging a checkpoint for target-environment QA, also run:
+
+```bash
+composer check:release
+```
+
+This groups install requirements, production readiness, and Membership integrity checks. It is intentionally separate from `test:checkpoint` because these checks inspect the current installation/environment.
+
+
+## Installation versus installed-site checks
+
+These commands intentionally represent different lifecycle states:
+
+```bash
+composer check:install
+```
+
+Use only before installation. It expects no `.env` and no `storage/installed.lock`.
+
+```bash
+composer check:site
+```
+
+Use for an existing development/staging installation. It expects `.env`, a valid installation lock, the recorded Core version to match the running code, no pending/missing migrations, no pending installed-module update, writable runtime directories, and healthy Membership/Payment state.
+
+```bash
+composer check:release
+```
+
+Use for a site intended for production. It includes distribution smoke checks, installed-site health, production configuration, Membership integrity and optional Payment integrity. A local development site can legitimately pass `check:site` while failing `check:release` because production settings such as HTTPS, `APP_ENV=production`, secure cookies or SMTP are not enabled.

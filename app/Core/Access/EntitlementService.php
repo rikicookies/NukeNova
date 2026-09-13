@@ -118,9 +118,11 @@ final class EntitlementService
         try {
             $lock = $this->database->prepare('SELECT id FROM users WHERE id=:id FOR UPDATE');
             $lock->execute(['id' => $userId]);
+            if ($lock->fetchColumn() === false) throw new InvalidArgumentException('User does not exist.');
             $statement = $this->database->prepare(
                 'SELECT id,expires_at FROM user_entitlements '
                 . 'WHERE user_id=:user_id AND entitlement=:entitlement AND revoked_at IS NULL '
+                . 'AND starts_at<=UTC_TIMESTAMP() '
                 . 'AND (expires_at IS NULL OR expires_at>UTC_TIMESTAMP()) ORDER BY expires_at IS NULL DESC, expires_at DESC LIMIT 1 FOR UPDATE'
             );
             $statement->execute(['user_id' => $userId, 'entitlement' => $entitlement]);
@@ -157,7 +159,7 @@ final class EntitlementService
         int $userId,
         string $entitlement,
         ?int $days,
-        int $grantedBy,
+        ?int $grantedBy,
         string $planKey,
         string $source = 'manual',
         ?string $note = null,
@@ -172,7 +174,8 @@ final class EntitlementService
             throw new InvalidArgumentException('Membership note must not exceed 255 characters.');
         }
 
-        $this->database->beginTransaction();
+        $ownsTransaction=!$this->database->inTransaction();
+        if($ownsTransaction) $this->database->beginTransaction();
         try {
             $lock = $this->database->prepare('SELECT id FROM users WHERE id=:id FOR UPDATE');
             $lock->execute(['id' => $userId]);
@@ -201,9 +204,9 @@ final class EntitlementService
                 'expires' => $expires,
                 'actor' => $grantedBy,
             ]);
-            $this->database->commit();
+            if($ownsTransaction) $this->database->commit();
         } catch (Throwable $error) {
-            if ($this->database->inTransaction()) $this->database->rollBack();
+            if($ownsTransaction&&$this->database->inTransaction()) $this->database->rollBack();
             throw $error;
         }
     }

@@ -25,3 +25,29 @@
 .classic-block { margin: .6rem 0; border: 1px solid #5e6d86; background: #d8e0ec; color: #111; }
 .classic-block h2 { margin: 0; padding: .35rem .55rem; background: var(--classic-accent); color: #fff; font-size: .85rem; }
 .classic-block-body { padding: .65rem; font-size: .85rem; }
+
+
+/* Beta 28 bundled-module polish: retain the Classic theme's compact light presentation. */
+.classic-theme :is(.module-section, .surface-card, .content-card, .poll-list article, .message-row, .notification-item, .form-surface, .stack-form, .message-form, .poll-form, .search-form, .media-upload, .module-metric, .stat-grid article, .system-list > div, .empty-state, .media-card) {
+    border-color: #a8adb3;
+    background: #f5f5f3;
+    color: #20252c;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+.classic-theme :is(.module-section-heading p, .surface-card-meta, .module-metric span, .stat-grid article span, .empty-state p, .message-row span, .message-row small, .poll-list article small, .content-card p) { color: #58616c; }
+.classic-theme :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.classic-theme :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) textarea,
+.classic-theme :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) select {
+    border-color: #8f969e;
+    background: #fff;
+    color: #20252c;
+}
+.classic-theme :is(.module-link-button, .module-button, .module-action-row button, .module-page button, .polls-page button, .messages-page button, .notifications-page button, .friends-page button, .search-page button, .statistics-page button) {
+    border-color: #6d7680;
+    background: #e1e4e7;
+    color: #202b38;
+}
+.classic-theme .module-button-primary { border-color: #39495c; background: #39495c; color: #fff; }
+.classic-theme .message-row.unread,
+.classic-theme .notification-item.is-unread { border-left-color: var(--classic-accent); background: #eef2f7; }
+.classic-theme .empty-state { border-style: dashed; }

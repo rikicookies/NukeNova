@@ -41,6 +41,16 @@ final class AuthorizationAudit
             . "OR p.slug LIKE 'logs.%' OR p.slug LIKE 'modules.%' OR p.slug LIKE 'themes.%' OR p.slug LIKE 'blocks.%')"
         )->fetchColumn();
 
+        $superPermissionStatement=$this->database->prepare(
+            "SELECT p.slug FROM permissions p "
+            . "INNER JOIN role_permissions rp ON rp.permission_id=p.id "
+            . "INNER JOIN roles r ON r.id=rp.role_id "
+            . "WHERE r.slug='super-administrator' AND p.slug IN (" . $placeholders . ")"
+        );
+        $superPermissionStatement->execute(self::CORE_PERMISSIONS);
+        $superPresent=array_map('strval',$superPermissionStatement->fetchAll(PDO::FETCH_COLUMN));
+        $superMissing=array_values(array_diff(self::CORE_PERMISSIONS,$superPresent));
+
         $rolesMissingAdminAccess = (int) $this->database->query(
             "SELECT COUNT(DISTINCT r.id) FROM roles r INNER JOIN role_permissions rp ON rp.role_id = r.id "
             . "INNER JOIN permissions p ON p.id = rp.permission_id "
@@ -62,6 +72,13 @@ final class AuthorizationAudit
                 'label' => 'Core permission catalog',
                 'passed' => $missing === [],
                 'detail' => $missing === [] ? 'All required core permissions exist.' : 'Missing: ' . implode(', ', $missing),
+            ],
+            [
+                'label' => 'Super Administrator core permissions',
+                'passed' => $superMissing === [],
+                'detail' => $superMissing === []
+                    ? 'Super Administrator retains every required core permission.'
+                    : 'Missing: ' . implode(', ', $superMissing),
             ],
             [
                 'label' => 'Public roles',

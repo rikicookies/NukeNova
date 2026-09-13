@@ -41,6 +41,7 @@ final class UpgradeReadiness
         $missing = (int) ($migrationStatus['missing_total'] ?? -1);
         $pending = (int) ($migrationStatus['pending_total'] ?? -1);
         $moduleUpdates = (int) ($migrationStatus['module_updates_total'] ?? -1);
+        $recovery = (int) ($migrationStatus['recovery_total'] ?? 0);
         $recordedKnown = is_string($recordedVersion) && $recordedVersion !== '';
         $recordedValid = ! $recordedKnown
             || preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/', $recordedVersion) === 1;
@@ -56,6 +57,7 @@ final class UpgradeReadiness
             $this->result('Verified file backup', $fileBackup['passed'], true, $fileBackup['detail']),
             $this->result('Matched backup pair', $backupPair['passed'], true, $backupPair['detail']),
             $this->result('Migration files present', $missing === 0, true, $missing < 0 ? 'Migration status is unavailable.' : "{$missing} executed migration file(s) missing."),
+            $this->result('No interrupted migration', $recovery === 0, true, "{$recovery} running/dirty migration operation(s) require recovery."),
             $this->result('Pending migrations', $pending === 0, false, $pending < 0 ? 'Migration status is unavailable.' : "{$pending} migration(s) pending."),
             $this->result('Module updates', $moduleUpdates === 0, false, $moduleUpdates < 0 ? 'Migration status is unavailable.' : "{$moduleUpdates} installed module update(s) available."),
         ];

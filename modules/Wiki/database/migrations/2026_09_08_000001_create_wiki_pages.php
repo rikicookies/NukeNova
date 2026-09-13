@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['wiki_pages'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE wiki_pages (
+CREATE TABLE IF NOT EXISTS wiki_pages (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     namespace VARCHAR(190) NOT NULL DEFAULT '',
     slug VARCHAR(120) NOT NULL,

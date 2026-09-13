@@ -1,1 +1,13 @@
-{% extends "layouts/default.twig" %}{% block title %}Messages — {{ cms_name|default('NovaNuke') }}{% endblock %}{% block content %}<section class="messages-page"><p class="eyebrow">Account</p><h1>Messages</h1>{% include "@private-messages/_nav.twig" %}{% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}<div class="message-list">{% for item in conversations %}<a class="message-row {{ item.unread ? 'unread' : '' }}" href="/messages/{{ item.id }}"><strong>{{ item.subject }}</strong><span>{{ item.other_username }}</span><small>{{ item.last_message_at }}</small></a>{% else %}<p>Your inbox is empty.</p>{% endfor %}</div></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}Messages — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="messages-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Messages'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Account', title: 'Messages', description: 'Private conversations with other members.'} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    {% if conversations %}
+    <div class="message-list surface-list">{% for item in conversations %}<a class="message-row {{ item.unread ? 'unread' : '' }}" href="/messages/{{ item.id }}"><strong>{{ item.subject }}</strong><span>{{ item.other_username }}</span><small>{{ item.last_message_at }}</small></a>{% endfor %}</div>
+    {% else %}{% include 'components/empty-state.twig' with {title: 'Your inbox is empty', message: 'New conversations will appear here.', action_url: '/messages/compose', action_label: 'Start a conversation'} only %}{% endif %}
+</section>
+{% endblock %}

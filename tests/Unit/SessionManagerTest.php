@@ -41,4 +41,23 @@ final class SessionManagerTest extends TestCase
         new SessionManager('test_session', true, 'Lax', 120, 30, 30);
     }
 
+
+    public function testHostPrefixedCookieRequiresSecureRootScopeWithoutDomain(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new SessionManager('__Host-novanuke', false, 'Lax', 7200, 1800, 900, '/', '');
+    }
+
+    public function testHostPrefixedCookieRejectsExplicitDomain(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new SessionManager('__Host-novanuke', true, 'Lax', 7200, 1800, 900, '/', 'example.test');
+    }
+
+    public function testUnsafeCookiePathIsRejected(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        new SessionManager('novanuke', true, 'Lax', 7200, 1800, 900, "bad;path", '');
+    }
+
 }

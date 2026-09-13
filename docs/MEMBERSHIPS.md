@@ -22,7 +22,9 @@ Memberships intentionally reuse the existing `vip` audience contract. News, Page
 
 ## Payments
 
-There is no payment processing in this phase. Payment providers, if added later, should create/revoke the same entitlement records through a dedicated service instead of bypassing MembershipService.
+Payments are optional. Core provides a provider-neutral verified-payment boundary and idempotent Membership provisioning, but no payment provider or checkout is enabled by default. Provider modules must verify their provider payload before provisioning and must use the Membership provisioning contract instead of writing entitlement rows directly.
+
+See `docs/PAYMENTS.md`.
 
 ## Membership API contract
 
@@ -68,3 +70,5 @@ Revoking the current VIP does not implicitly cancel a separate future schedule. 
 For a focused Beta 2 regression pass, run `composer test:membership`. The runner uses the normal isolated MySQL integration-test environment and destroys each temporary database after its test.
 
 For an existing installation, run `php bin/cms membership:check`. The command is read-only and reports schema or grant-integrity problems such as duplicate active/scheduled grants or active/future overlap.
+
+Extensions emit `membership.extended` rather than a second `membership.assigned` event, allowing Notifications and other consumers to distinguish renewals from new assignments.

@@ -29,8 +29,8 @@ final class DeveloperCliContractTest extends TestCase
     public function testInspectionCommandsRunBeforeApplicationBootstrap(): void
     {
         $cli = (string) file_get_contents(dirname(__DIR__, 2) . '/bin/cms');
-        $bootstrap = strpos($cli, "$application = require $rootPath . '/bootstrap/app.php';");
-        foreach (["if ($command === 'module:inspect')", "if ($command === 'module:list')"] as $needle) {
+        $bootstrap = strpos($cli, "\$application = require \$rootPath . '/bootstrap/app.php';");
+        foreach (["if (\$command === 'module:inspect')", "if (\$command === 'module:list')"] as $needle) {
             $position = strpos($cli, $needle);
             self::assertNotFalse($position);
             self::assertLessThan($bootstrap, $position);

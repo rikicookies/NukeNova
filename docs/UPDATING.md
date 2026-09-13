@@ -25,10 +25,10 @@ php bin/cms backup:verify
 4. Run the read-only preflight with the exact version being replaced:
 
 ```bash
-php bin/cms upgrade:check --from=0.2.0-alpha.49
+php bin/cms upgrade:check --from=CURRENT_INSTALLED_VERSION
 ```
 
-Alpha.50 supports direct preflight from Alpha.33 through Alpha.49. For an older release, follow its documented intermediate updates or perform a clean installation and controlled data migration; do not claim an untested direct upgrade.
+`upgrade:check` validates whether the declared source release is supported by the running package. If the source is rejected, follow the documented intermediate update path or perform a clean installation and controlled data migration; do not force or claim an untested direct upgrade.
 
 5. Run:
 
@@ -36,6 +36,7 @@ Alpha.50 supports direct preflight from Alpha.33 through Alpha.49. For an older 
 composer install --no-dev --optimize-autoloader
 php bin/cms migrate:status
 php bin/cms migrate
+php bin/cms migrate:status
 php bin/cms cache:clear
 php bin/cms release:check
 ```
@@ -46,7 +47,7 @@ php bin/cms release:check
 9. Record successful completion using the same source version supplied to the preflight:
 
 ```bash
-php bin/cms upgrade:complete --from=0.2.0-alpha.49
+php bin/cms upgrade:complete --from=CURRENT_INSTALLED_VERSION
 ```
 
 10. Disable maintenance mode.
@@ -67,15 +68,17 @@ Do not delete `storage/installed.lock` during an update. Removing it intentional
 
 ## Recovering from a failed migration
 
-NovaNuke stops at the first failed core or module migration and does not record that migration as completed. It does not automatically call `down()`: MySQL and MariaDB may commit DDL implicitly, so an automatic rollback cannot promise restoration of the previous schema.
+NovaNuke stops at the first failed Core or module migration. Because MySQL/MariaDB may commit DDL implicitly, NovaNuke does not pretend that a transaction rolled schema changes back. It leaves a durable `running` or `dirty` operation with the exact migration checksum.
 
-1. Keep maintenance mode enabled and do not retry the migration blindly.
-2. Save the exact migration name and underlying error from the console or application log.
-3. Restore the database backup and file backup created together immediately before the update. Do not combine a restored database with newer application files.
-4. Confirm the restored site's version and run `php bin/cms migrate:status`.
-5. Correct the original cause in a disposable copy, create a fresh matched backup pair and repeat the documented update sequence.
+1. Keep maintenance mode enabled and save the exact migration/error.
+2. Run `php bin/cms migrate:status`; do not edit `migration_operations`, `migrations`, `module_migrations`, or application tables.
+3. Correct environmental causes such as privileges, quota, connection loss, or invalid SQL.
+4. Run `php bin/cms migrate:recover` for Core, or `php bin/cms migrate:recover --module=SLUG` for a module install/update/uninstall.
+5. Run `php bin/cms migrate:status` again. Continue only when recovery, pending, and missing totals are zero.
 
-If `migrate` reports executed migration files as missing, restore the correct release files before doing anything else. Never delete rows from `migrations` or `module_migrations` merely to silence the check.
+The recovery runner acquires one database-scoped MySQL advisory lock shared by Core and modules. It validates the unchanged migration file, examines declared postconditions, safely resumes missing idempotent steps, and commits the classic history row together with `completed`. If the migration is a third-party legacy migration without recovery postconditions, recovery stops: restore the matched pre-update database/file backup or install a reviewed recoverable version of that exact file. Full operational details are in `docs/RECOVERY.md`.
+
+If `migrate` reports executed migration files as missing, restore the correct release files before doing anything else. Never delete migration history merely to silence the check.
 
 `backup:verify` checks the newest NovaNuke SQL and TAR backups in private storage. It validates the SQL envelope and SHA-256 fingerprint, then validates TAR headers, terminator, safe regular-file paths and every manifest size/hash without extracting content. Both files must be valid and created no more than ten minutes apart. Verification proves that the generated files are internally intact; a periodic restoration test on a disposable database remains necessary.
 

@@ -21,12 +21,12 @@ final class WikiRevisionTest extends TestCase
         self::assertStringContainsString('rollBack()', $repository);
 
         $migration = (string) file_get_contents(dirname(__DIR__, 2) . '/modules/Wiki/database/migrations/2026_09_08_000002_create_wiki_revisions.php');
-        self::assertStringContainsString('CREATE TABLE wiki_page_revisions', $migration);
+        self::assertStringContainsString('CREATE TABLE IF NOT EXISTS wiki_page_revisions', $migration);
         self::assertStringContainsString('SELECT id,1,namespace,slug,title,content', $migration);
 
         $commentsMigration = (string) file_get_contents(dirname(__DIR__, 2) . '/modules/Wiki/database/migrations/2026_09_09_000003_add_wiki_comments.php');
-        self::assertStringContainsString('ALTER TABLE wiki_pages ADD comments_enabled', $commentsMigration);
-        self::assertStringContainsString('ALTER TABLE wiki_page_revisions ADD comments_enabled', $commentsMigration);
+        self::assertStringContainsString("MigrationSchema::addColumn(\$database,'wiki_pages','comments_enabled'", $commentsMigration);
+        self::assertStringContainsString("MigrationSchema::addColumn(\$database,'wiki_page_revisions','comments_enabled'", $commentsMigration);
     }
 
     public function testRestoreIsConfirmedAuthorizedAndCreatesANewRevision(): void

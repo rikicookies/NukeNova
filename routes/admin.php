@@ -257,6 +257,7 @@ $menusController = static fn (Container $container): MenusController => new Menu
     $container->get(CsrfTokenManager::class),
     $container->get(SessionManager::class),
     $container->get(ViewRenderer::class),
+    $container->get(SettingsRepository::class),
 );
 $router->get('/admin/menus', static fn (Request $request, Container $container): Response =>
     $menusController($container)->index()
@@ -266,6 +267,12 @@ $router->post('/admin/menus/save', static fn (Request $request, Container $conta
 );
 $router->post('/admin/menu-items/save', static fn (Request $request, Container $container): Response =>
     $menusController($container)->saveItem($request)
+);
+$router->post('/admin/menus/{id}/order', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->savePublicMenuOrder($request)
+);
+$router->post('/admin/navigation/order', static fn (Request $request, Container $container): Response =>
+    $menusController($container)->saveAdminNavigationOrder($request)
 );
 $router->post('/admin/menus/{id}/delete', static fn (Request $request, Container $container): Response =>
     $menusController($container)->deleteMenu($request)

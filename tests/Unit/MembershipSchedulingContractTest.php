@@ -37,10 +37,17 @@ final class MembershipSchedulingContractTest extends TestCase
         $root=dirname(__DIR__,2);
         $source=(string)file_get_contents($root.'/app/Core/Access/EntitlementService.php');
 
-        self::assertStringContainsString("new DateTimeImmutable((string)\$record['expires_at']", $source);
-        self::assertStringNotContainsString("SET expires_at=:expires,plan_key='vip-custom'", $source);
-        self::assertStringContainsString("SET expires_at=:expires,source=\\'manual\\'", $source);
-        self::assertStringContainsString('expired_event_at=NULL', $source);
+        $extendStart=strpos($source,'public function extend(');
+        $scheduleStart=strpos($source,'public function schedule(', $extendStart);
+        self::assertNotFalse($extendStart);
+        self::assertNotFalse($scheduleStart);
+
+        $extendSource=substr($source,$extendStart,$scheduleStart-$extendStart);
+
+        self::assertStringContainsString("new DateTimeImmutable((string)\$record['expires_at']", $extendSource);
+        self::assertStringNotContainsString("plan_key='vip-custom'", $extendSource);
+        self::assertStringContainsString("SET expires_at=:expires,source=\\'manual\\'", $extendSource);
+        self::assertStringContainsString('expired_event_at=NULL', $extendSource);
     }
 
     public function testAdminSchedulingActionsRemainPostAndCsrfProtected(): void
@@ -57,6 +64,21 @@ final class MembershipSchedulingContractTest extends TestCase
             self::assertStringContainsString("\$router->post('".$route."'", $routes);
         }
         self::assertGreaterThanOrEqual(3, substr_count($controller, 'csrf->validate'));
+    }
+
+
+    public function testLegacyGrantOnlyExtendsCurrentNotFutureVip(): void
+    {
+        $root=dirname(__DIR__,2);
+        $source=(string)file_get_contents($root.'/app/Core/Access/EntitlementService.php');
+        $grantStart=strpos($source,'public function grant(');
+        $replaceStart=strpos($source,'public function replace(',$grantStart);
+        self::assertNotFalse($grantStart);
+        self::assertNotFalse($replaceStart);
+
+        $grantSource=substr($source,$grantStart,$replaceStart-$grantStart);
+        self::assertStringContainsString('starts_at<=UTC_TIMESTAMP()',$grantSource);
+        self::assertStringContainsString('User does not exist.',$grantSource);
     }
 
     public function testNoVipBooleanColumnWasAdded(): void

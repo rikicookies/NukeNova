@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['user_login_history'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE user_login_history (
+CREATE TABLE IF NOT EXISTS user_login_history (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     ip_address VARCHAR(45) NOT NULL,

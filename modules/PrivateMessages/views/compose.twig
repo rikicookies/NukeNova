@@ -1,1 +1,18 @@
-{% extends "layouts/default.twig" %}{% block title %}New message — NovaNuke{% endblock %}{% block content %}<section class="messages-page"><p class="eyebrow">Account</p><h1>New message</h1>{% include "@private-messages/_nav.twig" %}{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}<form class="message-form" method="post" action="/messages"><input type="hidden" name="_token" value="{{ csrf_token }}"><label>Recipient username<input name="recipient" required maxlength="32" value="{{ recipient|default('') }}"></label><label>Subject<input name="subject" required minlength="2" maxlength="200" value="{{ subject|default('') }}"></label><label>Format<select name="body_format"><option value="markdown"{% if body_format|default('markdown') == 'markdown' %} selected{% endif %}>Markdown</option><option value="html"{% if body_format|default('markdown') == 'html' %} selected{% endif %}>HTML (sanitized)</option></select></label><label>Message<textarea name="body" required minlength="2" maxlength="5000">{{ body|default('') }}</textarea></label><button type="submit">Send message</button></form></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}New message — NovaNuke{% endblock %}
+{% block content %}
+<section class="messages-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Messages', url: '/messages'}, {label: 'New message'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Account', title: 'New message', description: 'Start a private conversation with another member.'} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    <form class="message-form" method="post" action="/messages">
+        <input type="hidden" name="_token" value="{{ csrf_token }}">
+        <label>Recipient username<input name="recipient" required maxlength="32" value="{{ recipient|default('') }}"></label>
+        <label>Subject<input name="subject" required minlength="2" maxlength="200" value="{{ subject|default('') }}"></label>
+        <label>Format<select name="body_format"><option value="markdown"{% if body_format|default('markdown') == 'markdown' %} selected{% endif %}>Markdown</option><option value="html"{% if body_format|default('markdown') == 'html' %} selected{% endif %}>HTML (sanitized)</option></select></label>
+        <label>Message<textarea name="body" required minlength="2" maxlength="5000" rows="10">{{ body|default('') }}</textarea></label>
+        <div class="module-action-row"><button class="module-button-primary" type="submit">Send message</button><a class="module-link-button" href="/messages">Cancel</a></div>
+    </form>
+</section>
+{% endblock %}

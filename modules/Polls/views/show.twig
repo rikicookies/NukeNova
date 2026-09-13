@@ -1,1 +1,34 @@
-{% extends "layouts/default.twig" %}{% block title %}{{ poll.question }} — Polls{% endblock %}{% block content %}<section class="polls-page poll-detail"><p class="eyebrow">Poll</p><h1>{{ poll.question }}</h1>{% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}{% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}{% if poll.accepting and not has_voted %}<form class="poll-form" method="post" action="/polls/{{ poll.id }}/vote"><input type="hidden" name="_token" value="{{ csrf_token }}">{% for option in poll.options %}<label><input type="{{ poll.allow_multiple ? 'checkbox' : 'radio' }}" name="options[]" value="{{ option.id }}"> {{ option.label }}</label>{% endfor %}<small>{{ poll.allow_multiple ? 'Choose up to ' ~ poll.max_selections ~ ' options.' : 'Choose one option.' }}</small><button type="submit">Vote</button></form>{% else %}<p>{{ has_voted ? 'You already voted in this poll.' : 'This poll is closed.' }}</p>{% endif %}<h2>Results</h2><div class="poll-results">{% for option in poll.options %}{% set percent = poll.total_votes > 0 ? (option.votes / poll.total_votes * 100) : 0 %}<div><span>{{ option.label }} — {{ option.votes }} ({{ percent|round }}%)</span><progress max="100" value="{{ percent }}"></progress></div>{% endfor %}</div><p><strong>{{ poll.total_votes }}</strong> total voters.</p><p><a href="/polls">All polls</a></p></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}{{ poll.question }} — Polls{% endblock %}
+{% block content %}
+<section class="polls-page poll-detail module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Polls', url: '/polls'}, {label: 'Poll'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Poll', title: poll.question, description: poll.accepting ? 'Voting is open.' : 'Voting is closed.'} only %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    {% if error %}<p class="alert alert-error">{{ error }}</p>{% endif %}
+    <div class="module-split">
+        <section class="module-section">
+            <div class="module-section-heading"><div><h2>Your vote</h2><p>{{ poll.allow_multiple ? 'Choose up to ' ~ poll.max_selections ~ ' options.' : 'Choose one option.' }}</p></div></div>
+            {% if poll.accepting and not has_voted %}
+            <form class="poll-form" method="post" action="/polls/{{ poll.id }}/vote">
+                <input type="hidden" name="_token" value="{{ csrf_token }}">
+                {% for option in poll.options %}<label><span><input type="{{ poll.allow_multiple ? 'checkbox' : 'radio' }}" name="options[]" value="{{ option.id }}"> {{ option.label }}</span></label>{% endfor %}
+                <button class="module-button-primary" type="submit">Submit vote</button>
+            </form>
+            {% else %}
+                {% include 'components/empty-state.twig' with {title: has_voted ? 'Vote recorded' : 'Voting closed', message: has_voted ? 'Thanks for taking part. Current results are shown alongside.' : 'This poll is no longer accepting votes.'} only %}
+            {% endif %}
+        </section>
+        <section class="module-section">
+            <div class="module-section-heading"><div><h2>Results</h2><p>{{ poll.total_votes }} total voter{{ poll.total_votes == 1 ? '' : 's' }}.</p></div></div>
+            <div class="poll-results">
+                {% for option in poll.options %}
+                    {% set percent = poll.total_votes > 0 ? (option.votes / poll.total_votes * 100) : 0 %}
+                    <div><span><strong>{{ option.label }}</strong> — {{ option.votes }} ({{ percent|round }}%)</span><progress max="100" value="{{ percent }}"></progress></div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+    <div class="module-action-row"><a class="module-link-button" href="/polls">Back to all polls</a></div>
+</section>
+{% endblock %}

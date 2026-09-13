@@ -28,6 +28,7 @@ final class ReleaseChecklistTest extends TestCase
         file_put_contents($this->root . '/storage/private/.htaccess', "Require all denied\nDeny from all\n");
         file_put_contents($this->root . '/bootstrap/app.php', '<?php');
         file_put_contents($this->root . '/composer.json', '{}');
+        file_put_contents($this->root . '/composer.lock', '{"packages":[]}');
         file_put_contents($this->root . '/.env.example', "APP_KEY=\nDB_PASSWORD=\nMAIL_PASSWORD=\n");
         foreach (['INSTALLATION.md', 'PRODUCTION.md', 'PRODUCTION_HARDENING.md'] as $doc) {
             file_put_contents($this->root . '/docs/' . $doc, '# test');
@@ -59,6 +60,13 @@ final class ReleaseChecklistTest extends TestCase
     public function testItRejectsSecretsInTheExampleEnvironment(): void
     {
         file_put_contents($this->root . '/.env.example', "APP_KEY=secret\nDB_PASSWORD=secret\nMAIL_PASSWORD=secret\n");
+        self::assertFalse((new ReleaseChecklist($this->root))->passed());
+    }
+
+
+    public function testDistributionRequiresComposerLock(): void
+    {
+        unlink($this->root . '/composer.lock');
         self::assertFalse((new ReleaseChecklist($this->root))->passed());
     }
 

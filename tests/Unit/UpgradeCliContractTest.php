@@ -19,7 +19,7 @@ final class UpgradeCliContractTest extends TestCase
         self::assertStringContainsString("str_starts_with(\$arguments[0], '--from=')", $section);
         self::assertStringContainsString('MigrationStatus::class', $section);
         self::assertStringContainsString('$supportedUpgradeSources', $section);
-        self::assertStringContainsString("'0.4.0-beta.9', Version::CURRENT", $cli);
+        self::assertStringContainsString("'0.4.0-rc.1', '0.4.0-rc.2', Version::CURRENT", $cli);
         self::assertStringContainsString('UpgradeReadiness', $section);
         self::assertStringContainsString("'system.core_version'", $section);
         self::assertStringNotContainsString('->run(', $section);
@@ -35,6 +35,7 @@ final class UpgradeCliContractTest extends TestCase
 
         self::assertStringContainsString('MigrationStatus::class', $section);
         self::assertStringContainsString('ReleaseChecklist', $section);
+        self::assertStringContainsString('StorageProvisioner', $section);
         self::assertStringContainsString("'system.core_version'", $section);
         self::assertLessThan(strpos($section, '$settings->setMany'), strpos($section, 'if (! $passed) exit(1)'));
         self::assertStringNotContainsString('->run(', $section);

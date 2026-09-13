@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['users','user_profiles','roles','permissions','user_roles','role_permissions'];
+    private const MIGRATION_VALUES = [['roles','slug','super-administrator'],['roles','slug','administrator'],['roles','slug','editor'],['roles','slug','moderator'],['roles','slug','member'],['roles','slug','guest']];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(32) NOT NULL,
     email VARCHAR(254) NOT NULL,
@@ -28,7 +32,7 @@ CREATE TABLE users (
 SQL);
 
         $database->exec(<<<'SQL'
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     user_id BIGINT UNSIGNED PRIMARY KEY,
     display_name VARCHAR(100) NOT NULL,
     avatar_path VARCHAR(255) NULL,
@@ -43,7 +47,7 @@ CREATE TABLE user_profiles (
 SQL);
 
         $database->exec(<<<'SQL'
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL,
@@ -56,7 +60,7 @@ CREATE TABLE roles (
 SQL);
 
         $database->exec(<<<'SQL'
-CREATE TABLE permissions (
+CREATE TABLE IF NOT EXISTS permissions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(120) NOT NULL,
     slug VARCHAR(120) NOT NULL,
@@ -70,7 +74,7 @@ CREATE TABLE permissions (
 SQL);
 
         $database->exec(<<<'SQL'
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
     user_id BIGINT UNSIGNED NOT NULL,
     role_id BIGINT UNSIGNED NOT NULL,
     created_at DATETIME NOT NULL,
@@ -81,7 +85,7 @@ CREATE TABLE user_roles (
 SQL);
 
         $database->exec(<<<'SQL'
-CREATE TABLE role_permissions (
+CREATE TABLE IF NOT EXISTS role_permissions (
     role_id BIGINT UNSIGNED NOT NULL,
     permission_id BIGINT UNSIGNED NOT NULL,
     created_at DATETIME NOT NULL,
@@ -101,7 +105,8 @@ SQL);
         ];
         $statement = $database->prepare(
             'INSERT INTO roles (name, slug, is_system, created_at, updated_at) '
-            . 'VALUES (:name, :slug, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())'
+            . 'VALUES (:name, :slug, 1, UTC_TIMESTAMP(), UTC_TIMESTAMP()) '
+            . 'ON DUPLICATE KEY UPDATE name=VALUES(name),is_system=1,updated_at=UTC_TIMESTAMP()'
         );
         foreach ($roles as [$name, $slug]) {
             $statement->execute(['name' => $name, 'slug' => $slug]);

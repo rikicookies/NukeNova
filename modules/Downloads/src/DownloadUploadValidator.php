@@ -32,6 +32,14 @@ final class DownloadUploadValidator
         if (! is_string($mime) || ! in_array(strtolower($mime), self::TYPES[$extension], true)) {
             throw new RuntimeException('File content does not match an allowed MIME type.');
         }
+        if ($extension === 'zip') {
+            $handle = fopen($path, 'rb');
+            $signature = $handle === false ? false : fread($handle, 4);
+            if (is_resource($handle)) fclose($handle);
+            if (! is_string($signature) || ! in_array($signature, ["PK\x03\x04", "PK\x05\x06", "PK\x07\x08"], true)) {
+                throw new RuntimeException('ZIP archive signature is invalid.');
+            }
+        }
         if (mb_strlen($name) > 255 || preg_match('/[\x00-\x1F\x7F]/', $name)) throw new RuntimeException('Invalid original filename.');
         return new ValidatedUpload($path, $name, $extension, strtolower($mime), $size);
     }

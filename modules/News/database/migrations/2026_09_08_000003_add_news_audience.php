@@ -2,18 +2,23 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+use NovaNuke\Core\Database\MigrationSchema;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_COLUMNS = ['news_articles'=>['audience']];
+    private const MIGRATION_INDEXES = ['news_articles'=>['news_articles_audience_index']];
     public function up(PDO $database): void
     {
-        $database->exec("ALTER TABLE news_articles ADD audience VARCHAR(20) NOT NULL DEFAULT 'public' AFTER status");
-        $database->exec('CREATE INDEX news_articles_audience_index ON news_articles (audience, status, published_at)');
+        MigrationSchema::addColumn($database,'news_articles','audience',"VARCHAR(20) NOT NULL DEFAULT 'public' AFTER status");
+        MigrationSchema::createIndex($database,'news_articles','news_articles_audience_index','audience,status,published_at');
     }
 
     public function down(PDO $database): void
     {
-        $database->exec('DROP INDEX news_articles_audience_index ON news_articles');
-        $database->exec('ALTER TABLE news_articles DROP COLUMN audience');
+        MigrationSchema::dropIndex($database,'news_articles','news_articles_audience_index');
+        MigrationSchema::dropColumn($database,'news_articles','audience');
     }
 };

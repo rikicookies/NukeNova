@@ -71,4 +71,23 @@ final class ResponseTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         Response::html('ok')->withHeader('X-Test', "safe\r\nInjected: bad");
     }
+
+    public function testExternalRedirectAllowsDefaultExplicitPorts(): void
+    {
+        self::assertSame('https://example.test:443/file', Response::externalRedirect('https://example.test:443/file')->header('Location'));
+        self::assertSame('http://example.test:80/file', Response::externalRedirect('http://example.test:80/file')->header('Location'));
+    }
+
+    public function testExternalRedirectRejectsCredentialsAndUnexpectedPorts(): void
+    {
+        foreach (['https://user@example.test/file', 'https://example.test:444/file'] as $url) {
+            try {
+                Response::externalRedirect($url);
+                self::fail('Unsafe external redirect was accepted: ' . $url);
+            } catch (InvalidArgumentException) {
+                self::assertTrue(true);
+            }
+        }
+    }
+
 }

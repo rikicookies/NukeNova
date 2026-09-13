@@ -131,3 +131,209 @@ body.nav-collapsed .nova-menu-level-1 { display: none; }
 @media (prefers-reduced-motion: reduce) {
     .nova-workspace, .nova-sidebar { transition: none; }
 }
+
+
+/* Beta 28 bundled-module polish: map shared module primitives to NovaModern's light palette. */
+.nova-modern :is(.module-section, .surface-card, .content-card, .poll-list article, .message-row, .notification-item, .form-surface, .stack-form, .message-form, .poll-form, .search-form, .media-upload, .module-metric, .stat-grid article, .system-list > div, .empty-state) {
+    border-color: var(--nova-border);
+    background: var(--nova-surface);
+    color: var(--nova-text);
+    box-shadow: 0 1px 3px rgb(27 35 52 / 5%);
+}
+.nova-modern :is(.module-section-heading p, .surface-card-meta, .module-metric span, .stat-grid article span, .empty-state p, .message-row span, .message-row small, .poll-list article small, .content-card p) { color: var(--nova-muted); }
+.nova-modern :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.nova-modern :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) textarea,
+.nova-modern :is(.form-surface, .stack-form, .message-form, .search-form, .media-upload) select {
+    border-color: var(--nova-border);
+    background: #fff;
+    color: var(--nova-text);
+}
+.nova-modern :is(.module-link-button, .module-button, .module-action-row button, .module-page button, .polls-page button, .messages-page button, .notifications-page button, .friends-page button, .search-page button, .statistics-page button) {
+    border-color: #cfd6e2;
+    background: #f5f7fa;
+    color: #293447;
+}
+.nova-modern .module-button-primary { border-color: var(--nova-accent); background: var(--nova-accent); color: #fff; }
+.nova-modern :is(.module-button-danger, .module-action-row .danger-button) { border-color: #e4a2ab; background: #fff1f3; color: #a1283b; }
+.nova-modern .message-row.unread,
+.nova-modern .notification-item.is-unread { border-left-color: var(--nova-accent); background: #f4f7fd; }
+.nova-modern .empty-state { border-style: dashed; background: var(--nova-surface-soft); }
+.nova-modern .media-card { border-color: var(--nova-border); background: var(--nova-surface); color: var(--nova-text); }
+.nova-modern .system-list > div { border-color: var(--nova-border); background: var(--nova-surface-soft); }
+
+
+/* RC.3 mobile hardening */
+body.nova-modern.nav-open { overflow: hidden; }
+
+@media (max-width: 900px) {
+    .nova-sidebar {
+        height: calc(100dvh - 68px);
+        max-height: calc(100dvh - 68px);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: max(1rem, env(safe-area-inset-bottom));
+        scrollbar-gutter: stable;
+    }
+    .nova-sidebar > nav { min-height: min-content; padding-bottom: 1rem; }
+    .nova-nav-overlay { inset: 68px 0 0; }
+    .nova-content, .nova-public-main { overflow-x: clip; }
+    .nova-admin .table-wrap, .nova-admin .admin-table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        -webkit-overflow-scrolling: touch;
+    }
+    .nova-admin .admin-table { width: max-content; min-width: 100%; }
+    .nova-admin .admin-table-empty-row td {
+        position: sticky;
+        left: 0;
+        width: min(82vw, 34rem);
+        max-width: calc(100vw - 3rem);
+        background: var(--nova-surface);
+    }
+    .nova-admin .admin-table-empty {
+        width: min(100%, calc(100vw - 4rem));
+        max-width: 34rem;
+        margin-inline: auto;
+        padding-inline: .75rem;
+    }
+    .nova-admin .admin-table-empty p {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+    }
+    .nova-admin :is(.module-heading, .module-section-heading, .dashboard-section-heading, .nova-dashboard-heading) {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .nova-admin :is(.form-grid, .taxonomy-grid, .module-split, .statistics-columns) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .nova-admin :is(input, select, textarea, button) { min-width: 0; }
+}
+
+@media (max-width: 600px) {
+    .nova-sidebar {
+        height: calc(100dvh - 60px);
+        max-height: calc(100dvh - 60px);
+    }
+    .nova-nav-overlay { inset: 60px 0 0; }
+    .nova-content > section, .nova-page-content > section, .nova-page-content > article {
+        padding: 1rem;
+    }
+    .nova-admin .admin-page > h1,
+    .nova-admin .admin-page > .content-page-header h1 {
+        font-size: clamp(2.35rem, 13vw, 3.4rem);
+    }
+    .nova-admin .content-header-actions,
+    .nova-admin .module-action-row {
+        width: 100%;
+    }
+    .nova-admin .content-header-actions > *,
+    .nova-admin .module-action-row > * {
+        max-width: 100%;
+    }
+}
+
+
+/* RC.3 administration navigation sorter */
+.nova-modern .admin-navigation-order { margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--nova-border); border-radius: .8rem; background: var(--nova-surface-soft); }
+.admin-nav-sorter { display: grid; gap: .75rem; margin: 1rem 0; }
+.admin-nav-sort-group { overflow: hidden; border: 1px solid var(--nova-border); border-radius: .65rem; background: var(--nova-surface); }
+.admin-nav-sort-group > header, .admin-nav-sort-group li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .65rem; padding: .65rem .75rem; }
+.admin-nav-sort-group > header { border-bottom: 1px solid var(--nova-border); background: #f2f5f9; }
+.admin-nav-sort-group ul { margin: 0; padding: .35rem; list-style: none; }
+.admin-nav-sort-group li + li { border-top: 1px solid #edf0f4; }
+.admin-nav-drag-handle, .admin-nav-move-buttons button { min-width: 2.25rem; min-height: 2.25rem; border: 1px solid #cfd6e2; border-radius: .45rem; background: #fff; color: var(--nova-text); cursor: grab; touch-action: manipulation; }
+.admin-nav-move-buttons { display: flex; gap: .3rem; }
+.admin-nav-move-buttons button { cursor: pointer; }
+.admin-nav-sort-group.is-dragging, .admin-nav-sort-group li.is-dragging { opacity: .5; }
+.admin-nav-order-help { color: var(--nova-muted); font-size: .8rem; }
+@media (min-width: 760px) {
+    .admin-nav-sorter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+
+
+
+/* RC.3 primary navigation sorter — visually matches administration sorter */
+.nova-modern .primary-navigation-order {
+    border-color: var(--nova-border);
+    background: var(--nova-surface-soft);
+}
+
+.nova-modern .primary-menu-sorter {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: .75rem;
+    margin: 1rem 0;
+}
+
+.nova-modern .primary-menu-sort-item {
+    overflow: hidden;
+    border: 1px solid var(--nova-border);
+    border-radius: .65rem;
+    background: var(--nova-surface);
+}
+
+.nova-modern .primary-menu-sort-item > header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .65rem;
+    padding: .65rem .75rem;
+    border-bottom: 0;
+    background: #f2f5f9;
+}
+
+.nova-modern .primary-menu-sort-label {
+    min-width: 0;
+}
+
+.nova-modern .primary-menu-sort-label strong,
+.nova-modern .primary-menu-sort-label small {
+    display: block;
+}
+
+.nova-modern .primary-menu-sort-label small {
+    margin-top: .18rem;
+    color: var(--nova-muted);
+    overflow-wrap: anywhere;
+    font-weight: 400;
+}
+
+.nova-modern .primary-menu-children {
+    display: grid;
+    gap: .4rem;
+    margin: 0;
+    padding: .45rem .45rem .45rem 1.75rem;
+    border-top: 1px solid var(--nova-border);
+    background: #fbfcfe;
+    list-style: none;
+}
+
+.nova-modern .primary-menu-children .primary-menu-sort-item {
+    border-color: #dbe2ed;
+    box-shadow: none;
+}
+
+.nova-modern .primary-menu-sort-item.is-dragging {
+    opacity: .5;
+}
+
+@media (max-width: 600px) {
+    .nova-modern .primary-menu-sort-item > header {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .nova-modern .primary-menu-sort-item .admin-nav-move-buttons {
+        grid-column: 1 / -1;
+        justify-content: flex-end;
+    }
+
+    .nova-modern .primary-menu-children {
+        padding-left: .75rem;
+    }
+}

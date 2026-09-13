@@ -1,4 +1,372 @@
+## 0.4.0-rc.4 - unreleased
+
+### Release reliability and recovery
+- Added a durable `running` / `dirty` / `completed` operation ledger for Core and module migrations without replacing existing history.
+- Added checksum-guarded recovery, verified postconditions, repeat-safe bundled migrations, and a database-scoped MySQL/MariaDB advisory lock.
+- Added `migrate:recover` for interrupted Core, module install/update, and module uninstall operations.
+- Added MySQL fault-injection coverage for DDL committed before migration history, partial DDL, module lifecycle recovery, legacy history, and concurrent runners.
+
+## 0.4.0-beta.15 - 2026-09-10
+
+## 0.4.0-rc.3 - 2026-09-12
+
+### RC.3 checkpoint regression fixes
+- Corrected the isolated installer bootstrap test to use the real `Response::content()` API and restore NovaNuke's temporary error handler after each test.
+- Removed bootstrap-only `NOVANUKE_ROOT` dependencies from mail configuration and installer routes so isolated uninstalled-site tests work in an already-installed development tree.
+- Fresh-install bootstrap tests now use an isolated temporary distribution root instead of assuming the developer checkout has no `.env` or installation lock.
+- Updated the public-menu ordering contract to the final shared admin-style controls.
+- RC source-check fixtures now include the required `composer.lock`.
+
+
+### NovaModern mobile hardening
+- Fixed the NovaModern mobile administration sidebar so long navigation owns its viewport scroll, honors dynamic viewport height and iPhone safe-area padding, and no longer strands lower menu items off-screen.
+- Locks page scrolling while the mobile sidebar is open and keeps the active navigation item visible.
+- Hardened administration tables for narrow screens with contained horizontal scrolling and mobile-safe empty states.
+- Normalized narrow-screen module headings, forms, split layouts and action rows without changing module behavior.
+- Added regression coverage for mobile sidebar scrolling and responsive admin-table behavior.
+
+### Administration navigation ordering
+- Added persistent administration-sidebar ordering under Admin -> Menus.
+- Administrators with `menus.manage` can reorder navigation groups and links; the order is stored in settings and applied site-wide while permissions continue to filter visibility.
+- Desktop supports drag ordering; touch devices have explicit up/down controls so ordering does not depend on HTML5 drag support.
+- No database migration is required.
+
+### Public menu ordering
+- Primary navigation ordering now uses the same visual card language, spacing and move controls as the administration navigation sorter.
+- Primary navigation sorter controls are now explicitly visible for every item (drag handle plus up/down buttons), including narrow mobile layouts.
+- Dedicated the visual public-menu sorter to the `primary` menu used by NovaModern's main public sidebar, so the main navigation can be reordered as directly as the administration sidebar.
+- Added the same visual ordering workflow to normal/public menus in Admin -> Menus.
+- Each menu can be reordered by drag on desktop or explicit up/down controls on touch devices.
+- Saving updates only `sort_order`; parent/child relationships, role visibility, enabled state and destinations remain unchanged.
+- No migration is required.
+
+### Release hardening
+- Example-secret release validation now accepts both unquoted blank values and quoted-empty values while still rejecting real credential values.
+- No content schema changes and no new module migrations.
+
+
+## 0.4.0-rc.2 - 2026-09-12
+
+### Shared-hosting installer bootstrap correction
+- Fixed a release-blocking fresh-install failure discovered on Bluehost: an uninstalled web request no longer resolves PDO-backed maintenance/auth/module services before database credentials are submitted.
+- Installer-mode Kernel dispatch is now explicitly database-independent until `storage/installed.lock` exists.
+- Added regression coverage proving `/install` renders and `/` redirects to `/install` without a configured database.
+- Added a static installer-safety contract to prevent DB-backed Kernel guards from being eagerly resolved on uninstalled sites.
+- Release packages now require `composer.lock` so RC/stable deployments install the exact dependency graph tested during acceptance.
+- Carries the Beta 28 pre-RC fixes for pre-created empty databases, older-upgrade runtime-directory provisioning, and third-party/local modules.
+
+### Acceptance target
+- Replace RC.1 source with RC.2 on the Bluehost test site without manually creating `.env`.
+- Confirm `/install` renders before any database credentials are configured.
+- Install into the already-created empty Bluehost database.
+- Run installed-site and release/deployment checks after installation.
+
+
+## 0.4.0-rc.1 - 2026-09-11
+
+### First Release Candidate
+- Feature freeze begins for the 0.4.0 line.
+- Carries the complete Beta 28 visual-consistency pass across all bundled modules.
+- Carries pre-RC compatibility fixes for shared-hosting/pre-created empty databases, runtime-directory provisioning during older upgrades, and third-party/local module tolerance in bundled-module audits.
+- Upgrade support includes Beta 28 as a direct source release.
+- RC acceptance is now focused on packaged fresh installation, older-site upgrade, backup/restore, production configuration, SMTP, permissions and shared-hosting behavior.
+- No database migration is introduced by RC.1.
+
+### Acceptance target
+- Fresh install from the packaged archive into a pre-created empty database.
+- Existing-site upgrade from Beta 28.
+- Production-like install on Bluehost with HTTPS, SMTP, Linux permissions and `composer check:release` / `php bin/cms rc:deployment`.
+
+
+## 0.4.0-beta.28 - 2026-09-11
+
+### Final beta — bundled-module visual consistency pass
+- Completed an explicit visual audit of every bundled module before RC.1.
+- Fully refreshed Polls public/admin presentation: page hierarchy, cards, voting/results surfaces, status badges, inventory actions and empty states.
+- Fully refreshed Statistics public/admin presentation: metric cards, privacy context, breakdown panels, activity tables and empty states.
+- Refreshed Friends, Notifications, Quotes, Private Messages, Search, Media, Comments, Demo Content and Welcome using shared page/header/card/form/action primitives.
+- Brought the WebLinks community-submission screen into the current page/header/form system.
+- Re-reviewed previously modernized Downloads, News, Pages, WebLinks and Wiki surfaces instead of assuming prior work was sufficient.
+- Preserved Wiki's specialized Markdown/directory/map presentation while aligning empty states.
+- Added a shared bundled-module presentation layer in `public/assets/css/app.css`, with explicit NovaModern and Classic light-palette overrides.
+- Added `BundledModuleVisualConsistencyTest` plus `docs/VISUAL_AUDIT_BETA28.md`; the test requires every bundled module to appear in the visual-audit inventory.
+- Added consistent responsive module sections, metric grids, card lists, action rows, form surfaces and reusable empty-state treatment across old/new module screens.
+
+### Documentation contract correction
+- Updated the RC documentation contract test to assert the Beta 28 pre-RC wording instead of the superseded `Release Candidate preparation` phrase.
+- Corrected the RC documentation contract so it validates the restore workflow that Beta 28 actually documents, without requiring a nonexistent `backup:restore-check` command.
+
+### Pre-RC compatibility corrections
+- Installer now tries to use a pre-provisioned database before attempting `CREATE DATABASE`, allowing empty databases created by Laragon/control panels and shared-hosting accounts without database-creation privileges.
+- Existing non-empty databases remain protected by the empty-schema guard.
+- `upgrade:complete` now provisions the complete current runtime-directory contract before recording upgrade success, including directories added after older Alpha/Beta releases such as `storage/private/avatars`.
+- The bundled-module visual audit now requires every official bundled module while allowing additional third-party/local modules such as `TestModule`.
+- Added regression coverage for pre-existing empty database installs and the updated upgrade/module contracts.
+
+### Scope
+- No database migration.
+- No new module or major feature.
+- Existing routes, permissions and content behavior are preserved.
+- Beta 28 is intended to be the final beta before RC.1 acceptance.
+
+
+## 0.4.0-beta.27 - 2026-09-11
+
+### RC acceptance batch — backup recovery and deployment aggregation
+- Fixed the `rc:deployment` PaymentHealthCheck namespace regression (`Core\Billing`, not the nonexistent `Core\Payments`).
+- Added `BackupRecoveryCheck` to verify the latest database/file backup pair and perform a real disposable extraction of the verified file archive.
+- Added `backup:restore-check` CLI command; it never overwrites the active site and removes its temporary restore directory afterward.
+- Added backup freshness validation for RC deployment acceptance (latest matched pair must be no older than 24 hours).
+- Expanded `rc:deployment` so it now includes installed-site health and backup recovery in addition to production, authorization, Membership, Payments, mail, bundled themes and deployment-secret policy.
+- Added regression tests for the aggregate RC deployment contract and disposable backup recovery path.
+- Updated RC/recovery documentation to require actual extraction evidence rather than `backup:verify` alone.
+
+### Scope
+- No database migration.
+- No user-facing feature work.
+- No deferred visual/module polish work.
+
+
+## 0.4.0-beta.26 - 2026-09-11
+
+### RC security and request-boundary checkpoint
+- Fixed the Beta 25 external-redirect regression: credential-bearing URLs and non-default explicit ports are now rejected; explicit HTTP 80 / HTTPS 443 remain valid.
+- Hardened CSRF validation so malformed tokens fail without creating or rotating session state as a side effect.
+- Hardened database rate-limit configuration and key validation, and replaced unconditional expired-row cleanup on every hit with bounded probabilistic cleanup.
+- Carries forward the accumulated Beta 25 RC hardening: session cookie scope / `__Host-` invariants, production HTTPS CSP upgrade policy, deployment-secret validation, consolidated `rc:deployment`, request-path canonicalization, ZIP signature checks, image pixel ceilings, and the file-restore CLI import regression fix.
+- Added regression/contract coverage for the above boundaries.
+
+### Scope
+- No database migration.
+- No visual/module polish.
+- Intended as the next accumulated checkpoint after Beta 25, not a one-fix release.
+
+## 0.4.0-beta.25 - 2026-09-11
+
+### RC hardening batch — sessions, HTTP boundaries, uploads and deployment preflight
+- Added configurable `SESSION_PATH`/`SESSION_DOMAIN` and enforced the PHP `__Host-` cookie invariants: Secure, root path and no Domain.
+- Expanded production readiness with absolute session lifetime, cookie scope and HSTS-policy checks.
+- Production HTTPS CSP now includes `upgrade-insecure-requests`.
+- Added consolidated `rc:deployment` preflight covering production, authorization, memberships, payments, mail, bundled themes and deployment-secret policy.
+- Added deployment-secret checks for APP_KEY entropy, production database credentials and SMTP credentials without exposing secret values.
+- Hardened request path canonicalization: dot segments normalize before routing and encoded slash/backslash/null-byte ambiguity is rejected.
+- Hardened external redirects by rejecting embedded credentials and unexpected ports.
+- Hardened ZIP uploads with archive-signature verification and image uploads with a total pixel ceiling.
+- Fixed the Beta 23 file-restore CLI import regression and added contract coverage so the restore command cannot silently lose its implementation import.
+- Expanded RC/security/production documentation and release-check aggregation.
+
+### Scope
+- No database migration.
+- No visual/module polish work.
+- No new end-user feature.
+
+
+## 0.4.0-beta.24 - 2026-09-11
+
+### RC preparation — mail, themes, authorization and regression batch
+- Added database-independent `theme:check` to validate bundled theme manifests, compatibility, declared layout templates, screenshots and asset directories.
+- Added `mail:check` to validate log/SMTP transport configuration without opening a delivery connection or exposing SMTP credentials.
+- Added mail configuration unit coverage for development log mail, valid SMTP and invalid-secret-safe SMTP diagnostics.
+- Strengthened `security:audit` so the Super Administrator role must retain every required Core permission.
+- Added MySQL integration coverage proving the authorization audit detects a missing Super Administrator permission.
+- Added MySQL theme lifecycle integration coverage for bundled theme install, activation, switching, active-theme uninstall protection and uninstall of an inactive theme.
+- Added bundled-theme source-package validation to `check:rc-source`.
+- Added mail configuration validation to `check:site` and both theme/mail checks to `check:release`.
+- Updated RC acceptance and production documentation for structural SMTP validation and bundled-theme preflight.
+
+### Scope
+- No database migration.
+- No visual redesign or deferred module-polish work.
+- No SMTP message is sent by `mail:check`; real delivery remains an RC acceptance step.
+
+
+## 0.4.0-beta.23 - 2026-09-11
+
+### RC preparation — verified private-file restore
+- Added `FileBackupRestorer` for verified extraction of NovaNuke TAR backups into an empty destination.
+- Restore verifies the existing backup manifest/checksums before creating the destination and refuses non-empty targets.
+- Added `backup:restore-files --archive=PATH --destination=PATH`; there is intentionally no overwrite or force mode.
+- Added regression coverage for successful restore, tampered archives and non-empty destination refusal.
+- Added recovery documentation and RC acceptance guidance separating safe private-file restore from explicit operator-controlled SQL database restore.
+
+### Scope
+- No database migration.
+- No live/in-place restore behavior.
+- No module/theme visual work.
+
+
+## 0.4.0-beta.22 - 2026-09-11
+
+### RC preparation — automated fresh-installer acceptance
+- Added MySQL integration coverage that runs the real `InstallerService` against a random empty database and temporary application root.
+- Fresh-installer integration verifies current Core version recording, installation lock creation, generated environment configuration, Super Administrator + role assignment, complete Core migration execution, and required runtime storage provisioning.
+- Added a destructive-safety regression proving the installer refuses a non-empty database without deleting pre-existing tables or writing `.env` / installation lock state.
+- Updated RC and clean-install acceptance documentation to distinguish automated installer regression from the required browser fresh-install pass.
+
+### Scope
+- No runtime feature change.
+- No database migration.
+- No module/theme visual work.
+- Beta 22 remains a pre-RC acceptance checkpoint.
+
+
+## 0.4.0-beta.21 - 2026-09-11
+
+### RC fixture completeness correction
+- Completed the isolated RC test fixture with the structural directories required by `ReleaseChecklist`.
+- Added `app/` so public-root isolation can be evaluated correctly.
+- Added `storage/sessions/` so required distribution structure passes in the synthetic clean fixture.
+- Keeps RC cleanliness tests isolated from installed-site runtime state.
+
+### Scope
+- Test-only correction plus release metadata.
+- No database migration or runtime feature change.
+
+
+## 0.4.0-beta.20 - 2026-09-11
+
+### RC test isolation correction
+- Corrected `ReleaseCandidateChecklistTest` so PHPUnit no longer assumes the active checkout is an untouched release archive.
+- RC cleanliness behavior is now tested against an isolated temporary distribution fixture.
+- Added explicit fixture coverage proving `.env`, installation locks, runtime logs/cache and backups are rejected by `rc:check`.
+- Existing installed sites can now run `composer test:checkpoint` without failing merely because legitimate runtime state exists.
+- `composer check:rc-source` remains intentionally restricted to a freshly extracted clean source package.
+
+### Scope
+- No runtime feature change.
+- No database migration.
+- No production data cleanup.
+- No change to RC cleanliness policy; only test isolation was corrected.
+
+
+## 0.4.0-beta.19 - 2026-09-11
+
+### Release Candidate preparation — source/package acceptance
+- Added database-independent `php bin/cms rc:check` for clean source-package acceptance.
+- Added `composer check:rc-source` combining RC cleanliness, release checklist and distribution smoke checks.
+- RC source validation rejects `.env`, `storage/installed.lock`, runtime logs/cache/backups, stale release metadata and incomplete RC documentation.
+- Added `docs/RC_ACCEPTANCE.md` covering source package, fresh install, real upgrade, backup/restore, security, SMTP, production configuration, bundled-module/theme regression and acceptance recording.
+- Updated stale README, clean-install and update instructions from older alpha/beta wording to the current lifecycle-aware workflow.
+- Reworked production release procedure around backups, upgrade preflight/completion, `check:site`, security audit and `check:release`.
+- Added regression contracts for RC documentation and separation between source-package checks and installed-site checks.
+
+### Scope
+- Feature freeze remains in effect.
+- No database migration.
+- No Membership/Payment behavior change.
+- No deferred module visual-polish work.
+- Beta 19 remains a pre-RC checkpoint; tagging RC still requires the acceptance matrix.
+
+
+## 0.4.0-beta.18 - 2026-09-10
+
+### Release-candidate readiness — lifecycle-aware validation
+- Added read-only `php bin/cms site:check` for an already-installed NovaNuke site.
+- Installed-site health now validates `.env`, installation lock, recorded Core version, migration state, installed module versions, and all required runtime directories.
+- Split Composer lifecycle checks into `check:install`, `check:site`, and `check:release`.
+- `check:install` is now explicitly pre-install only and may correctly require `.env` / installation lock to be absent.
+- `check:site` is the development/staging health pass for an existing installation and includes Membership + optional Payment integrity.
+- `check:release` now combines distribution checklist/smoke, installed-site health, production readiness, Membership integrity, and Payment integrity without running installer-only checks.
+- Added regression contracts so installer absence rules cannot leak back into installed-site/release validation.
+- Documented the distinction between install, site and production-release validation.
+
+### Scope
+- No feature or database-schema change.
+- No module visual-polish work in this checkpoint.
+- Beta 18 is a pre-RC validation/hardening checkpoint, not the Release Candidate itself.
+
+
+## 0.4.0-beta.17 - 2026-09-10
+
+### Beta 3 — Optional payments stabilization checkpoint
+- Hardened receipt idempotency for concurrent duplicate provider delivery by mapping MySQL duplicate-key races to a domain-level duplicate receipt and reloading the canonical receipt.
+- Added read-only `php bin/cms payment:check` for receipt schema, ownership, known plan keys, provider-reference uniqueness and registered provider visibility.
+- Added payment integrity to `composer check:release`.
+- Added integration coverage for duplicate-key mapping and normal payment health state.
+- Added contract coverage for concurrent duplicate handling and payment health checks.
+
+### Scope
+- Payments remain optional and disabled by default.
+- No bundled payment provider, checkout route, webhook route, recurring billing, refunds or automatic cancellations.
+- No card number, CVV/CVC, bank credential or provider secret storage.
+- No new database migration beyond Beta 16's `payment_receipts` table.
+
+
+## 0.4.0-beta.16 - 2026-09-10
+
+### Beta 3 — Optional payments foundation
+- Added provider-neutral `PaymentProviderInterface`, `PaymentProviderRegistry` and normalized `VerifiedPayment` trust boundary.
+- Added `MembershipProvisionerInterface` so verified external grants reuse Membership rules/events instead of writing entitlement rows directly.
+- Added durable `payment_receipts` idempotency storage keyed by provider + external reference.
+- Added transactional `MembershipPaymentProvisioner`: duplicate provider delivery is a no-op; conflicting reuse of a payment reference is rejected; failed Membership provisioning rolls the receipt back.
+- Entitlement replacement now cooperates safely with an existing outer transaction and accepts a nullable system/external granter.
+- Added focused unit/architecture coverage and MySQL integration coverage for verified payment fulfillment, duplicate delivery, tamper detection, provider mismatch and rollback.
+- Added `docs/PAYMENTS.md` documenting the provider boundary, sensitive-data rules and provider-module integration.
+
+### Scope
+- Payments remain optional and disabled by default.
+- No Stripe, PayPal or other payment provider is bundled.
+- No checkout or webhook route is exposed by Core.
+- No card number, CVV/CVC, bank credential or provider secret is stored in `payment_receipts`.
+- Manual Membership administration remains unchanged.
+
+### Database
+- Adds `2026_09_10_000022_create_payment_receipts.php`.
+
+
+### Checkpoint contract cleanup
+- Updated the admin dashboard membership-route contract to the dedicated Memberships admin introduced in Beta 2.
+- Tightened the state-changing GET-route contract so benign read-only routes such as `/account/deleted` are not false positives.
+- Updated the upgrade CLI source-chain contract for Beta 14 -> Beta 15.
+- No runtime Membership behavior or database schema change in this checkpoint.
+
 # Changelog
+
+## 0.4.0-beta.14 - 2026-09-10
+
+### Checkpoint test-suite stabilization
+- Fixed PHP-variable interpolation warnings in CLI and installer contract tests.
+- Updated stale Beta 1 migration contract so later Beta 2 membership migrations are valid.
+- Made the VIP constant contract formatting-insensitive.
+- Updated Wiki optional-comments contract to the Core event/interface architecture.
+- Repaired the inter-module dependency regex so PHPUnit no longer triggers repeated malformed-regex warnings.
+- Made RequirementsChecker temporary-directory cleanup recursive and Windows-safe.
+- No runtime Membership behavior or database schema change in this checkpoint.
+
+
+## 0.4.0-beta.13 - 2026-09-10
+
+### Beta 2 — Memberships stabilization checkpoint
+- Replaced the false-positive extension contract with method-scoped assertions so unrelated legacy SQL cannot fail the test.
+- Scoped activation-marker contracts to `grant`, `replace`, and `schedule` instead of counting strings across an entire source file.
+- Hardened legacy custom-day grants so future scheduled VIP grants cannot be mistaken for current active grants.
+- Immediate custom-day grants now cancel an existing future VIP schedule and emit the matching cancellation event.
+- Added `membership.extended` / `MembershipExtended` so extensions are distinguishable from new assignments for event consumers and Notifications.
+- Admin activity logging now records assigning Free as a VIP revocation transition rather than a new membership assignment.
+- Expanded Membership integration coverage across lifecycle, scheduling, Lifetime, dry-run maintenance, idempotency, replacement history, invalid input, health checks, overview/history, and legacy custom-day grants.
+- Added `composer test:checkpoint` for the full PHPUnit + isolated integration pass.
+- Added `composer check:release` for install, production, and Membership integrity checks.
+
+### Scope
+- No payment processing.
+- No persisted `users.is_vip` boolean.
+- No new Membership database migration in this checkpoint.
+
+
+## 0.4.0-beta.12 - 2026-09-10
+
+### Memberships QA stabilization
+- Rebuilt the extension identity contract test explicitly so it verifies that `plan_key` is preserved.
+- No runtime Membership behavior or database schema changes are included.
+
+
+## 0.4.0-beta.11 - 2026-09-10
+
+### Memberships QA stabilization
+- Fixed the final stale Membership scheduling assertion: extension must preserve the current `plan_key`.
+- The contract now explicitly rejects rewriting extensions to `vip-custom` and verifies the real expiration update.
+- No runtime behavior or database schema changes are included.
+
 
 ## 0.4.0-beta.10 - 2026-09-10
 

@@ -14,12 +14,14 @@ use NovaNuke\Installer\InstallerService;
 use NovaNuke\Installer\RequirementsChecker;
 use NovaNuke\Core\I18n\LocaleRegistry;
 
-$controller = static function (Container $container): InstallerController {
+$installerRoot = dirname(__DIR__);
+
+$controller = static function (Container $container) use ($installerRoot): InstallerController {
     return new InstallerController(
-        NOVANUKE_ROOT,
+        $installerRoot,
         new RequirementsChecker(),
         new InstallationValidator($container->get(LocaleRegistry::class)),
-        new InstallerService(NOVANUKE_ROOT, new EnvWriter()),
+        new InstallerService($installerRoot, new EnvWriter()),
         $container->get(CsrfTokenManager::class),
         $container->get(ViewRenderer::class),
     );

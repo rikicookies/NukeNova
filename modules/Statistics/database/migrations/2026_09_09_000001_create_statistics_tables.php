@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['statistics_daily'];
+    private const MIGRATION_VALUES = [['settings','key','statistics.collection_enabled'],['settings','key','statistics.public_enabled']];
     public function up(PDO $database):void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE statistics_daily (
+CREATE TABLE IF NOT EXISTS statistics_daily (
  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, statistic_date DATE NOT NULL,
  section VARCHAR(50) NOT NULL, referrer_host VARCHAR(190) NOT NULL DEFAULT 'direct',
  browser_type VARCHAR(30) NOT NULL DEFAULT 'other', device_type VARCHAR(30) NOT NULL DEFAULT 'other',

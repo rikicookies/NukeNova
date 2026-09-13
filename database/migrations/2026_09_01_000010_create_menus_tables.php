@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['menus','menu_items','menu_item_roles'];
+    private const MIGRATION_VALUES = [['permissions','slug','menus.manage'],['menus','slug','primary'],['menu_items','target','/'],['menu_items','target','welcome'],['menu_items','target','/login']];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
@@ -66,18 +70,23 @@ SQL);
         $database->exec(<<<'SQL'
 INSERT INTO menus (name, slug, description, enabled, created_at, updated_at)
 VALUES ('Primary navigation', 'primary', 'Main public navigation.', 1, UTC_TIMESTAMP(), UTC_TIMESTAMP())
+ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id),updated_at=updated_at
 SQL);
         $menuId = (int) $database->lastInsertId();
         $item = $database->prepare(
             'INSERT INTO menu_items (menu_id, parent_id, title, link_type, target, url, sort_order, enabled, new_window, created_at, updated_at) '
-            . 'VALUES (:menu, NULL, :title, :type, :target, :url, :sort, 1, 0, UTC_TIMESTAMP(), UTC_TIMESTAMP())'
+            . 'SELECT :menu,NULL,:title,:type,:target,:url,:sort,1,0,UTC_TIMESTAMP(),UTC_TIMESTAMP() FROM DUAL '
+            . 'WHERE NOT EXISTS (SELECT 1 FROM menu_items WHERE menu_id=:existing_menu AND parent_id IS NULL AND target=:existing_target)'
         );
         foreach ([
             ['Home', 'internal', '/', '/', 10],
             ['Welcome', 'module', 'welcome', '/welcome', 20],
             ['Account', 'internal', '/login', '/login', 30],
         ] as [$title, $type, $target, $url, $sort]) {
-            $item->execute(['menu' => $menuId, 'title' => $title, 'type' => $type, 'target' => $target, 'url' => $url, 'sort' => $sort]);
+            $item->execute([
+                'menu' => $menuId,'title' => $title,'type' => $type,'target' => $target,'url' => $url,'sort' => $sort,
+                'existing_menu' => $menuId,'existing_target' => $target,
+            ]);
         }
     }
 

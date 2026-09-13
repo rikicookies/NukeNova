@@ -1,1 +1,17 @@
-{% extends "layouts/default.twig" %}{% block title %}Blocked users — Messages{% endblock %}{% block content %}<section class="messages-page"><p class="eyebrow">Account</p><h1>Blocked users</h1>{% include "@private-messages/_nav.twig" %}{% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}<div class="message-list">{% for item in blocks %}<div class="message-row"><strong>{{ item.username }}</strong><small>{{ item.created_at }}</small><form method="post" action="/messages/users/{{ item.id }}/unblock"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Unblock</button></form></div>{% else %}<p>You have not blocked anyone.</p>{% endfor %}</div></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}Blocked users — Messages{% endblock %}
+{% block content %}
+<section class="messages-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Messages', url: '/messages'}, {label: 'Blocked users'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Account', title: 'Blocked users', description: 'Blocked members cannot start new private conversations with you.'} only %}
+    {% include "@private-messages/_nav.twig" %}
+    {% if message %}<p class="alert alert-success">{{ message }}</p>{% endif %}
+    {% if blocks %}
+    <div class="surface-list">
+        {% for item in blocks %}
+        <article class="surface-card"><div class="module-section-heading"><div><h2>{{ item.username }}</h2><div class="surface-card-meta"><span>Blocked {{ item.created_at }}</span></div></div><form method="post" action="/messages/users/{{ item.id }}/unblock"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Unblock</button></form></div></article>
+        {% endfor %}
+    </div>
+    {% else %}{% include 'components/empty-state.twig' with {title: 'No blocked users', message: 'People you block will be listed here so you can reverse the action later.'} only %}{% endif %}
+</section>
+{% endblock %}

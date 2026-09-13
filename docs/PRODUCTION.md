@@ -1,6 +1,6 @@
 # Production deployment
 
-NovaNuke 0.1.0 is the first stable release. Test a complete backup and restore before every deployment or update.
+Treat production deployment as a separate acceptance target from local development. Test a complete backup and restore before every deployment or update.
 
 ## Required production environment
 
@@ -68,18 +68,21 @@ If the hosting plan cannot point a domain at `public/`, ask the host to change t
 
 ## Release procedure
 
-1. Run `php bin/cms release:smoke` against the release package/source tree before deployment.
-3. Put the site in maintenance mode from `/admin/settings`.
-3. Create database and file backups with `backup:database` and `backup:files`, then move encrypted copies off-server.
-4. Preserve `.env`, `composer.lock`, `storage/installed.lock` and all of `storage/private/`.
+1. Run `php bin/cms rc:check` and `php bin/cms release:smoke` against the clean release package/source tree before deployment.
+2. Put the site in maintenance mode from `/admin/settings`.
+3. Create database and file backups with `backup:database` and `backup:files`, verify them with `backup:verify`, then move protected copies off-server.
+4. Preserve `.env`, `composer.lock`, `storage/installed.lock` and all persistent private/upload data.
 5. Replace application files and run `composer install --no-dev --optimize-autoloader`.
-6. Run `php bin/cms migrate:status`, then `php bin/cms migrate`.
-7. Apply module updates from `/admin/modules` and run `php bin/cms migrate:status` again.
-8. Clear generated caches if instructed by the release notes.
-9. Run `php bin/cms release:check`.
-10. Run `php bin/cms security:audit` and correct every failed authorization check.
-11. Run `php bin/cms production:check` and correct every required failure.
-12. Visit `/admin/system`, resolve warnings and smoke-test authentication, permissions, uploads and module routes.
+6. Run the supported upgrade preflight with the exact currently recorded source version.
+7. Run `php bin/cms migrate:status`, then `php bin/cms migrate`.
+8. Apply compatible module/theme updates and run `php bin/cms migrate:status` again.
+9. Clear generated caches if instructed by the release notes.
+10. Complete the upgrade with `upgrade:complete --from=CURRENT_INSTALLED_VERSION`.
+11. Run `composer check:site`.
+12. Run `php bin/cms security:audit` and correct every failed authorization check.
+13. Run `composer check:release` and correct every required production failure.
+14. Visit `/admin/system` and smoke-test authentication, permissions, uploads, email workflows and enabled module routes.
+15. Disable maintenance mode only after acceptance is complete.
 
 ## Maintenance and cache
 
@@ -97,3 +100,25 @@ The clear command is restricted to `storage/cache`, preserves the cache root and
 Run the data-retention command regularly after first checking its dry-run output. See `docs/MAINTENANCE.md` for Laragon, cron and shared-hosting examples.
 
 For local download storage, run `php bin/cms downloads:orphans` after backups. Use `--delete` only after reviewing the eligible count; new files receive a 24-hour grace period.
+
+
+## Final release validation
+
+For an already-installed site that is intended to go public, run:
+
+```bash
+composer check:release
+```
+
+Do not use `install:check` as an installed-site health check. The installer deliberately expects `.env` and `storage/installed.lock` to be absent. For development/staging installations use `composer check:site`.
+
+
+## Mail configuration preflight
+
+Before testing real delivery, run:
+
+```bash
+php bin/cms mail:check
+```
+
+This checks the selected mail transport and SMTP configuration structure without sending a message. A successful structural check does not replace a real registration/reset/email-change delivery test on the target SMTP service.

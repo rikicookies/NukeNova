@@ -37,5 +37,5 @@
         </form>
     {% else %}<p><a href="/login">Sign in</a> to join the conversation.</p>{% endif %}
     <div class="comment-list">{{ tree.branch(comments, content_type, content_id, csrf_token, return_to, current_user, 0) }}</div>
-    {% if comments is empty %}<p class="comments-empty">No approved comments yet.</p>{% endif %}
+    {% if comments is empty %}{% include 'components/empty-state.twig' with {title: 'No comments yet', message: 'Be the first to join the conversation.'} only %}{% endif %}
 </section>

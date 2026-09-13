@@ -12,9 +12,9 @@ final class UpgradeCompletionTest extends TestCase
     public function testItAcceptsACleanCompletionFromTheRecordedSource(): void
     {
         $checks = (new UpgradeCompletion())->check(
-            '0.4.0-beta.9',
-            '0.4.0-beta.10',
-            '0.4.0-beta.9',
+            '0.4.0-rc.2',
+            '0.4.0-rc.3',
+            '0.4.0-rc.2',
             $this->upgradeStatus(),
             true,
         );
@@ -30,8 +30,8 @@ final class UpgradeCompletionTest extends TestCase
         $status['pending_total'] = 1;
         $status['module_updates_total'] = 2;
         $checks = $this->byName((new UpgradeCompletion())->check(
-            '0.4.0-beta.9',
-            '0.4.0-beta.10',
+            '0.4.0-rc.2',
+            '0.4.0-rc.3',
             '0.2.0-alpha.48',
             $status,
             false,
@@ -46,8 +46,8 @@ final class UpgradeCompletionTest extends TestCase
     public function testLegacyInstallationCanInitializeItsRecordedVersionWithAWarning(): void
     {
         $check = $this->byName((new UpgradeCompletion())->check(
-            '0.4.0-beta.9',
-            '0.4.0-beta.10',
+            '0.4.0-rc.2',
+            '0.4.0-rc.3',
             null,
             $this->upgradeStatus(),
             true,
@@ -56,6 +56,22 @@ final class UpgradeCompletionTest extends TestCase
         self::assertFalse($check['required']);
         self::assertFalse($check['passed']);
         self::assertStringContainsString('initialize', $check['detail']);
+    }
+
+    public function testInterruptedMigrationBlocksUpgradeCompletion(): void
+    {
+        $status = $this->upgradeStatus();
+        $status['recovery_total'] = 1;
+        $check = $this->byName((new UpgradeCompletion())->check(
+            '0.4.0-rc.2',
+            '0.4.0-rc.3',
+            '0.4.0-rc.2',
+            $status,
+            true,
+        ))['Core and module migrations'];
+
+        self::assertFalse($check['passed']);
+        self::assertStringContainsString('recovery required 1', $check['detail']);
     }
 
     public function testFreshInstallerRecordsTheCurrentCoreVersion(): void

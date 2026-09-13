@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['media_files'];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
-CREATE TABLE media_files (
+CREATE TABLE IF NOT EXISTS media_files (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     uploaded_by BIGINT UNSIGNED NOT NULL,
     public_path VARCHAR(255) NOT NULL,

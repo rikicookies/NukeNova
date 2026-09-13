@@ -23,7 +23,15 @@ final class MenuManager
     ) {
     }
 
-    public function all(): array { return $this->repository->all(); }
+    public function all(): array
+    {
+        $menus = $this->repository->all();
+        foreach ($menus as &$menu) {
+            $menu['tree'] = $this->trees->build($menu['items']);
+        }
+        unset($menu);
+        return $menus;
+    }
     public function roles(): array { return $this->repository->roles(); }
 
     /** @param array<string,mixed> $input */
@@ -78,6 +86,12 @@ final class MenuManager
             'enabled' => ($input['enabled'] ?? null) === '1' ? 1 : 0,
             'new_window' => ($input['new_window'] ?? null) === '1' && $type === 'external' ? 1 : 0,
         ], $roleIds);
+    }
+
+    /** @param list<array{id:int,children:list<mixed>}> $itemIds */
+    public function reorderItems(int $menuId, array $itemIds): void
+    {
+        $this->repository->reorderItems($menuId, $itemIds);
     }
 
     public function deleteMenu(int $id): void { $this->repository->deleteMenu($id); }

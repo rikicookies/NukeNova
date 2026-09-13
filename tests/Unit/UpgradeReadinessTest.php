@@ -76,6 +76,16 @@ final class UpgradeReadinessTest extends TestCase
         self::assertFalse($checks['Installation lock']['passed']);
     }
 
+    public function testInterruptedMigrationBlocksUpgradePreflight(): void
+    {
+        $status = $this->upgradeStatus();
+        $status['recovery_total'] = 1;
+        $check = $this->byName($this->checker()->check('0.2.0-alpha.35', $status))['No interrupted migration'];
+
+        self::assertTrue($check['required']);
+        self::assertFalse($check['passed']);
+    }
+
     public function testEmptyBackupFilesBlockUpgrade(): void
     {
         file_put_contents($this->databaseBackup, '');
@@ -101,8 +111,8 @@ final class UpgradeReadinessTest extends TestCase
 
     private function checker(): UpgradeReadiness
     {
-        return new UpgradeReadiness($this->root, '0.4.0-beta.10', [
-            '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9',
+        return new UpgradeReadiness($this->root, '0.4.0-rc.3', [
+            '0.2.0-alpha.35', '0.2.0-alpha.36', '0.2.0-alpha.37', '0.2.0-alpha.38', '0.2.0-alpha.39', '0.2.0-alpha.40', '0.2.0-alpha.41', '0.2.0-alpha.42', '0.2.0-alpha.43', '0.2.0-alpha.44', '0.2.0-alpha.45', '0.2.0-alpha.46', '0.2.0-alpha.47', '0.2.0-alpha.48', '0.2.0-alpha.49', '0.2.0-alpha.50', '0.2.0-alpha.51', '0.2.0-alpha.52', '0.2.0-alpha.53', '0.2.0-alpha.54', '0.2.0-alpha.55', '0.2.0-alpha.56', '0.2.0-alpha.57', '0.2.0-alpha.58', '0.2.0-alpha.59', '0.2.0-alpha.60', '0.3.0-beta.1', '0.3.0-beta.2', '0.3.0-beta.3', '0.3.0-beta.4', '0.3.0-beta.5', '0.3.0-beta.6', '0.4.0-beta.1', '0.4.0-beta.2', '0.4.0-beta.3', '0.4.0-beta.4', '0.4.0-beta.5', '0.4.0-beta.6', '0.4.0-beta.7', '0.4.0-beta.8', '0.4.0-beta.9', '0.4.0-beta.10', '0.4.0-beta.11', '0.4.0-beta.12', '0.4.0-beta.13', '0.4.0-beta.14', '0.4.0-beta.15', '0.4.0-beta.16', '0.4.0-beta.17', '0.4.0-beta.18', '0.4.0-beta.19', '0.4.0-beta.20', '0.4.0-beta.21', '0.4.0-beta.22', '0.4.0-beta.23', '0.4.0-beta.24', '0.4.0-beta.25', '0.4.0-beta.26', '0.4.0-beta.27', '0.4.0-beta.28', '0.4.0-rc.1', '0.4.0-rc.2',
         ]);
     }
 

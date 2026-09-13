@@ -146,9 +146,9 @@ final class WikiModuleContractTest extends TestCase
         $repository = (string) file_get_contents($root . '/modules/Wiki/src/WikiRepository.php');
         $public = (string) file_get_contents($root . '/modules/Wiki/src/PublicWikiController.php');
 
-        self::assertStringContainsString("listen('comments.content.checking'", $module);
+        self::assertStringContainsString('EventName::COMMENTS_CONTENT_CHECKING', $module);
         self::assertStringContainsString("event->type !== 'wiki'", $module);
-        self::assertStringContainsString('has(CommentService::class)', $module);
+        self::assertStringContainsString('has(CommentProviderInterface::class)', $module);
         self::assertStringContainsString('comments_enabled=1', $repository);
         self::assertStringContainsString('&& $this->canView($page, $userId)', $repository);
         self::assertStringContainsString("comments->for('wiki'", $public);

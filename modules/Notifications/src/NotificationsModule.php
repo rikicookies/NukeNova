@@ -13,6 +13,7 @@ use NovaNuke\Core\Http\Request;
 use NovaNuke\Core\Http\Response;
 use NovaNuke\Core\Maintenance\MaintenancePruning;
 use NovaNuke\Core\Membership\MembershipAssigned;
+use NovaNuke\Core\Membership\MembershipExtended;
 use NovaNuke\Core\Membership\MembershipActivated;
 use NovaNuke\Core\Membership\MembershipRevoked;
 use NovaNuke\Core\Membership\MembershipExpired;
@@ -124,6 +125,22 @@ final class NotificationsModule implements ModuleInterface
                 error_log('Notification delivery failed: ' . $error->getMessage());
             }
         });
+        $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_EXTENDED, static function (object $event) use ($publisher): void {
+            if (! $event instanceof MembershipExtended) return;
+            try {
+                $publisher->toUser(
+                    $event->userId,
+                    'membership.extended',
+                    'VIP membership extended',
+                    'Your VIP membership was extended by ' . $event->days . ' day(s) and now expires ' . $event->expiresAt . ' UTC.',
+                    '/account/profile',
+                    'membership-extended:' . $event->userId . ':' . md5($event->planKey . ':' . $event->expiresAt),
+                );
+            } catch (Throwable $error) {
+                error_log('Notification delivery failed: ' . $error->getMessage());
+            }
+        });
+
         $context->events->listen(\NovaNuke\Core\Events\EventName::MEMBERSHIP_REVOKED, static function (object $event) use ($publisher): void {
             if (! $event instanceof MembershipRevoked) return;
             try {

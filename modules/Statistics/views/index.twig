@@ -1,1 +1,21 @@
-{% extends "layouts/default.twig" %}{% block title %}Site statistics — {{ cms_name|default('NovaNuke') }}{% endblock %}{% block content %}<section class="statistics-page"><p class="eyebrow">Community</p><h1>Site statistics</h1><div class="stat-grid"><article><strong>{{ summary.registered_users }}</strong><span>Registered users</span></article><article><strong>{{ summary.published_news }}</strong><span>Published news</span></article><article><strong>{{ summary.approved_comments }}</strong><span>Approved comments</span></article><article><strong>{{ summary.downloads }}</strong><span>Downloads</span></article><article><strong>{{ summary.views_30_days }}</strong><span>Views in 30 days</span></article></div><h2>Popular sections</h2><div class="table-wrap"><table class="admin-table"><thead><tr><th>Section</th><th>Views</th></tr></thead><tbody>{% for item in sections %}<tr><td>{{ item.section }}</td><td>{{ item.views }}</td></tr>{% else %}<tr><td colspan="2">No aggregate data yet.</td></tr>{% endfor %}</tbody></table></div><p><small>Statistics are aggregate and do not expose individual browsing histories.</small></p></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}Site statistics — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="statistics-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Statistics'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Community', title: 'Site statistics', description: 'A privacy-aware overview of community activity and popular sections.'} only %}
+    <div class="stat-grid">
+        <article><strong>{{ summary.registered_users }}</strong><span>Registered users</span></article>
+        <article><strong>{{ summary.published_news }}</strong><span>Published news</span></article>
+        <article><strong>{{ summary.approved_comments }}</strong><span>Approved comments</span></article>
+        <article><strong>{{ summary.downloads }}</strong><span>Downloads</span></article>
+        <article><strong>{{ summary.views_30_days }}</strong><span>Views in 30 days</span></article>
+    </div>
+    <section class="module-section">
+        <div class="module-section-heading"><div><h2>Popular sections</h2><p>Aggregate views only; individual browsing histories are not exposed.</p></div></div>
+        {% if sections %}
+        <div class="table-wrap"><table class="admin-table"><thead><tr><th>Section</th><th>Views</th></tr></thead><tbody>{% for item in sections %}<tr><td>{{ item.section }}</td><td>{{ item.views }}</td></tr>{% endfor %}</tbody></table></div>
+        {% else %}{% include 'components/empty-state.twig' with {title: 'No aggregate data yet', message: 'Statistics will appear here after enough site activity has been collected.'} only %}{% endif %}
+    </section>
+</section>
+{% endblock %}

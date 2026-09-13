@@ -137,8 +137,26 @@ final class InstallerService
             throw new RuntimeException('Invalid database name.');
         }
 
+        // Prefer an already-provisioned database. Shared-hosting database users often
+        // have permission to use a schema created in the control panel but do not have
+        // CREATE DATABASE permission. Only attempt creation when the schema is actually
+        // missing.
+        try {
+            return new PDO(
+                $serverDsn . ";dbname={$databaseName}",
+                $data->databaseUsername,
+                $data->databasePassword,
+                $options,
+            );
+        } catch (\PDOException $error) {
+            $driverCode = isset($error->errorInfo[1]) ? (int) $error->errorInfo[1] : 0;
+            if ($driverCode !== 1049) {
+                throw $error;
+            }
+        }
+
         $server->exec(
-            "CREATE DATABASE IF NOT EXISTS `{$databaseName}` "
+            "CREATE DATABASE `{$databaseName}` "
             . 'CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
         );
 

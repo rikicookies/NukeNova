@@ -16,6 +16,6 @@
     <header><p class="eyebrow">{{ trans('wiki::index.eyebrow') }}</p><h1>{{ trans('wiki::map.title') }}</h1><p>{{ trans('wiki::map.description') }}</p></header>
     {% if map.pages %}<section><h2>{{ trans('wiki::map.root') }}</h2><ul>{% for page in map.pages %}<li><a href="/wiki/{{ page.path }}">{{ page.title }}</a>{% if page.audience != 'public' %} <small>· {{ page.audience == 'vip' ? 'VIP' : 'Members' }}</small>{% endif %}</li>{% endfor %}</ul></section>{% endif %}
     {% if map.namespaces %}{{ _self.namespace_tree(map.namespaces) }}{% endif %}
-    {% if not map.pages and not map.namespaces %}<p>{{ trans('wiki::map.empty') }}</p>{% endif %}
+    {% if not map.pages and not map.namespaces %}{% include 'components/empty-state.twig' with {title: trans('wiki::map.empty'), message: 'The sitemap will populate as wiki pages and namespaces are created.'} only %}{% endif %}
 </section>
 {% endblock %}

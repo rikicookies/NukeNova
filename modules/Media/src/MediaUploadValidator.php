@@ -20,7 +20,8 @@ final class MediaUploadValidator
         if (mb_strlen($name)>255 || preg_match('/[\x00-\x1F\x7F]/',$name)) throw new RuntimeException('Original filename is invalid.');
         $extension=strtolower((string)pathinfo($name,PATHINFO_EXTENSION));$mime=(new finfo(FILEINFO_MIME_TYPE))->file($path);$dimensions=@getimagesize($path);
         if (!isset(self::TYPES[$extension]) || !is_string($mime) || self::TYPES[$extension]!==strtolower($mime) || !is_array($dimensions)
-            || ($dimensions['mime'] ?? '')!==$mime || $dimensions[0]<1 || $dimensions[1]<1 || $dimensions[0]>12000 || $dimensions[1]>12000) {
+            || ($dimensions['mime'] ?? '')!==$mime || $dimensions[0]<1 || $dimensions[1]<1
+            || $dimensions[0]>12000 || $dimensions[1]>12000 || ((int)$dimensions[0] * (int)$dimensions[1]) > 40000000) {
             throw new RuntimeException('Image content, extension or dimensions are invalid.');
         }
         return new ValidatedMedia($path,$name,$extension==='jpeg'?'jpg':$extension,strtolower($mime),$size,(int)$dimensions[0],(int)$dimensions[1]);

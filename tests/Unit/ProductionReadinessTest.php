@@ -43,7 +43,7 @@ final class ProductionReadinessTest extends TestCase
     {
         $config = new ConfigRepository([
             'app' => ['environment' => 'development', 'debug' => true, 'url' => 'http://example.test', 'key' => 'short'],
-            'session' => ['secure' => false, 'same_site' => 'None', 'idle_timeout' => 60, 'rotation_interval' => 60],
+            'session' => ['name' => 'novanuke_session', 'secure' => false, 'same_site' => 'None', 'lifetime' => 120, 'idle_timeout' => 60, 'rotation_interval' => 60, 'path' => '/admin', 'domain' => 'example.test'],
             'security' => ['headers_enabled' => false],
             'mail' => ['mailer' => 'log'],
         ]);
@@ -54,7 +54,8 @@ final class ProductionReadinessTest extends TestCase
         }
         foreach ([
             'Production environment', 'Debug disabled', 'HTTPS URL', 'Secure session cookie',
-            'Session SameSite policy', 'Session idle timeout', 'Session ID rotation', 'Security headers', 'Application key',
+            'Session SameSite policy', 'Session absolute lifetime', 'Session idle timeout', 'Session ID rotation',
+            'Session cookie scope', 'Security headers', 'Application key',
         ] as $name) {
             self::assertFalse($byName[$name]['passed'], $name);
         }
@@ -71,8 +72,8 @@ final class ProductionReadinessTest extends TestCase
         @chmod($this->root . '/.env', 0644);
         $config = new ConfigRepository([
             'app' => ['environment' => 'production', 'debug' => false, 'url' => 'https://example.test', 'key' => 'base64:' . str_repeat('a', 48)],
-            'session' => ['secure' => true, 'same_site' => 'Lax', 'idle_timeout' => 1800, 'rotation_interval' => 900],
-            'security' => ['headers_enabled' => true],
+            'session' => ['name' => '__Host-novanuke', 'secure' => true, 'same_site' => 'Lax', 'lifetime' => 7200, 'idle_timeout' => 1800, 'rotation_interval' => 900, 'path' => '/', 'domain' => ''],
+            'security' => ['headers_enabled' => true, 'hsts_enabled' => true, 'hsts_max_age' => 31536000],
             'mail' => ['mailer' => 'smtp'],
         ]);
         $byName = [];
@@ -89,8 +90,8 @@ final class ProductionReadinessTest extends TestCase
         unlink($this->root . '/public/uploads/.htaccess');
         $config = new ConfigRepository([
             'app' => ['environment' => 'production', 'debug' => false, 'url' => 'https://example.test', 'key' => 'base64:' . str_repeat('a', 48)],
-            'session' => ['secure' => true, 'same_site' => 'Lax', 'idle_timeout' => 1800, 'rotation_interval' => 900],
-            'security' => ['headers_enabled' => true],
+            'session' => ['name' => '__Host-novanuke', 'secure' => true, 'same_site' => 'Lax', 'lifetime' => 7200, 'idle_timeout' => 1800, 'rotation_interval' => 900, 'path' => '/', 'domain' => ''],
+            'security' => ['headers_enabled' => true, 'hsts_enabled' => true, 'hsts_max_age' => 31536000],
             'mail' => ['mailer' => 'smtp'],
         ]);
         $byName = [];

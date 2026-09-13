@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-use NovaNuke\Core\Database\Migration;
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
 
-return new class implements Migration {
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES = ['news_categories','news_topics','news_articles','news_tags','news_article_tags'];
+    private const MIGRATION_VALUES = [['news_categories','slug','general'],['news_topics','slug','announcements']];
     public function up(PDO $database): void
     {
         $database->exec(<<<'SQL'
@@ -80,9 +84,9 @@ CREATE TABLE IF NOT EXISTS news_article_tags (
     CONSTRAINT news_article_tags_tag_fk FOREIGN KEY (tag_id) REFERENCES news_tags(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 SQL);
-        $category = $database->prepare('INSERT INTO news_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP())');
+        $category = $database->prepare('INSERT INTO news_categories (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE name=VALUES(name),description=VALUES(description)');
         $category->execute(['name' => 'General', 'slug' => 'general', 'description' => 'General news and announcements.']);
-        $topic = $database->prepare('INSERT INTO news_topics (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP())');
+        $topic = $database->prepare('INSERT INTO news_topics (name,slug,description,created_at,updated_at) VALUES (:name,:slug,:description,UTC_TIMESTAMP(),UTC_TIMESTAMP()) ON DUPLICATE KEY UPDATE name=VALUES(name),description=VALUES(description)');
         $topic->execute(['name' => 'Announcements', 'slug' => 'announcements', 'description' => 'Official site announcements.']);
     }
 

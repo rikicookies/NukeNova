@@ -1,1 +1,21 @@
-{% extends "layouts/default.twig" %}{% block title %}Polls — {{ cms_name|default('NovaNuke') }}{% endblock %}{% block content %}<section class="polls-page"><p class="eyebrow">Community</p><h1>Polls</h1><div class="poll-list">{% for poll in polls %}<article><span class="badge {{ poll.status == 'active' ? 'badge-active' : '' }}">{{ poll.status }}</span><h2><a href="/polls/{{ poll.id }}">{{ poll.question }}</a></h2><small>{{ poll.vote_count }} votes{% if poll.ends_at %} · Ends {{ poll.ends_at }} UTC{% endif %}</small></article>{% else %}<p>No polls are available.</p>{% endfor %}</div></section>{% endblock %}
+{% extends "layouts/default.twig" %}
+{% block title %}Polls — {{ cms_name|default('NovaNuke') }}{% endblock %}
+{% block content %}
+<section class="polls-page module-page">
+    {% include 'components/breadcrumbs.twig' with {items: [{label: 'Home', url: '/'}, {label: 'Polls'}]} only %}
+    {% include 'components/page-header.twig' with {eyebrow: 'Community', title: 'Polls', description: 'Vote in active questions and review results from recent community polls.'} only %}
+    {% if polls %}
+    <div class="poll-list">
+        {% for poll in polls %}
+        <article>
+            <div class="surface-card-meta"><span class="badge {{ poll.status == 'active' ? 'badge-active' : '' }}">{{ poll.status }}</span><span>{{ poll.vote_count }} votes</span>{% if poll.ends_at %}<span>Ends {{ poll.ends_at }} UTC</span>{% endif %}</div>
+            <h2><a href="/polls/{{ poll.id }}">{{ poll.question }}</a></h2>
+            <div class="module-action-row"><a class="module-link-button" href="/polls/{{ poll.id }}">{{ poll.status == 'active' ? 'Vote / results' : 'View results' }}</a></div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+        {% include 'components/empty-state.twig' with {title: 'No polls available', message: 'There are no published polls to vote in or review right now.'} only %}
+    {% endif %}
+</section>
+{% endblock %}

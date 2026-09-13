@@ -20,7 +20,7 @@ final class ReleaseChecklist
         $checks = [];
         $required = [
             'public/index.php', 'public/.htaccess', 'public/.user.ini', 'public/uploads/.htaccess',
-            'bootstrap/app.php', 'composer.json', '.env.example',
+            'bootstrap/app.php', 'composer.json', 'composer.lock', '.env.example',
             'storage/cache', 'storage/logs', 'storage/sessions', 'storage/private', 'storage/private/.htaccess',
             'docs/INSTALLATION.md', 'docs/PRODUCTION.md', 'docs/PRODUCTION_HARDENING.md',
         ];
@@ -50,9 +50,9 @@ final class ReleaseChecklist
 
         $example = @file_get_contents($this->rootPath . '/.env.example');
         $safeExample = is_string($example)
-            && preg_match('/^DB_PASSWORD=\s*$/m', $example) === 1
-            && preg_match('/^MAIL_PASSWORD=\s*$/m', $example) === 1
-            && preg_match('/^APP_KEY=\s*$/m', $example) === 1;
+            && preg_match('/^DB_PASSWORD=(?:""|\'\')?\s*$/m', $example) === 1
+            && preg_match('/^MAIL_PASSWORD=(?:""|\'\')?\s*$/m', $example) === 1
+            && preg_match('/^APP_KEY=(?:""|\'\')?\s*$/m', $example) === 1;
         $checks[] = [
             'name' => 'Example secrets',
             'passed' => $safeExample,

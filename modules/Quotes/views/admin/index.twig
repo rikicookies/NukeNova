@@ -5,18 +5,20 @@
   {% include 'components/breadcrumbs.twig' with {items: [{label: 'Admin', url: '/admin'}, {label: 'Quotes'}]} only %}
   {% include 'components/page-header.twig' with {eyebrow: 'Example module', title: 'Quotes', description: 'Reference CRUD showing permissions, CSRF, migrations, activity logging and an admin menu extension.', actions: [{label: 'View quotes', url: '/quotes'}]} only %}
   {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
-  {% if error %}<div class="error-message">{{ error }}</div>{% endif %}
-
-  <form method="post" action="/admin/quotes" class="stack-form">
-    <input type="hidden" name="_token" value="{{ csrf_token }}">
-    <label>Quote<textarea name="quote_text" maxlength="500" required></textarea></label>
-    <label>Attribution<input name="attribution" maxlength="120"></label>
-    <label><input type="checkbox" name="is_published" value="1" checked> Published</label>
-    <button type="submit">Create quote</button>
-  </form>
-
+  {% if error %}<div class="form-errors"><p>{{ error }}</p></div>{% endif %}
+  <section class="module-section">
+    <div class="module-section-heading"><div><h2>Create quote</h2><p>Add a short quotation and optional attribution.</p></div></div>
+    <form method="post" action="/admin/quotes" class="stack-form">
+      <input type="hidden" name="_token" value="{{ csrf_token }}">
+      <label>Quote<textarea name="quote_text" maxlength="500" required></textarea></label>
+      <label>Attribution<input name="attribution" maxlength="120"></label>
+      <label class="toggle-row"><input type="checkbox" name="is_published" value="1" checked><span><strong>Published</strong><small>Show this quote immediately on the public page.</small></span></label>
+      <button type="submit">Create quote</button>
+    </form>
+  </section>
+  <div class="module-section-heading"><div><h2>Quote inventory</h2><p>Published and draft quotes currently stored by the module.</p></div></div>
   <div class="table-wrap"><table class="admin-table"><thead><tr><th>Quote</th><th>Attribution</th><th>Status</th><th>Action</th></tr></thead><tbody>
-    {% for quote in quotes %}<tr><td>{{ quote.quote_text }}</td><td>{{ quote.attribution|default('—', true) }}</td><td>{{ quote.is_published ? 'Published' : 'Draft' }}</td><td><form method="post" action="/admin/quotes/{{ quote.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Delete</button></form></td></tr>
+    {% for quote in quotes %}<tr><td>{{ quote.quote_text }}</td><td>{{ quote.attribution|default('—', true) }}</td><td><span class="badge {{ quote.is_published ? 'badge-active' : '' }}">{{ quote.is_published ? 'Published' : 'Draft' }}</span></td><td><form method="post" action="/admin/quotes/{{ quote.id }}/delete"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="danger-button" type="submit">Delete</button></form></td></tr>
     {% else %}{% include 'components/admin-table-empty.twig' with {colspan: 4, title: 'No quotes yet', message: 'Use the form above to create the first quote.'} only %}{% endfor %}
   </tbody></table></div>
 </section>

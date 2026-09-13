@@ -165,7 +165,9 @@ Disabling a module never removes data. Uninstalling offers two explicit choices:
 
 An update runs only pending migrations and updates the installed semantic version. Back up the database before updating production modules.
 
-`php bin/cms migrate:status` lists pending and missing migration files for every installed module. It also reports when the copied manifest version is newer than the installed database record. Status inspection never executes migrations or changes module state.
+New module migrations must implement `NovaNuke\Core\Database\RecoverableMigration`, make every DDL/data step safe to repeat, and declare or implement verifiable `isApplied()` / `isRolledBack()` postconditions. Bundled migrations may use `VerifiesMigrationState` plus `MIGRATION_TABLES`, `MIGRATION_COLUMNS`, `MIGRATION_INDEXES`, and `MIGRATION_VALUES`; complex data coverage should use explicit methods. Core and modules share the same database advisory lock and durable operation ledger. After an interrupted install, update, or uninstall, use `php bin/cms migrate:recover --module=SLUG`; never repair module history by hand.
+
+`php bin/cms migrate:status` lists pending and missing migration files for every installed module. It also reports interrupted `running`/`dirty` operations and when the copied manifest version is newer than the installed database record. Status inspection never executes migrations or changes module state.
 
 ## Lifecycle states
 

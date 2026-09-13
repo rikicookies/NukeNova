@@ -1,10 +1,10 @@
 # Clean installation checklist
 
-This checklist is the acceptance baseline for NovaNuke 0.3.0-beta.1. Run it against a disposable database and a new application directory. Never point these steps at a production database.
+This checklist is the clean-install acceptance baseline for the current NovaNuke beta/Release Candidate line. Run it against a disposable database and a new application directory. Never point these steps at a production database.
 
 ## Laragon baseline
 
-1. Create an empty directory such as `C:\dev\www\novanuke-alpha50`.
+1. Create an empty directory such as `C:\dev\www\novanuke-clean-test`.
 2. Extract the release into that directory.
 3. Preserve no `.env` or `storage/installed.lock` from another installation.
 4. Run `composer install`, followed by `php bin/cms install:check`.
@@ -21,7 +21,7 @@ No database table, `.env` value or lock file should require manual editing.
 - Open the Admin dashboard, Settings, Users, Roles, Modules, Themes, Logs and System Information.
 - Confirm production secrets are absent from rendered pages and logs.
 - Confirm Default, Classic and NovaModern can each be activated without a server error.
-- Run `php bin/cms migrate:status` and confirm no core migration is pending.
+- Run `php bin/cms migrate:status` and confirm no Core migration or running/dirty recovery operation is pending.
 - Run `php bin/cms release:check` and record any warning rather than bypassing it.
 
 ## Module acceptance
@@ -76,8 +76,15 @@ Repeat the entire process with a second empty database and a second empty applic
 
 ## Recorded result
 
-Record PHP version, database/version, web server, clean-install result, module test result, Demo Content result and any warning. Alpha.59 is accepted only after this checklist succeeds twice without undocumented intervention.
+Record the NovaNuke version, PHP version, database/version, web server, clean-install result, module test result, Demo Content result and every warning. A Release Candidate is accepted only after this checklist succeeds without undocumented intervention; repeat the clean-install pass when validating final packaging.
 
 ## Distribution smoke
 
 Before beginning a fresh-install test from a packaged release, run `php bin/cms release:smoke`. The package must pass before Composer/application/database bootstrap is considered part of the test.
+
+
+## Automated installer regression
+
+`composer test:integration` includes `InstallerFreshInstallIntegrationTest`. It creates a random disposable database and temporary application root, runs the real `InstallerService`, verifies the current Core version/Super Administrator/storage structure, and separately proves that a non-empty database is refused without deleting pre-existing data.
+
+This automated regression complements, but does not replace, the browser-based fresh-install acceptance above.

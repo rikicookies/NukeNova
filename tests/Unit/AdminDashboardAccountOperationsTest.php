@@ -31,6 +31,6 @@ final class AdminDashboardAccountOperationsTest extends TestCase
         self::assertStringContainsString("tableExists('user_entitlements')", $source);
         self::assertStringContainsString('COUNT(DISTINCT user_id)', $source);
         self::assertStringContainsString('INTERVAL 7 DAY', $source);
-        self::assertStringContainsString("'/admin/users?vip=active'", $source);
+        self::assertStringContainsString("'/admin/memberships?status=active'", $source);
     }
 }

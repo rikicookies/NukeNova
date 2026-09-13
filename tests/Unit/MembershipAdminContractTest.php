@@ -44,4 +44,26 @@ final class MembershipAdminContractTest extends TestCase
         self::assertStringContainsString("->isVip((int)\$user['id'])", $audience);
         self::assertStringNotContainsString('EntitlementService::VIP', $audience);
     }
+    public function testDedicatedMembershipMutationsStayPostAndCsrfProtected(): void
+    {
+        $root=dirname(__DIR__,2);
+        $routes=(string)file_get_contents($root.'/routes/admin.php');
+        $controller=(string)file_get_contents($root.'/app/Admin/MembershipsController.php');
+
+        foreach([
+            '/admin/memberships/{id}/assign',
+            '/admin/memberships/{id}/extend',
+            '/admin/memberships/{id}/schedule',
+            '/admin/memberships/{id}/schedule/cancel',
+            '/admin/memberships/{id}/revoke',
+        ] as $route){
+            self::assertStringContainsString("\$router->post('{$route}'",$routes);
+            self::assertStringNotContainsString("\$router->get('{$route}'",$routes);
+        }
+
+        self::assertGreaterThanOrEqual(5,substr_count($controller,'$this->csrf->validate('));
+        self::assertStringContainsString("'memberships.manage'",$controller);
+    }
+
+
 }
