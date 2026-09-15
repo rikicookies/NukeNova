@@ -51,6 +51,9 @@ final class ProgressiveAdminActionsTest extends TestCase
         self::assertStringContainsString("form.dataset.ajaxPending = 'true'", $script);
         self::assertStringContainsString('delete form.dataset.ajaxPending;', $script);
         self::assertStringContainsString("'Action failed because the page could not be refreshed.'", $script);
-        self::assertStringNotContainsString("response.ok ? 'Action completed.'", $script);
+        self::assertStringNotContainsString(
+            "announce(feedback?.message || (response.ok ? 'Action completed.' : 'Action failed.')",
+            $script,
+        );
     }
 }

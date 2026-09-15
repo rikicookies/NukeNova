@@ -16,6 +16,7 @@ final class Router
 
     public function beginOwner(string $owner): void {$this->owner = $owner;}
     public function endOwner(): void {$this->owner = null;}
+    public function removeOwner(string $owner): void {$this->routes=array_values(array_filter($this->routes,static fn(Route $route):bool=>$route->owner!==$owner));}
 
     public function get(string $path, Closure $handler, ?string $name = null): void
     {

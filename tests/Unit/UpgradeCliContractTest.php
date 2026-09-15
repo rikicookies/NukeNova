@@ -19,7 +19,7 @@ final class UpgradeCliContractTest extends TestCase
         self::assertStringContainsString("str_starts_with(\$arguments[0], '--from=')", $section);
         self::assertStringContainsString('MigrationStatus::class', $section);
         self::assertStringContainsString('$supportedUpgradeSources', $section);
-        self::assertStringContainsString("'0.4.0-rc.1', '0.4.0-rc.2', Version::CURRENT", $cli);
+        self::assertStringContainsString("'0.4.0-rc.1', '0.4.0-rc.2', '0.4.0-rc.3', Version::CURRENT", $cli);
         self::assertStringContainsString('UpgradeReadiness', $section);
         self::assertStringContainsString("'system.core_version'", $section);
         self::assertStringNotContainsString('->run(', $section);

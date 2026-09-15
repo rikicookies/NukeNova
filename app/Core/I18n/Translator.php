@@ -17,6 +17,9 @@ final class Translator
 
     /** @var array<string,array<string,string>> */
     private array $catalogues = [];
+    private ?string $owner=null;/** @var array<string,array<string,array<string,mixed>>> */private array$changes=[];
+    public function beginOwner(string$o):void{$this->owner=$o;}public function endOwner():void{$this->owner=null;}public function commitOwner(string$o):void{unset($this->changes[$o]);}
+    public function removeOwner(string$o):void{foreach($this->changes[$o]??[]as$n=>$x){if(($this->directories[$n]??null)!==$x['after'])continue;if($x['exists'])$this->directories[$n]=$x['directory'];else unset($this->directories[$n]);if($x['catalogue_exists'])$this->catalogues[$n]=$x['catalogue'];else unset($this->catalogues[$n]);}unset($this->changes[$o]);}
 
     public function __construct(
         string $locale,
@@ -48,6 +51,7 @@ final class Translator
         if ($real === false || ! is_dir($real)) {
             return;
         }
+        if($this->owner!==null&&!isset($this->changes[$this->owner][$namespace]))$this->changes[$this->owner][$namespace]=['exists'=>isset($this->directories[$namespace]),'directory'=>$this->directories[$namespace]??null,'catalogue_exists'=>isset($this->catalogues[$namespace]),'catalogue'=>$this->catalogues[$namespace]??null,'after'=>$real];
         $this->directories[$namespace] = $real;
         unset($this->catalogues[$namespace]);
     }

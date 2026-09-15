@@ -2,7 +2,7 @@
 
 NovaNuke is a lightweight modular CMS with an old-school spirit, written from scratch for PHP 8.3+.
 
-Current development release: **0.4.0-rc.3**. This is the third Release Candidate for the 0.4.0 line, focused on NovaModern mobile hardening and administration navigation ordering. The code is feature-frozen; remaining work is limited to acceptance failures, security/reliability corrections, packaging and documentation. The currently published stable line remains separate until RC acceptance completes.
+Current development release: **0.4.0-rc.4**. This fourth Release Candidate consolidates the accepted installer, migration, backup, mail, theme, security, membership, progressive-action, module-isolation and HTTP hardening work for the 0.4.0 line. The code remains feature-frozen; remaining work is limited to release acceptance and any defects found during that validation.
 
 ## Included in 0.1.0
 

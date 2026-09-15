@@ -11,6 +11,7 @@ use PDO;
 use RuntimeException;
 use Throwable;
 use NovaNuke\Core\I18n\Translator;
+use NovaNuke\Core\View\ViewRenderer;
 
 final class ModuleManager
 {
@@ -209,7 +210,7 @@ final class ModuleManager
                 break;
             }
         }
-        foreach($lifecycles as$slug=>$lifecycle){$this->router->beginOwner($slug);try{$lifecycle['provider']->boot($lifecycle['context']);}catch(Throwable$error){$this->repository->setError($slug,$error->getMessage());error_log("Module {$slug} failed to boot: {$error->getMessage()}");}finally{$this->router->endOwner();}}
+        foreach($lifecycles as$slug=>$lifecycle){$this->beginOwner($slug);try{$lifecycle['provider']->boot($lifecycle['context']);$this->endOwner();$this->commitOwner($slug);}catch(Throwable$error){$this->endOwner();$this->removeOwner($slug);$this->repository->setError($slug,$error->getMessage());error_log("Module {$slug} failed to boot: {$error->getMessage()}");}}
     }
 
     /** @return array{provider:ModuleInterface,context:ModuleContext}|null */
@@ -219,6 +220,7 @@ final class ModuleManager
             $this->repository->setError($slug, 'Module files are missing from disk.');
             return null;
         }
+        $this->beginOwner($slug);
         try {
             $this->translator->addNamespace($slug, $manifest->path . '/language');
             $provider = $this->provider($manifest);
@@ -229,15 +231,19 @@ final class ModuleManager
                 $this->events,
                 $manifest->path,
             );
-            $this->router->beginOwner($slug);
-            try {$provider->register($context);} finally {$this->router->endOwner();}
+            $provider->register($context);
+            $this->endOwner();
             return ['provider'=>$provider,'context'=>$context];
         } catch (Throwable $error) {
+            $this->endOwner();
+            $this->removeOwner($slug);
             $this->repository->setError($slug, $error->getMessage());
             error_log("Module {$slug} failed to register: {$error->getMessage()}");
             return null;
         }
     }
+
+    private function beginOwner(string$s):void{$this->views()?->beginOwner($s);$this->container->beginOwner($s);$this->router->beginOwner($s);ModuleMutationScope::begin($s);$this->translator->beginOwner($s);}private function endOwner():void{$this->container->endOwner();$this->router->endOwner();ModuleMutationScope::end();$this->translator->endOwner();$this->views()?->endOwner();}private function commitOwner(string$s):void{ModuleMutationScope::commit($s);$this->container->commitOwner($s);$this->translator->commitOwner($s);$this->views()?->commitOwner($s);}private function removeOwner(string$s):void{$this->container->removeOwner($s);$this->router->removeOwner($s);ModuleMutationScope::rollback($s);$this->translator->removeOwner($s);$this->views()?->removeOwner($s);}private function views():?ViewRenderer{return$this->container->has(ViewRenderer::class)?$this->container->get(ViewRenderer::class):null;}
 
     private function manifest(string $slug): ModuleManifest
     {

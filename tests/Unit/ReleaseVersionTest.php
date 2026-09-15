@@ -11,7 +11,7 @@ final class ReleaseVersionTest extends TestCase
 {
     public function testReleaseUsesTheExpectedDevelopmentVersion(): void
     {
-        self::assertSame('0.4.0-rc.3', Version::CURRENT);
+        self::assertSame('0.4.0-rc.4', Version::CURRENT);
     }
 
     public function testBundledModulesAndThemesAcceptTheCurrentRelease(): void

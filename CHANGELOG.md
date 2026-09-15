@@ -1,4 +1,4 @@
-## 0.4.0-rc.4 - unreleased
+## 0.4.0-rc.4 - 2026-09-15
 
 - Extended progressive AJAX actions to notifications, friends, and theme lifecycle/configuration while preserving viewport position.
 

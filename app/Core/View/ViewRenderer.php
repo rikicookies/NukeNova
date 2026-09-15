@@ -13,6 +13,10 @@ final class ViewRenderer
 {
     private readonly Environment $twig;
     private readonly FilesystemLoader $loader;
+    private ?string $owner=null;/** @var array<string,array<string,array{before:list<string>,after:list<string>}>> */private array$paths=[];/** @var array<string,list<array{name:string,value:mixed}>> */private array$globals=[];
+    public function beginOwner(string$o):void{$this->owner=$o;}public function endOwner():void{$this->owner=null;}
+    public function removeOwner(string$o):void{foreach($this->paths[$o]??[]as$n=>$x)if($this->loader->getPaths($n)===$x['after'])$this->loader->setPaths($x['before'],$n);unset($this->paths[$o],$this->globals[$o]);}
+    public function commitOwner(string$o):void{foreach($this->globals[$o]??[]as$g)$this->twig->addGlobal($g['name'],$g['value']);unset($this->paths[$o],$this->globals[$o]);}
 
     public function __construct(string $viewPath, string $cachePath, bool $debug, ?Translator $translator = null)
     {
@@ -37,12 +41,12 @@ final class ViewRenderer
             throw new \InvalidArgumentException('Invalid view namespace.');
         }
 
-        $this->loader->addPath($path, $namespace);
+        $this->before($namespace);$this->loader->addPath($path,$namespace);$this->after($namespace);
     }
 
     public function prependPath(string $path): void
     {
-        $this->loader->prependPath($path);
+        $this->before(FilesystemLoader::MAIN_NAMESPACE);$this->loader->prependPath($path);$this->after(FilesystemLoader::MAIN_NAMESPACE);
     }
 
     public function prependNamespace(string $namespace, string $path): void
@@ -51,12 +55,13 @@ final class ViewRenderer
             throw new \InvalidArgumentException('Invalid view namespace.');
         }
 
-        $this->loader->prependPath($path, $namespace);
+        $this->before($namespace);$this->loader->prependPath($path,$namespace);$this->after($namespace);
     }
 
     public function addGlobal(string $name, mixed $value): void
     {
-        $this->twig->addGlobal($name, $value);
+        if($this->owner!==null){$this->globals[$this->owner][]=['name'=>$name,'value'=>$value];return;}
+        $this->twig->addGlobal($name,$value);
     }
 
     /** @param array<string, mixed> $data */
@@ -64,4 +69,5 @@ final class ViewRenderer
     {
         return $this->twig->render($template, $data);
     }
+    private function before(string$n):void{if($this->owner===null||isset($this->paths[$this->owner][$n]))return;$p=$this->loader->getPaths($n);$this->paths[$this->owner][$n]=['before'=>$p,'after'=>$p];}private function after(string$n):void{if($this->owner!==null)$this->paths[$this->owner][$n]['after']=$this->loader->getPaths($n);}
 }
