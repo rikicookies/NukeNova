@@ -1,7 +1,7 @@
 {% extends "layouts/default.twig" %}
 {% block title %}Membership — {{ membership_user.username }} — NovaNuke{% endblock %}
 {% block content %}
-<section class="admin-page">
+<section class="admin-page" id="membership-detail">
 {% include 'components/breadcrumbs.twig' with {items:[{label:'Admin',url:'/admin'},{label:'Memberships',url:'/admin/memberships'},{label:membership_user.username}]} only %}
 {% include 'components/page-header.twig' with {eyebrow:'Membership',title:membership_user.username,description:membership_user.email} only %}
 
@@ -15,14 +15,14 @@
 {% endif %}
 
 <h2>Assign plan</h2>
-<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/assign">
+<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/assign" data-ajax-action data-ajax-replace="#membership-detail" data-ajax-success="Membership updated.">
 <input type="hidden" name="_token" value="{{ csrf_token }}">
 <label>Plan<select name="plan" required>{% for key,plan in membership_plans %}<option value="{{ key }}">{{ plan.name }}</option>{% endfor %}</select></label>
 <label>Note<input type="text" name="note" maxlength="255" placeholder="Reason, invoice, courtesy, etc."></label>
 <button type="submit">Apply membership</button>
 </form>
 {% if membership_status.vip|default(false) %}
-<form method="post" action="/admin/memberships/{{ membership_user.id }}/revoke" onsubmit="return confirm('Revoke VIP access now?')">
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/revoke" onsubmit="return confirm('Revoke VIP access now?')" data-ajax-action data-ajax-replace="#membership-detail" data-ajax-success="VIP access revoked.">
 <input type="hidden" name="_token" value="{{ csrf_token }}">
 <button type="submit" class="secondary-button">Revoke current VIP</button>
 </form>
@@ -33,13 +33,13 @@
 <h2>Extend active VIP</h2>
 <div class="button-group">
 {% for quick_days in [30,90,365] %}
-<form method="post" action="/admin/memberships/{{ membership_user.id }}/extend">
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/extend" data-ajax-action data-ajax-replace="#membership-detail" data-ajax-success="VIP access extended.">
 <input type="hidden" name="_token" value="{{ csrf_token }}"><input type="hidden" name="days" value="{{ quick_days }}">
 <button type="submit" class="secondary-button">+{{ quick_days }} days</button>
 </form>
 {% endfor %}
 </div>
-<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/extend">
+<form class="settings-form" method="post" action="/admin/memberships/{{ membership_user.id }}/extend" data-ajax-action data-ajax-replace="#membership-detail" data-ajax-success="VIP access extended.">
 <input type="hidden" name="_token" value="{{ csrf_token }}">
 <label>Additional days<input type="number" name="days" min="1" max="3650" value="30" required></label>
 <label>Note<input type="text" name="note" maxlength="255" placeholder="Optional reason"></label>
@@ -50,7 +50,7 @@
 <h2>Schedule future VIP</h2>
 {% if scheduled_membership %}
 <p><span class="badge">Scheduled</span> {{ scheduled_membership.name|default('VIP') }} starts {{ scheduled_membership.starts_at }} UTC{% if scheduled_membership.starts_in_days is not null %} (about {{ scheduled_membership.starts_in_days }} day(s)){% endif %}{% if scheduled_membership.expires_at %}, expires {{ scheduled_membership.expires_at }} UTC{% else %}, lifetime{% endif %}.</p>
-<form method="post" action="/admin/memberships/{{ membership_user.id }}/schedule/cancel" onsubmit="return confirm('Cancel scheduled VIP?')">
+<form method="post" action="/admin/memberships/{{ membership_user.id }}/schedule/cancel" onsubmit="return confirm('Cancel scheduled VIP?')" data-ajax-action data-ajax-replace="#membership-detail" data-ajax-success="Scheduled VIP cancelled.">
 <input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit" class="secondary-button">Cancel scheduled VIP</button>
 </form>
 {% else %}

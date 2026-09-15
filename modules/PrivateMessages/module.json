@@ -10,5 +10,6 @@
     "php_min_version": "8.3.0",
     "dependencies": {},
     "permissions": ["private-messages.moderate"],
-    "events": ["private-message.sent"]
+    "events": ["private-message.sent"],
+    "navigation": {"label": "Private Messages", "url": "/messages", "icon": "message", "order": 110, "audience": "member"}
 }

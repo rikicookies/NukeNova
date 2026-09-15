@@ -9,5 +9,6 @@
     "cms_min_version": "0.1.0-alpha.10",
     "php_min_version": "8.3.0",
     "dependencies": {},
-    "permissions": ["search.manage"]
+    "permissions": ["search.manage"],
+    "navigation": {"label": "Search", "url": "/search", "icon": "search", "order": 50, "audience": "public"}
 }

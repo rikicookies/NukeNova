@@ -68,6 +68,8 @@ final class PublicCommentsController
             $this->activity->log($user ? (int) $user['id'] : null, $action, 'comment', $id, [], $request->ip());
             $this->session->put('comments.message', $message);
             return Response::redirect($returnTo, 303);
+        } catch (CommentTargetNotFound) {
+            return Response::html('Not found.', 404);
         } catch (RuntimeException $error) {
             $this->session->put('comments.error', $error->getMessage());
             return Response::redirect($returnTo, 303);
@@ -84,6 +86,13 @@ final class PublicCommentsController
     private function returnTo(mixed $value): string
     {
         $value = (string) $value;
-        return str_starts_with($value, '/') && ! str_starts_with($value, '//') && ! preg_match('/[\x00-\x1F]/', $value) ? $value : '/';
+        if ($value === ''
+            || ! str_starts_with($value, '/')
+            || str_starts_with($value, '//')
+            || str_contains($value, '\\')
+            || preg_match('/[\x00-\x20\x7F]/', $value) === 1) {
+            return '/';
+        }
+        return $value;
     }
 }

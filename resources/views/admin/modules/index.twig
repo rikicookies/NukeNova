@@ -10,7 +10,7 @@
 
     <div class="module-grid">
         {% for slug, item in modules %}
-        <article class="module-card">
+        <article class="module-card" id="module-{{ slug }}">
             <div class="module-heading">
                 <div>
                     <h2>{{ item.manifest ? item.manifest.name : item.name }}</h2>
@@ -29,16 +29,16 @@
 
             <div class="module-actions">
                 {% if not item.installed and item.manifest and item.compatible %}
-                    <form method="post" action="/admin/modules/{{ slug }}/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
+                    <form method="post" action="/admin/modules/{{ slug }}/install" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module installed."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
                 {% elseif item.installed and item.manifest %}
-                    <form method="post" action="/admin/modules/{{ slug }}/audience"><input type="hidden" name="_token" value="{{ csrf_token }}"><label>Public audience<select name="audience"><option value="public" {{ item.audience == 'public' ? 'selected' : '' }}>Everyone</option><option value="guest" {{ item.audience == 'guest' ? 'selected' : '' }}>Visitors only</option><option value="member" {{ item.audience == 'member' ? 'selected' : '' }}>Signed-in users</option><option value="vip" {{ item.audience == 'vip' ? 'selected' : '' }}>Active VIP only</option></select></label><button type="submit">Save audience</button></form>
-                    {% if item.update_available and item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/update"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
+                    <form method="post" action="/admin/modules/{{ slug }}/audience" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module audience updated."><input type="hidden" name="_token" value="{{ csrf_token }}"><label>Public audience<select name="audience"><option value="public" {{ item.audience == 'public' ? 'selected' : '' }}>Everyone</option><option value="guest" {{ item.audience == 'guest' ? 'selected' : '' }}>Visitors only</option><option value="member" {{ item.audience == 'member' ? 'selected' : '' }}>Signed-in users</option><option value="vip" {{ item.audience == 'vip' ? 'selected' : '' }}>Active VIP only</option></select></label><button type="submit">Save audience</button></form>
+                    {% if item.update_available and item.compatible %}<form method="post" action="/admin/modules/{{ slug }}/update" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module updated."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
                     {% if item.enabled %}
-                        <form method="post" action="/admin/modules/{{ slug }}/disable"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Disable</button></form>
+                        <form method="post" action="/admin/modules/{{ slug }}/disable" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module disabled."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Disable</button></form>
                     {% elseif item.compatible %}
-                        <form method="post" action="/admin/modules/{{ slug }}/enable"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Enable</button></form>
+                        <form method="post" action="/admin/modules/{{ slug }}/enable" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module enabled."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Enable</button></form>
                     {% endif %}
-                    <form class="uninstall-form" method="post" action="/admin/modules/{{ slug }}/uninstall">
+                    <form class="uninstall-form" method="post" action="/admin/modules/{{ slug }}/uninstall" data-ajax-action data-ajax-replace="#module-{{ slug }}" data-ajax-success="Module uninstalled.">
                         <input type="hidden" name="_token" value="{{ csrf_token }}">
                         <label><input type="checkbox" name="delete_data" value="1"> Delete module tables and data</label>
                         <label>Type <code>{{ slug }}</code><input name="confirm_slug" required autocomplete="off"></label>

@@ -34,6 +34,16 @@ final class ReleaseCandidateChecklist
         foreach(['.env','storage/installed.lock'] as $path){
             if(file_exists($this->rootPath.'/'.$path)||is_link($this->rootPath.'/'.$path)) $forbidden[]=$path;
         }
+        foreach(glob($this->rootPath.'/.env.*')?:[] as $path){
+            if(basename($path)==='.env.example') continue;
+            $forbidden[]=str_replace('\\','/',substr($path,strlen($this->rootPath)+1));
+        }
+        foreach(['*.sql','*.zip','*.tar','*.tar.gz','*.bak'] as $pattern){
+            foreach(glob($this->rootPath.'/'.$pattern)?:[] as $path){
+                if(!is_file($path)&&!is_link($path)) continue;
+                $forbidden[]=str_replace('\\','/',substr($path,strlen($this->rootPath)+1));
+            }
+        }
         foreach($this->runtimeArtifacts() as $path) $forbidden[]=$path;
         sort($forbidden,SORT_STRING);
         $this->add(
@@ -104,7 +114,9 @@ final class ReleaseCandidateChecklist
         $roots=[
             'storage/cache',
             'storage/logs',
-            'storage/private/backups',
+            'storage/sessions',
+            'storage/private',
+            'public/uploads',
         ];
         foreach($roots as $relativeRoot){
             $directory=$this->rootPath.'/'.$relativeRoot;

@@ -19,6 +19,8 @@ final class ReleaseCandidateDeploymentContractTest extends TestCase
         self::assertStringContainsString('BackupRecoveryCheck $backups',$source);
         self::assertStringContainsString("'group'=>'site'",$source);
         self::assertStringContainsString("'group'=>'backups'",$source);
+        self::assertStringContainsString('MailDeliveryAcceptance $mailAcceptance',$source);
+        self::assertStringContainsString("'group'=>'mail-delivery'",$source);
     }
 
     public function testBackupRecoveryCliIsExposed(): void

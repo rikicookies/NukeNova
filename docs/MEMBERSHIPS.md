@@ -43,6 +43,8 @@ Bundled catalogue queries may use direct SQL for efficient filtering across hund
 
 Membership assignment, revocation and expiration expose Core events so optional modules can react without querying entitlement tables. Expiration itself remains based on `expires_at`; `expired_event_at` is only an idempotency marker that prevents emitting the same expiration event more than once.
 
+Activation and expiration processing lock and revalidate each grant. Their marker is written only after all event listeners succeed, inside the same database transaction. A listener failure rolls back the marker and listener database writes so a later maintenance run can retry instead of permanently losing the lifecycle event.
+
 Run normal maintenance processing to discover newly expired grants. If Notifications is enabled, users receive membership lifecycle notifications through those events.
 
 ## Scheduling and extensions

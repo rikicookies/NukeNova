@@ -6,6 +6,7 @@ namespace NovaNuke\Core\System;
 
 use NovaNuke\Core\Backup\BackupRecoveryCheck;
 use NovaNuke\Core\Mail\MailConfigurationCheck;
+use NovaNuke\Core\Mail\MailDeliveryAcceptance;
 use NovaNuke\Core\Membership\MembershipHealthCheck;
 use NovaNuke\Core\Billing\PaymentHealthCheck;
 use NovaNuke\Core\Security\AuthorizationAudit;
@@ -21,6 +22,7 @@ final class ReleaseCandidateDeploymentCheck
         private readonly MembershipHealthCheck $membership,
         private readonly PaymentHealthCheck $payments,
         private readonly MailConfigurationCheck $mail,
+        private readonly MailDeliveryAcceptance $mailAcceptance,
         private readonly ThemeDistributionCheck $themes,
         private readonly DeploymentSecretCheck $secrets,
     ) {
@@ -50,7 +52,10 @@ final class ReleaseCandidateDeploymentCheck
             $checks[]=['group'=>'payments','name'=>$check['name'],'passed'=>$check['passed'],'required'=>true,'detail'=>$check['detail']];
         }
         foreach($this->mail->run() as $check){
-            $checks[]=['group'=>'mail','name'=>$check['name'],'passed'=>$check['passed'],'required'=>$check['required'],'detail'=>$check['detail']];
+            $checks[]=['group'=>'mail-config','name'=>$check['name'],'passed'=>$check['passed'],'required'=>$check['required'],'detail'=>$check['detail']];
+        }
+        foreach($this->mailAcceptance->run() as $check){
+            $checks[]=['group'=>'mail-delivery','name'=>$check['name'],'passed'=>$check['passed'],'required'=>true,'detail'=>$check['detail']];
         }
         foreach($this->themes->run() as $check){
             $checks[]=['group'=>'themes','name'=>$check['name'],'passed'=>$check['passed'],'required'=>true,'detail'=>$check['detail']];

@@ -70,6 +70,8 @@ Do not delete `storage/installed.lock` during an update. Removing it intentional
 
 NovaNuke stops at the first failed Core or module migration. Because MySQL/MariaDB may commit DDL implicitly, NovaNuke does not pretend that a transaction rolled schema changes back. It leaves a durable `running` or `dirty` operation with the exact migration checksum.
 
+While that marker exists, ordinary Core migrations, module migrations, and module uninstall are blocked. Use the explicit recovery command; ordinary `migrate` never treats recovery as an implicit retry.
+
 1. Keep maintenance mode enabled and save the exact migration/error.
 2. Run `php bin/cms migrate:status`; do not edit `migration_operations`, `migrations`, `module_migrations`, or application tables.
 3. Correct environmental causes such as privileges, quota, connection loss, or invalid SQL.

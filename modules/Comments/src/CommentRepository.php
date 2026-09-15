@@ -28,6 +28,20 @@ final class CommentRepository
         return $statement->fetchAll();
     }
 
+    /** @return array{content_type:string,content_id:int,status:string}|null */
+    public function targetForComment(int $commentId): ?array
+    {
+        $statement = $this->database->prepare('SELECT content_type,content_id,status FROM comments WHERE id=:id');
+        $statement->execute(['id' => $commentId]);
+        $row = $statement->fetch();
+        if (! is_array($row)) return null;
+        return [
+            'content_type' => (string) $row['content_type'],
+            'content_id' => (int) $row['content_id'],
+            'status' => (string) $row['status'],
+        ];
+    }
+
     public function react(int $commentId, int $userId, string $reaction): void
     {
         $comment = $this->find($commentId);

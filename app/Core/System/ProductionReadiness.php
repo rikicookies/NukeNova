@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace NovaNuke\Core\System;
 
 use NovaNuke\Core\Config\ConfigRepository;
+use NovaNuke\Core\Mail\MailConfigurationCheck;
+use NovaNuke\Core\Mail\MailProductionReadiness;
 
 final class ProductionReadiness
 {
@@ -93,8 +95,10 @@ final class ProductionReadiness
         $this->add($checks, 'PHP exposure', filter_var(ini_get('expose_php'), FILTER_VALIDATE_BOOL) !== true, false, 'Recommended: expose_php=Off.');
         $this->add($checks, 'OPcache', extension_loaded('Zend OPcache') || function_exists('opcache_get_status'), false, 'Recommended for production performance.');
 
-        $smtp = (string) $this->config->get('mail.mailer', 'log') === 'smtp';
-        $this->add($checks, 'SMTP transport', $smtp, false, $smtp ? 'SMTP transport selected.' : 'Log mail is acceptable for testing; configure SMTP before public email workflows.');
+        $mailReadiness = new MailProductionReadiness($this->config, new MailConfigurationCheck($this->config));
+        foreach ($mailReadiness->run() as $check) {
+            $checks[] = $check;
+        }
 
         return $checks;
     }

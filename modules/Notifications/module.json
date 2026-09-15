@@ -10,5 +10,6 @@
     "php_min_version": "8.3.0",
     "dependencies": {},
     "permissions": [],
-    "events": ["private-message.sent", "comment.created", "friend.requested", "friend.accepted", "maintenance.pruning"]
+    "events": ["private-message.sent", "comment.created", "friend.requested", "friend.accepted", "maintenance.pruning"],
+    "navigation": {"label": "Notifications", "url": "/notifications", "icon": "bell", "order": 100, "audience": "member"}
 }

@@ -21,9 +21,10 @@ final class FileBackup
     ) {
     }
 
-    /** @return array{path:string,files:int,bytes:int,sha256:string} */
-    public function create(): array
+    /** @return array{path:string,files:int,bytes:int,sha256:string,backup_set:string} */
+    public function create(?string $backupSetId = null): array
     {
+        $backupSetId = BackupSetId::normalize($backupSetId);
         $this->prepareDirectory();
         $files = $this->inventory();
         $suffix = bin2hex(random_bytes(4));
@@ -46,7 +47,8 @@ final class FileBackup
                 $writer->addFile($archivePath, $sourcePath);
             }
             $manifest = json_encode([
-                'format' => 1,
+                'format' => 2,
+                'backup_set' => $backupSetId,
                 'created_at' => gmdate(DATE_ATOM),
                 'files' => $manifestFiles,
             ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n";
@@ -59,7 +61,7 @@ final class FileBackup
             chmod($finalPath, 0600);
             $archiveHash = hash_file('sha256', $finalPath);
             if ($archiveHash === false) throw new RuntimeException('Unable to fingerprint the file backup.');
-            return ['path' => $finalPath, 'files' => count($files), 'bytes' => $totalBytes, 'sha256' => $archiveHash];
+            return ['path' => $finalPath, 'files' => count($files), 'bytes' => $totalBytes, 'sha256' => $archiveHash, 'backup_set' => $backupSetId];
         } catch (Throwable $error) {
             if (is_resource($stream)) fclose($stream);
             if (is_file($temporaryPath)) unlink($temporaryPath);

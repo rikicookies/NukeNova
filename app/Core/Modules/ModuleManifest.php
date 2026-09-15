@@ -13,6 +13,7 @@ final readonly class ModuleManifest
     /** @param array<string, string> $dependencies
      *  @param list<string> $permissions
      *  @param list<string> $events
+     *  @param array{label:string,url:string,icon:?string,order:int,audience:string}|null $navigation
      */
     public function __construct(
         public string $name,
@@ -26,6 +27,7 @@ final readonly class ModuleManifest
         public array $dependencies,
         public array $permissions,
         public array $events,
+        public ?array $navigation,
         public string $apiVersion,
         public string $path,
     ) {
@@ -104,6 +106,8 @@ final readonly class ModuleManifest
             $seenEvents[$event] = true;
         }
 
+        $navigation = self::navigation($data['navigation'] ?? null);
+
         $apiVersion = trim((string) ($data['api_version'] ?? '1.0'));
         if (! preg_match('/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$/', $apiVersion)) {
             throw new InvalidArgumentException('Module API version must use major.minor format.');
@@ -121,6 +125,7 @@ final readonly class ModuleManifest
             array_map(static fn (mixed $value): string => trim((string) $value), $dependencies),
             array_values(array_map('strval', $permissions)),
             array_values(array_map('strval', $events)),
+            $navigation,
             $apiVersion,
             $path,
         );
@@ -141,8 +146,27 @@ final readonly class ModuleManifest
             'dependencies' => $this->dependencies,
             'permissions' => $this->permissions,
             'events' => $this->events,
+            'navigation' => $this->navigation,
             'api_version' => $this->apiVersion,
         ];
+    }
+
+    /** @return array{label:string,url:string,icon:?string,order:int,audience:string}|null */
+    private static function navigation(mixed $navigation): ?array
+    {
+        if ($navigation === null || $navigation === false) return null;
+        if (! is_array($navigation)) throw new InvalidArgumentException('Module navigation must be an object or null.');
+        $label = trim((string) ($navigation['label'] ?? ''));
+        $url = trim((string) ($navigation['url'] ?? ''));
+        $icon = isset($navigation['icon']) ? trim((string) $navigation['icon']) : null;
+        $order = filter_var($navigation['order'] ?? 0, FILTER_VALIDATE_INT);
+        $audience = (string) ($navigation['audience'] ?? 'public');
+        if ($label === '' || mb_strlen($label) > 120) throw new InvalidArgumentException('Module navigation label is invalid.');
+        if (! str_starts_with($url, '/') || str_starts_with($url, '//') || strlen($url) > 2048) throw new InvalidArgumentException('Module navigation URL must be an internal path.');
+        if ($icon !== null && ($icon === '' || ! preg_match('/^[a-z][a-z0-9-]{0,49}$/', $icon))) throw new InvalidArgumentException('Module navigation icon is invalid.');
+        if ($order === false || $order < -10000 || $order > 10000) throw new InvalidArgumentException('Module navigation order is invalid.');
+        if (! in_array($audience, ['public', 'guest', 'member', 'vip'], true)) throw new InvalidArgumentException('Module navigation audience is invalid.');
+        return ['label' => $label, 'url' => $url, 'icon' => $icon, 'order' => (int) $order, 'audience' => $audience];
     }
 
     private static function assertSemanticVersion(string $version, string $label): void

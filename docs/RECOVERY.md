@@ -20,6 +20,8 @@ Do not delete or edit any of these rows. Keep maintenance mode enabled and inspe
 php bin/cms migrate:status
 ```
 
+Normal `migrate`, module install/update, and module uninstall operations refuse to start while any `running` or `dirty` operation exists. Recovery is deliberately explicit so a later pending migration can never run ahead of an interrupted schema change.
+
 After correcting the reported cause, reconcile an interrupted Core migration:
 
 ```bash
@@ -61,14 +63,16 @@ Stop and restore `storage/installed.lock` from a trusted backup. Verify `.env` a
 
 Never extract a NovaNuke backup directly over a live application tree.
 
-First verify the latest matched backup pair and prove the file archive can actually be extracted:
+First verify the latest matched backup set and prove both restore paths where the environment allows it:
 
 ```bash
 php bin/cms backup:verify
 php bin/cms backup:restore-check
 ```
 
-`backup:restore-check` uses a disposable temporary directory and removes it after verification. It does not overwrite the live site.
+`backup:restore-check` always uses a disposable temporary directory for files. When `NOVANUKE_BACKUP_VERIFY_DSN` credentials point to an empty disposable MySQL database, it also performs a real SQL import, verifies tables/migration history, and cleans the imported tables. It never overwrites the live site database.
+
+For manifest-backed sets, keep the entire `set-...` directory together. Verify `manifest.json` before any manual import or extraction. A `.incomplete-set-...` directory is staging debris, not a valid backup, and can be removed only after confirming no backup process is running. If a manual restore fails midway, keep the original site offline, preserve the verified set, recreate an empty destination database/directory, and restart from verification instead of continuing from an unknown partial state.
 
 Restore the file archive into a new empty disposable directory:
 
@@ -78,6 +82,6 @@ php bin/cms backup:restore-files --archive=/protected/path/novanuke-files-....ta
 
 The restore command verifies the TAR manifest/checksums before extraction, rejects a non-empty destination and has no overwrite/force mode.
 
-Database SQL restore is deliberately not automated by NovaNuke. Create/select an empty disposable database with the database server's normal administration tooling, import the verified SQL backup there, then pair it with the matching application release and restored private files. This keeps database selection and destructive replacement outside an application CLI shortcut.
+NovaNuke does not create a restore database automatically. Create/select an empty disposable database with the database server's normal administration tooling. Either configure the three `NOVANUKE_BACKUP_VERIFY_*` values and run `backup:restore-check`, or import the verified SQL manually and record the result. If automated credentials are absent, release acceptance remains `MANUAL REQUIRED / NOT VERIFIED` until that manual evidence exists.
 
 After recovery, run `php bin/cms migrate:status` and installed-site checks using the application release matching the backup before exposing the restored site.

@@ -39,6 +39,11 @@ final class InstallerFreshInstallIntegrationTest extends TestCase
         foreach(glob($source.'/*.php')?:[] as $migration){
             copy($migration,$this->root.'/database/migrations/'.basename($migration));
         }
+        $project=dirname(__DIR__,2);
+        foreach(['modules','themes','resources'] as $directory){
+            $this->copyTree($project.'/'.$directory,$this->root.'/'.$directory);
+        }
+        mkdir($this->root.'/public/assets/themes',0770,true);
 
         $options=[
             PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
@@ -103,6 +108,14 @@ final class InstallerFreshInstallIntegrationTest extends TestCase
             1,
             (int)$database->query("SELECT COUNT(*) FROM users WHERE username='rc_admin' AND status='active'")->fetchColumn(),
         );
+        $modules=$database->query('SELECT slug,enabled FROM modules ORDER BY slug')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $expectedModules=array_fill_keys(\NovaNuke\Installer\DefaultBundledModules::SLUGS,1);ksort($expectedModules);
+        self::assertSame($expectedModules,array_map('intval',$modules));
+        self::assertArrayNotHasKey('demo-content',$modules);
+        self::assertSame('novamodern',(string)$database->query("SELECT `value` FROM settings WHERE `key`='theme.active'")->fetchColumn());
+        self::assertSame(1,(int)$database->query("SELECT COUNT(*) FROM themes WHERE slug='novamodern'")->fetchColumn());
+        self::assertSame(1,(int)$database->query("SELECT COUNT(*) FROM blocks WHERE slug='modules' AND type='modules-menu' AND enabled=1")->fetchColumn());
+        self::assertFileExists($this->root().'/public/assets/themes/novamodern/css/novamodern.css');
         self::assertSame(
             1,
             (int)$database->query(
@@ -260,5 +273,21 @@ PHP);
             $item->isDir()?@rmdir($item->getPathname()):@unlink($item->getPathname());
         }
         @rmdir($root);
+    }
+
+    private function copyTree(string $source,string $target):void
+    {
+        $iterator=new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($source,\FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::SELF_FIRST,
+        );
+        foreach($iterator as$item){
+            $destination=$target.'/'.substr($item->getPathname(),strlen($source)+1);
+            if($item->isDir()){
+                if(!is_dir($destination))mkdir($destination,0770,true);
+            }else{
+                $parent=dirname($destination);if(!is_dir($parent))mkdir($parent,0770,true);copy($item->getPathname(),$destination);
+            }
+        }
     }
 }

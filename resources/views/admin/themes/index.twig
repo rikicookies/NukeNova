@@ -8,7 +8,7 @@
     {% if message %}<div class="success-message">{{ message }}</div>{% endif %}
     {% if error %}<div class="form-errors"><ul><li>{{ error }}</li></ul></div>{% endif %}
 
-    <div class="theme-grid">
+    <div class="theme-grid" id="theme-grid">
         {% for slug, item in themes %}
         <article class="theme-card {{ item.active ? 'active-theme' : '' }}">
             {% if item.installed and item.manifest and item.manifest.screenshot %}
@@ -21,15 +21,15 @@
 
                 <div class="module-actions">
                 {% if not item.installed and item.manifest and item.compatible %}
-                    <form method="post" action="/admin/themes/{{ slug }}/install"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
+                    <form method="post" action="/admin/themes/{{ slug }}/install" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="Theme installed."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Install</button></form>
                 {% elseif item.installed and item.manifest %}
-                    {% if item.update_available %}<form method="post" action="/admin/themes/{{ slug }}/update"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
-                    {% if not item.active %}<form method="post" action="/admin/themes/{{ slug }}/activate"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Activate</button></form>{% endif %}
+                    {% if item.update_available %}<form method="post" action="/admin/themes/{{ slug }}/update" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="Theme updated."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Update</button></form>{% endif %}
+                    {% if not item.active %}<form method="post" action="/admin/themes/{{ slug }}/activate" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="Theme activated."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">Activate</button></form>{% endif %}
                 {% endif %}
                 </div>
 
                 {% if item.installed and item.manifest and item.manifest.settings %}
-                <form class="theme-settings" method="post" action="/admin/themes/{{ slug }}/configure">
+                <form class="theme-settings" method="post" action="/admin/themes/{{ slug }}/configure" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="Theme appearance saved.">
                     <input type="hidden" name="_token" value="{{ csrf_token }}">
                     {% for key, definition in item.manifest.settings %}
                         {% if definition.type == 'boolean' %}
@@ -45,7 +45,7 @@
                 {% endif %}
 
                 {% if item.installed and not item.active %}
-                <form class="uninstall-form" method="post" action="/admin/themes/{{ slug }}/uninstall">
+                <form class="uninstall-form" method="post" action="/admin/themes/{{ slug }}/uninstall" data-ajax-action data-ajax-replace="#theme-grid" data-ajax-success="Theme uninstalled.">
                     <input type="hidden" name="_token" value="{{ csrf_token }}">
                     <label>Type <code>{{ slug }}</code><input name="confirm_slug" required autocomplete="off"></label>
                     <button class="danger-button" type="submit">Uninstall</button>

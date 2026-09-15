@@ -20,10 +20,16 @@ final class MigrationSafetyContractTest extends TestCase
     public function testModuleMigratorUsesTheSameStopBeforeContinueRule(): void
     {
         $source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/Core/Modules/ModuleMigrator.php');
+        $executeStart = strpos($source, 'private function execute(');
+        $rollbackStart = strpos($source, 'public function rollbackAll(', $executeStart);
 
-        self::assertStringContainsString("\$status['missing_files'] !== []", $source);
-        self::assertLessThan(strpos($source, '$migration = require $file'), strpos($source, "\$status['missing_files'] !== []"));
-        self::assertStringContainsString('No later migration was run.', $source);
+        self::assertNotFalse($executeStart);
+        self::assertNotFalse($rollbackStart);
+        $execute = substr($source, $executeStart, $rollbackStart - $executeStart);
+
+        self::assertStringContainsString("\$status['missing_files'] !== []", $execute);
+        self::assertLessThan(strpos($execute, '$migration = require $file'), strpos($execute, "\$status['missing_files'] !== []"));
+        self::assertStringContainsString('No later migration was run.', $execute);
     }
 
     public function testCliExposesExplicitRecoveryAndNeverAttemptsAutomaticCoreRollback(): void

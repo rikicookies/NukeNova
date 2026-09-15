@@ -9,5 +9,6 @@
   "cms_min_version": "0.2.0-alpha.58",
   "php_min_version": "8.3.0",
   "dependencies": {},
-  "permissions": ["quotes.manage"]
+  "permissions": ["quotes.manage"],
+  "navigation": {"label": "Quotes", "url": "/quotes", "icon": "quotes", "order": 80, "audience": "public"}
 }

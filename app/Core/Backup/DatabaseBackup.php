@@ -16,8 +16,9 @@ final class DatabaseBackup
     ) {
     }
 
-    public function create(): string
+    public function create(?string $backupSetId = null): string
     {
+        $backupSetId = BackupSetId::normalize($backupSetId);
         if (is_link($this->directory)) throw new RuntimeException('Private backup directory must not be a symbolic link.');
         if (! is_dir($this->directory) && ! mkdir($this->directory, 0700, true) && ! is_dir($this->directory)) {
             throw new RuntimeException('Unable to create the private backup directory.');
@@ -31,9 +32,27 @@ final class DatabaseBackup
         $stream = fopen($temporaryPath, 'xb');
         if ($stream === false) throw new RuntimeException('Unable to create the database backup.');
 
+        $transactionStarted = false;
         try {
             chmod($temporaryPath, 0600);
-            $this->write($stream, "-- NovaNuke database backup\n-- Created: " . gmdate(DATE_ATOM) . "\n\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+            $engines = $this->tableEngines();
+            $nonTransactional = array_keys(array_filter($engines, static fn (string $engine): bool => strcasecmp($engine, 'InnoDB') !== 0));
+
+            $this->database->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+            $this->database->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT');
+            $transactionStarted = true;
+
+            $snapshot = $nonTransactional === [] ? 'consistent-inno-db' : 'mixed-engines';
+            $this->write($stream, "-- NovaNuke database backup\n");
+            $this->write($stream, '-- Created: ' . gmdate(DATE_ATOM) . "\n");
+            $this->write($stream, "-- Format: 2\n");
+            $this->write($stream, "-- Backup-Set: {$backupSetId}\n");
+            $this->write($stream, "-- Snapshot: {$snapshot}\n");
+            if ($nonTransactional !== []) {
+                $this->write($stream, '-- Non-Transactional-Tables: ' . implode(',', $nonTransactional) . "\n");
+            }
+            $this->write($stream, "\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\n");
+
             $tables = $this->database->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->fetchAll(PDO::FETCH_NUM);
             foreach ($tables as $record) {
                 $table = (string) $record[0];
@@ -52,16 +71,35 @@ final class DatabaseBackup
             }
             $this->write($stream, "SET FOREIGN_KEY_CHECKS=1;\n");
             if (! fflush($stream)) throw new RuntimeException('Unable to flush the database backup.');
+
+            $this->database->exec('COMMIT');
+            $transactionStarted = false;
             fclose($stream);
             $stream = null;
             if (! rename($temporaryPath, $finalPath)) throw new RuntimeException('Unable to finalize the database backup.');
             chmod($finalPath, 0600);
             return $finalPath;
         } catch (Throwable $error) {
+            if ($transactionStarted) {
+                try { $this->database->exec('ROLLBACK'); } catch (Throwable) {}
+            }
             if (is_resource($stream)) fclose($stream);
             if (is_file($temporaryPath)) unlink($temporaryPath);
             throw $error;
         }
+    }
+
+    /** @return array<string,string> */
+    private function tableEngines(): array
+    {
+        $engines = [];
+        $rows = $this->database->query("SHOW TABLE STATUS WHERE Engine IS NOT NULL")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $row) {
+            $name = (string) ($row['Name'] ?? '');
+            $engine = (string) ($row['Engine'] ?? '');
+            if ($name !== '' && $engine !== '') $engines[$name] = $engine;
+        }
+        return $engines;
     }
 
     private function identifier(string $name): string

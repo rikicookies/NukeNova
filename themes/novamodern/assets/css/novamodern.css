@@ -13,6 +13,9 @@ body.nova-modern { --nova-sidebar: 270px; --nova-sidebar-collapsed: 72px; --nova
 .nova-top-actions { display: flex; align-items: center; gap: .35rem; margin-left: auto; }
 .nova-top-actions a { display: flex; align-items: center; gap: .45rem; padding: .55rem .7rem; border-radius: .45rem; color: #fff; font-size: .82rem; text-decoration: none; }
 .nova-top-actions a:hover, .nova-top-actions a:focus-visible { background: rgb(255 255 255 / 9%); }
+.nova-logout-form { margin: 0; }
+.nova-logout-form button { padding: .55rem .7rem; border: 0; border-radius: .45rem; background: transparent; color: #fff; font: inherit; font-size: .82rem; cursor: pointer; }
+.nova-logout-form button:hover, .nova-logout-form button:focus-visible { background: rgb(255 255 255 / 9%); }
 
 .nova-workspace { display: grid; grid-template-columns: var(--nova-sidebar) minmax(0, 1fr); min-height: calc(100vh - 68px); transition: grid-template-columns .2s ease; }
 .nova-sidebar { position: sticky; z-index: 30; top: 68px; align-self: start; height: calc(100vh - 68px); overflow: auto; background: #252b38; color: #d9deea; transition: width .2s ease, transform .2s ease; }

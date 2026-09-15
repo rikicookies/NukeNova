@@ -91,6 +91,7 @@ final class ModuleMigrator
         $lock->acquire();
         try {
             $this->operations->ensureRepository();
+            if (! $onlyRecovering) $this->operations->assertNoneUnresolved("run module {$manifest->slug} migrations");
             $directory = $manifest->path . '/database/migrations';
             $status = $this->status($manifest);
             if ($status['missing_files'] !== []) {
@@ -157,6 +158,7 @@ final class ModuleMigrator
         $lock->acquire();
         try {
             $this->operations->ensureRepository();
+            $this->operations->assertNoneUnresolved("uninstall module {$manifest->slug}");
             $statement = $this->database->prepare(
                 'SELECT migration FROM module_migrations WHERE module_slug = :slug ORDER BY id DESC'
             );

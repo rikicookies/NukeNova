@@ -4,6 +4,8 @@
 .classic-header small { color: #cbd2db; }
 .classic-header nav { display: block; }
 .classic-header nav a { padding: .45rem .7rem; border: 1px solid #66717f; border-radius: .25rem; background: #293440; color: white; text-decoration: none; font-size: .8rem; }
+.classic-header .public-logout-form { margin: 0; }
+.classic-header .public-logout-form button { padding: .45rem .7rem; border: 1px solid #66717f; border-radius: .25rem; background: #293440; color: white; cursor: pointer; }
 .classic-header .menu-level-0 > .is-active > a { color: var(--classic-accent); }
 .classic-header .menu-item > .menu-level { padding: .35rem; border: 1px solid #59616b; background: #252e39; box-shadow: 0 8px 18px rgb(0 0 0 / 28%); }
 .classic-shell { width: min(1200px, calc(100% - 1rem)); min-height: 75vh; margin: 0 auto; padding: .75rem; border-inline: 1px solid #777f88; background: #e5e7e9; }

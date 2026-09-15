@@ -10,5 +10,6 @@
     "php_min_version": "8.3.0",
     "dependencies": {},
     "permissions": ["wiki.edit", "wiki.publish"],
-    "events": ["sitemap.collecting"]
+    "events": ["sitemap.collecting"],
+    "navigation": {"label": "Wiki", "url": "/wiki", "icon": "wiki", "order": 60, "audience": "public"}
 }

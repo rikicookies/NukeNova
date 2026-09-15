@@ -43,12 +43,29 @@ MAIL_FROM_NAME="NovaNuke"
 
 Replace every example. Bluehost currently recommends authenticated SSL/TLS on port 465 for cPanel email. If the account specifically provides port 587, use `MAIL_ENCRYPTION=tls` instead. Never place these values in the repository.
 
-## Verification
+## Verification levels
 
-1. Open `/admin/system` and confirm `Mail transport: smtp` and `SMTP configuration: Valid`.
-2. Request password recovery for a controlled account.
-3. Confirm receipt, sender, subject, HTML link and text-only fallback.
-4. Open the link once and verify it cannot be reused.
-5. Check spam delivery and configure SPF, DKIM and DMARC through the hosting/email provider.
+NovaNuke intentionally distinguishes three different claims:
 
-NovaNuke never writes SMTP debug conversations, usernames or passwords to its activity log. User-facing delivery failures remain generic; detailed exceptions go only through production-safe server logging.
+1. `php bin/cms mail:check` — configuration is structurally valid. This can pass with `MAIL_MAILER=log` in development/test and never claims a message was delivered.
+2. `php bin/cms production:check` — production mail is ready. This requires `MAIL_MAILER=smtp` plus structurally valid SMTP configuration.
+3. `php bin/cms mail:acceptance` — delivery has been manually accepted for the three real account workflows. Until all three are recorded, RC deployment remains `MANUAL REQUIRED / NOT VERIFIED`.
+
+On a disposable production-like environment, exercise and confirm all three workflows:
+
+- create/register a controlled account and confirm the registration-verification message arrives;
+- request password recovery and confirm the reset message arrives;
+- request an account email change and confirm the change-verification message arrives.
+
+For every workflow confirm the expected recipient and sender, the HTTPS site URL in the link, and that the token succeeds once and cannot be reused. Only after the real workflow succeeds, record that acceptance:
+
+```bash
+php bin/cms mail:acceptance --record=registration-verification
+php bin/cms mail:acceptance --record=password-reset
+php bin/cms mail:acceptance --record=email-change
+php bin/cms mail:acceptance
+```
+
+The acceptance file is bound to the current SMTP settings and effective site URL. Changing those values invalidates the previous acceptance instead of carrying a stale PASS into another deployment. The state file is private and contains only a configuration fingerprint and verification timestamps; it does not store the SMTP password.
+
+Check spam delivery and configure SPF, DKIM and DMARC through the hosting/email provider. NovaNuke never writes SMTP debug conversations, usernames or passwords to its activity log. User-facing delivery failures remain generic; detailed exceptions go only through production-safe server logging.

@@ -26,6 +26,7 @@ final class CommentService implements CommentProviderInterface
         private readonly AuthManager $auth,
         private readonly SettingsRepository $settings,
         private readonly EventDispatcher $events,
+        private readonly CommentTargetAccessGuard $targetAccess,
         private readonly DatabaseRateLimiter $limiter,
         private readonly string $appKey,
         private readonly ContentRendererInterface $contentRenderer,
@@ -34,6 +35,7 @@ final class CommentService implements CommentProviderInterface
 
     public function for(string $type, int $id): array
     {
+        if (! $this->targetAccess->allows($type, $id)) return [];
         $viewer = $this->auth->user();
         $comments = $this->repository->approved($type, $id, $viewer ? (int) $viewer['id'] : null);
         foreach ($comments as &$comment) {
@@ -50,9 +52,7 @@ final class CommentService implements CommentProviderInterface
     public function create(Request $request, string $type, int $contentId): int
     {
         if (! preg_match('/^[a-z][a-z0-9-]{0,99}$/', $type) || $contentId < 1) throw new RuntimeException('Invalid comment target.');
-        $target = new CommentTargetChecking($type, $contentId);
-        $this->events->dispatch(\NovaNuke\Core\Events\EventName::COMMENTS_CONTENT_CHECKING, $target);
-        if (! $target->accepted) throw new RuntimeException('This content does not accept comments.');
+        $this->targetAccess->require($type, $contentId);
         $user = $this->auth->user();
         if ($user === null && ! $this->guestsAllowed()) throw new RuntimeException('Sign in to comment.');
         $key = ($user ? 'user:' . $user['id'] : 'ip:' . $request->ip()) . '|' . $type . ':' . $contentId;
@@ -79,6 +79,7 @@ final class CommentService implements CommentProviderInterface
     {
         $user = $this->auth->user();
         if ($user === null) throw new RuntimeException('Sign in to edit comments.');
+        $this->assertCommentTargetAccessible($id, false);
         [$body, $bodyFormat] = $this->body($request->input('body'), $request->input('body_format'));
         $this->repository->edit($id, (int) $user['id'], $body, $bodyFormat);
     }
@@ -87,6 +88,7 @@ final class CommentService implements CommentProviderInterface
     {
         $user = $this->auth->user();
         if ($user === null) throw new RuntimeException('Sign in to react to comments.');
+        $this->assertCommentTargetAccessible($id, true);
         $reaction = (string) $reaction;
         if (! in_array($reaction, ['like', 'dislike'], true)) throw new RuntimeException('Invalid reaction.');
         $this->repository->react($id, (int) $user['id'], $reaction);
@@ -94,6 +96,7 @@ final class CommentService implements CommentProviderInterface
 
     public function report(Request $request, int $id): int
     {
+        $this->assertCommentTargetAccessible($id, true);
         $reason = trim((string) $request->input('reason'));
         if (mb_strlen($reason) < 5 || mb_strlen($reason) > 500) throw new RuntimeException('Report reason must contain 5-500 characters.');
         $user = $this->auth->user();
@@ -103,6 +106,13 @@ final class CommentService implements CommentProviderInterface
         $report = $this->repository->report($id, $user ? (int) $user['id'] : null, $this->hash($identity), $reason);
         $this->limiter->hit($key);
         return $report;
+    }
+
+    private function assertCommentTargetAccessible(int $commentId, bool $approvedOnly): void
+    {
+        $target = $this->repository->targetForComment($commentId);
+        if ($target === null || ($approvedOnly && $target['status'] !== 'approved')) throw new CommentTargetNotFound();
+        $this->targetAccess->require($target['content_type'], $target['content_id']);
     }
 
     /** @return array{string,string} */

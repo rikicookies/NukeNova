@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NovaNuke\Core\Database;
 
 use PDO;
+use RuntimeException;
 
 final class MigrationOperationStore
 {
@@ -62,6 +63,25 @@ final class MigrationOperationStore
         $statement = $this->database->prepare($sql);
         $statement->execute($parameters);
         return $statement->fetchAll();
+    }
+
+    public function assertNoneUnresolved(string $action): void
+    {
+        $operation = $this->unresolved()[0] ?? null;
+        if (! is_array($operation)) return;
+        $scope = (string) $operation['scope'];
+        $recoveryCommand = str_starts_with($scope, 'module:')
+            ? 'php bin/cms migrate:recover --module=' . substr($scope, strlen('module:'))
+            : 'php bin/cms migrate:recover';
+        throw new RuntimeException(sprintf(
+            'Cannot %s while migration %s.%s (%s) is %s. Run %s first.',
+            $action,
+            $scope,
+            (string) $operation['migration'],
+            (string) $operation['direction'],
+            strtoupper((string) $operation['state']),
+            $recoveryCommand,
+        ));
     }
 
     public function start(string $scope, string $migration, string $direction, string $checksum): void

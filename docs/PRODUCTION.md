@@ -119,6 +119,7 @@ Before testing real delivery, run:
 
 ```bash
 php bin/cms mail:check
+php bin/cms mail:acceptance
 ```
 
-This checks the selected mail transport and SMTP configuration structure without sending a message. A successful structural check does not replace a real registration/reset/email-change delivery test on the target SMTP service.
+`mail:check` checks the selected transport and SMTP configuration structure without sending a message. `production:check` requires SMTP and fails when `MAIL_MAILER=log`. A structurally valid SMTP configuration is still not delivery evidence: `mail:acceptance` remains `MANUAL REQUIRED / NOT VERIFIED` until registration verification, password reset, and email-change verification have each been exercised on the production-like host and explicitly recorded. See `docs/MAIL.md` and `docs/RC_ACCEPTANCE.md`.

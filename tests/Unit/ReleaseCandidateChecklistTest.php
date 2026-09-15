@@ -35,6 +35,12 @@ final class ReleaseCandidateChecklistTest extends TestCase
             file_put_contents($root.'/storage/logs/novanuke.log',"test\n");
             file_put_contents($root.'/storage/cache/generated.php',"<?php\n");
             file_put_contents($root.'/storage/private/backups/example.sql',"secret\n");
+            file_put_contents($root.'/storage/sessions/session-secret',"session\n");
+            mkdir($root.'/storage/private/downloads',0770,true);
+            file_put_contents($root.'/storage/private/downloads/customer.pdf',"private\n");
+            file_put_contents($root.'/public/uploads/customer.jpg',"upload\n");
+            file_put_contents($root.'/.env.production',"APP_KEY=secret\n");
+            file_put_contents($root.'/old-release.zip',"archive\n");
 
             $byName=[];
             foreach((new ReleaseCandidateChecklist($root))->run() as $check){
@@ -47,6 +53,11 @@ final class ReleaseCandidateChecklistTest extends TestCase
             self::assertStringContainsString('storage/logs/novanuke.log',$byName['Clean source package']['detail']);
             self::assertStringContainsString('storage/cache/generated.php',$byName['Clean source package']['detail']);
             self::assertStringContainsString('storage/private/backups/example.sql',$byName['Clean source package']['detail']);
+            self::assertStringContainsString('storage/sessions/session-secret',$byName['Clean source package']['detail']);
+            self::assertStringContainsString('storage/private/downloads/customer.pdf',$byName['Clean source package']['detail']);
+            self::assertStringContainsString('public/uploads/customer.jpg',$byName['Clean source package']['detail']);
+            self::assertStringContainsString('.env.production',$byName['Clean source package']['detail']);
+            self::assertStringContainsString('old-release.zip',$byName['Clean source package']['detail']);
         }finally{
             $this->removeTree($root);
         }

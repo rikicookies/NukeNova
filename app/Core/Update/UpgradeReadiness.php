@@ -72,7 +72,8 @@ final class UpgradeReadiness
         if (preg_match($filenamePattern, $result['file']) !== 1 || basename($result['file']) !== $result['file']) {
             return ['passed' => false, 'detail' => 'Verified backup filename is invalid.'];
         }
-        $path = $this->rootPath . '/storage/private/backups/' . $result['file'];
+        $path = (string) ($result['metadata']['path'] ?? '');
+        if ($path === '') $path = $this->rootPath . '/storage/private/backups/' . $result['file'];
         if (! is_file($path) || is_link($path)) {
             return ['passed' => false, 'detail' => 'Verified backup is no longer a regular file.'];
         }

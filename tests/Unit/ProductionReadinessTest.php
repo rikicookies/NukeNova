@@ -63,6 +63,24 @@ final class ProductionReadinessTest extends TestCase
     }
 
 
+    public function testProductionReadinessRequiresSmtpInsteadOfLogMailer(): void
+    {
+        $config = new ConfigRepository([
+            'app' => ['environment' => 'production', 'debug' => false, 'url' => 'https://example.test', 'key' => 'base64:' . str_repeat('a', 48)],
+            'session' => ['name' => '__Host-novanuke', 'secure' => true, 'same_site' => 'Lax', 'lifetime' => 7200, 'idle_timeout' => 1800, 'rotation_interval' => 900, 'path' => '/', 'domain' => ''],
+            'security' => ['headers_enabled' => true, 'hsts_enabled' => true, 'hsts_max_age' => 31536000],
+            'mail' => ['mailer' => 'log', 'from_address' => 'noreply@example.test', 'from_name' => 'NovaNuke'],
+        ]);
+        $byName = [];
+        foreach ((new ProductionReadiness($config, $this->root))->run() as $check) {
+            $byName[$check['name']] = $check;
+        }
+
+        self::assertFalse($byName['Production mail transport']['passed']);
+        self::assertTrue($byName['Production mail transport']['required']);
+        self::assertFalse((new ProductionReadiness($config, $this->root))->passed());
+    }
+
     public function testItRejectsOverlyPermissiveEnvironmentFileOnPosix(): void
     {
         if (PHP_OS_FAMILY === 'Windows') {

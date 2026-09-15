@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NovaNuke\Core\Backup;
 
+use NovaNuke\Core\Version;
 use RuntimeException;
 use Throwable;
 
@@ -16,15 +17,101 @@ final class BackupVerifier
     /** @return list<array{type:string,passed:bool,file:string,detail:string}> */
     public function verifyLatest(): array
     {
+        $incomplete = glob(rtrim($this->directory, '/\\') . DIRECTORY_SEPARATOR . '.incomplete-set-*', GLOB_ONLYDIR) ?: [];
+        if ($incomplete !== []) {
+            $detail = 'Incomplete backup staging exists and must not be treated as a valid set: ' . basename($incomplete[0]);
+            return [
+                ['type'=>'database','passed'=>false,'file'=>'','detail'=>$detail,'metadata'=>[]],
+                ['type'=>'files','passed'=>false,'file'=>'','detail'=>$detail,'metadata'=>[]],
+                ['type'=>'pair','passed'=>false,'file'=>'','detail'=>$detail,'metadata'=>[]],
+            ];
+        }
+        $manifestPath = $this->latestManifest();
+        if ($manifestPath !== null) return $this->verifyManifestResults($manifestPath);
         $databasePath = $this->latest('novanuke-db-*.sql');
         $filePath = $this->latest('novanuke-files-*.tar');
         $database = $this->verifyCandidate('database', $databasePath, $this->verifyDatabase(...));
         $files = $this->verifyCandidate('files', $filePath, $this->verifyFileArchive(...));
 
-        return [$database, $files, $this->verifyPair($databasePath, $filePath, $database['passed'] && $files['passed'])];
+        return [$database, $files, $this->verifyPair($database, $files)];
     }
 
-    /** @return array{files:int,bytes:int,sha256:string} */
+    /** @return array<string,mixed> */
+    public function verifyManifest(string $manifestPath, bool $allowStaging = false): array
+    {
+        $this->assertRegularFile($manifestPath);
+        $raw = file_get_contents($manifestPath);
+        if (! is_string($raw) || $raw === '') throw new RuntimeException('Backup-set manifest is empty.');
+        try { $manifest = json_decode($raw, true, 32, JSON_THROW_ON_ERROR); }
+        catch (Throwable $error) { throw new RuntimeException('Backup-set manifest JSON is invalid.', 0, $error); }
+        if (! is_array($manifest) || ($manifest['format'] ?? null) !== 1) throw new RuntimeException('Backup-set manifest format is unsupported.');
+        $cmsVersion = (string) ($manifest['cms_version'] ?? '');
+        if (preg_match('/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/', $cmsVersion) !== 1) throw new RuntimeException('Backup-set CMS version is invalid.');
+        if (explode('.', $cmsVersion, 2)[0] !== explode('.', Version::CURRENT, 2)[0]) throw new RuntimeException('Backup set is incompatible with this CMS major version.');
+        if (! is_string($manifest['php_version'] ?? null) || $manifest['php_version'] === '') throw new RuntimeException('Backup-set PHP version is missing.');
+        $setId = (string) ($manifest['backup_set_id'] ?? '');
+        BackupSetId::normalize($setId);
+        if (($manifest['status'] ?? null) !== 'complete') throw new RuntimeException('Backup set is incomplete.');
+        if (! is_string($manifest['started_at'] ?? null) || strtotime($manifest['started_at']) === false
+            || ! is_string($manifest['completed_at'] ?? null) || strtotime($manifest['completed_at']) === false) {
+            throw new RuntimeException('Backup-set timestamps are invalid.');
+        }
+        $parent = basename(dirname($manifestPath));
+        if (basename($manifestPath) !== 'manifest.json' || ($parent !== $setId && (! $allowStaging || $parent !== '.incomplete-' . $setId))) {
+            throw new RuntimeException('Backup-set manifest location does not match its identifier.');
+        }
+        $components = $manifest['components'] ?? null;
+        if (! is_array($components)) throw new RuntimeException('Backup-set components are missing.');
+        $verified = [];
+        foreach (['database', 'files'] as $type) {
+            $component = $components[$type] ?? null;
+            if (! is_array($component) || ! is_string($component['name'] ?? null)
+                || basename($component['name']) !== $component['name'] || ! is_int($component['bytes'] ?? null)
+                || ! is_string($component['sha256'] ?? null) || preg_match('/^[a-f0-9]{64}$/', $component['sha256']) !== 1
+                || ($component['backup_set_id'] ?? null) !== $setId) {
+                throw new RuntimeException("Backup-set {$type} component metadata is invalid.");
+            }
+            $path = dirname($manifestPath) . DIRECTORY_SEPARATOR . $component['name'];
+            $actual = $type === 'database' ? $this->verifyDatabase($path) : $this->verifyFileArchive($path);
+            $artifactBytes = (int) ($actual['artifact_bytes'] ?? $actual['bytes']);
+            if ($artifactBytes !== $component['bytes'] || ! hash_equals($actual['sha256'], $component['sha256'])) {
+                throw new RuntimeException("Backup-set {$type} component size or checksum does not match.");
+            }
+            if (! hash_equals($actual['backup_set'], $setId)) throw new RuntimeException("Backup-set {$type} identifier does not match.");
+            $actual['path'] = $path;
+            $verified[$type] = $actual;
+        }
+        return ['manifest' => $manifest, 'database' => $verified['database'], 'files' => $verified['files'], 'path' => $manifestPath];
+    }
+
+    /** @return list<array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>}> */
+    private function verifyManifestResults(string $manifestPath): array
+    {
+        try {
+            $set = $this->verifyManifest($manifestPath);
+            $database = ['type'=>'database','passed'=>true,'file'=>basename($set['database']['path']),'detail'=>"1 file(s), {$set['database']['bytes']} source byte(s), SHA-256 {$set['database']['sha256']}",'metadata'=>$set['database']];
+            $files = ['type'=>'files','passed'=>true,'file'=>basename($set['files']['path']),'detail'=>"{$set['files']['files']} file(s), {$set['files']['bytes']} source byte(s), SHA-256 {$set['files']['sha256']}",'metadata'=>$set['files']];
+            $pair = ['type'=>'pair','passed'=>true,'file'=>basename($manifestPath),'detail'=>'Verified complete backup set '.$set['manifest']['backup_set_id'].'.','metadata'=>['backup_set'=>$set['manifest']['backup_set_id'],'manifest'=>$manifestPath]];
+            return [$database, $files, $pair];
+        } catch (Throwable $error) {
+            return [
+                ['type'=>'database','passed'=>false,'file'=>'','detail'=>'Backup set verification failed before restore: '.$error->getMessage(),'metadata'=>[]],
+                ['type'=>'files','passed'=>false,'file'=>'','detail'=>'Backup set verification failed before restore: '.$error->getMessage(),'metadata'=>[]],
+                ['type'=>'pair','passed'=>false,'file'=>basename($manifestPath),'detail'=>$error->getMessage(),'metadata'=>['manifest'=>$manifestPath]],
+            ];
+        }
+    }
+
+    private function latestManifest(): ?string
+    {
+        if (! is_dir($this->directory) || is_link($this->directory)) return null;
+        $paths = glob(rtrim($this->directory, '/\\') . DIRECTORY_SEPARATOR . 'set-*' . DIRECTORY_SEPARATOR . 'manifest.json') ?: [];
+        usort($paths, static fn (string $a, string $b): int => strcmp($b, $a));
+        foreach ($paths as $path) if (is_file($path) && ! is_link($path)) return $path;
+        return null;
+    }
+
+    /** @return array{files:int,bytes:int,sha256:string,backup_set:string,snapshot_consistent:bool,snapshot:string} */
     public function verifyDatabase(string $path): array
     {
         $this->assertRegularFile($path);
@@ -49,12 +136,28 @@ final class BackupVerifier
         } finally {
             fclose($stream);
         }
+        $prefix = file_get_contents($path, false, null, 0, min(2048, $size));
+        if (! is_string($prefix)) throw new RuntimeException('Database backup metadata cannot be read.');
+        preg_match('/^-- Backup-Set: ([^\r\n]+)$/m', $prefix, $setMatch);
+        preg_match('/^-- Snapshot: ([^\r\n]+)$/m', $prefix, $snapshotMatch);
+        $backupSet = (string) ($setMatch[1] ?? '');
+        $snapshot = (string) ($snapshotMatch[1] ?? 'legacy-unverified');
+        if ($backupSet !== '' && preg_match('/^set-[0-9]{14}-[a-f0-9]{24}$/', $backupSet) !== 1) {
+            throw new RuntimeException('Database backup set identifier is invalid.');
+        }
         $hash = hash_file('sha256', $path);
         if ($hash === false) throw new RuntimeException('Database backup cannot be fingerprinted.');
-        return ['files' => 1, 'bytes' => $size, 'sha256' => $hash];
+        return [
+            'files' => 1,
+            'bytes' => $size,
+            'sha256' => $hash,
+            'backup_set' => $backupSet,
+            'snapshot_consistent' => $snapshot === 'consistent-inno-db',
+            'snapshot' => $snapshot,
+        ];
     }
 
-    /** @return array{files:int,bytes:int,sha256:string} */
+    /** @return array{files:int,bytes:int,artifact_bytes:int|false,sha256:string,backup_set:string} */
     public function verifyFileArchive(string $path): array
     {
         $this->assertRegularFile($path);
@@ -121,9 +224,13 @@ final class BackupVerifier
         if (! $terminated) throw new RuntimeException('File backup has no complete TAR terminator.');
         if ($manifest === null) throw new RuntimeException('File backup manifest is missing.');
         $record = json_decode($manifest, true, 16, JSON_THROW_ON_ERROR);
-        if (! is_array($record) || ($record['format'] ?? null) !== 1 || ! is_array($record['files'] ?? null)
+        if (! is_array($record) || ! in_array(($record['format'] ?? null), [1, 2], true) || ! is_array($record['files'] ?? null)
             || ! is_string($record['created_at'] ?? null) || strtotime($record['created_at']) === false) {
             throw new RuntimeException('File backup manifest is invalid.');
+        }
+        $backupSet = (string) ($record['backup_set'] ?? '');
+        if ($backupSet !== '' && preg_match('/^set-[0-9]{14}-[a-f0-9]{24}$/', $backupSet) !== 1) {
+            throw new RuntimeException('File backup set identifier is invalid.');
         }
         $expected = [];
         foreach ($record['files'] as $item) {
@@ -144,51 +251,60 @@ final class BackupVerifier
         return [
             'files' => count($entries),
             'bytes' => array_sum(array_column($entries, 'bytes')),
+            'artifact_bytes' => filesize($path),
             'sha256' => $hash,
+            'backup_set' => $backupSet,
         ];
     }
 
-    /** @param callable(string):array{files:int,bytes:int,sha256:string} $verifier
-     *  @return array{type:string,passed:bool,file:string,detail:string}
+    /** @param callable(string):array<string,mixed> $verifier
+     *  @return array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>}
      */
     private function verifyCandidate(string $type, ?string $path, callable $verifier): array
     {
-        if ($path === null) return ['type' => $type, 'passed' => false, 'file' => '', 'detail' => 'No backup found.'];
+        if ($path === null) return ['type' => $type, 'passed' => false, 'file' => '', 'detail' => 'No backup found.', 'metadata' => []];
         try {
             $result = $verifier($path);
+            $detail = "{$result['files']} file(s), {$result['bytes']} source byte(s), SHA-256 {$result['sha256']}";
+            if ($type === 'database') {
+                $detail .= '; snapshot ' . (($result['snapshot_consistent'] ?? false) ? 'consistent' : 'NOT VERIFIED (' . ($result['snapshot'] ?? 'unknown') . ')');
+            }
             return [
                 'type' => $type,
                 'passed' => true,
                 'file' => basename($path),
-                'detail' => "{$result['files']} file(s), {$result['bytes']} source byte(s), SHA-256 {$result['sha256']}",
+                'detail' => $detail,
+                'metadata' => $result,
             ];
         } catch (Throwable $error) {
-            return ['type' => $type, 'passed' => false, 'file' => basename($path), 'detail' => $error->getMessage()];
+            return ['type' => $type, 'passed' => false, 'file' => basename($path), 'detail' => $error->getMessage(), 'metadata' => []];
         }
     }
 
-    /** @return array{type:string,passed:bool,file:string,detail:string} */
-    private function verifyPair(?string $databasePath, ?string $filePath, bool $individuallyValid): array
+    /** @param array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>} $database
+     *  @param array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>} $files
+     *  @return array{type:string,passed:bool,file:string,detail:string,metadata:array<string,mixed>}
+     */
+    private function verifyPair(array $database, array $files): array
     {
-        $file = $databasePath !== null && $filePath !== null
-            ? basename($databasePath) . ' + ' . basename($filePath)
-            : '';
-        if (! $individuallyValid || $databasePath === null || $filePath === null) {
-            return ['type' => 'pair', 'passed' => false, 'file' => $file, 'detail' => 'Both backups must pass individually.'];
+        $file = $database['file'] !== '' && $files['file'] !== '' ? $database['file'] . ' + ' . $files['file'] : '';
+        if (! $database['passed'] || ! $files['passed']) {
+            return ['type' => 'pair', 'passed' => false, 'file' => $file, 'detail' => 'Both backups must pass individual integrity verification.', 'metadata' => []];
         }
-        $databaseTime = filemtime($databasePath);
-        $fileTime = filemtime($filePath);
-        if ($databaseTime === false || $fileTime === false) {
-            return ['type' => 'pair', 'passed' => false, 'file' => $file, 'detail' => 'Backup creation times are unavailable.'];
+        $databaseSet = (string) ($database['metadata']['backup_set'] ?? '');
+        $fileSet = (string) ($files['metadata']['backup_set'] ?? '');
+        if ($databaseSet === '' || $fileSet === '') {
+            return ['type' => 'pair', 'passed' => false, 'file' => $file, 'detail' => 'Backup set ID is missing; legacy timestamp pairing is not accepted for release recovery.', 'metadata' => []];
         }
-        $difference = abs($databaseTime - $fileTime);
+        if (! hash_equals($databaseSet, $fileSet)) {
+            return ['type' => 'pair', 'passed' => false, 'file' => $file, 'detail' => "Backup set IDs do not match ({$databaseSet} vs {$fileSet}).", 'metadata' => []];
+        }
         return [
             'type' => 'pair',
-            'passed' => $difference <= 600,
+            'passed' => true,
             'file' => $file,
-            'detail' => $difference <= 600
-                ? "Backups were created {$difference} second(s) apart."
-                : "Backups were created {$difference} seconds apart; create a fresh matched pair.",
+            'detail' => "Matched backup set {$databaseSet}.",
+            'metadata' => ['backup_set' => $databaseSet],
         ];
     }
 

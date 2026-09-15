@@ -25,6 +25,7 @@ use NovaNuke\Core\Http\ErrorHandler;
 use NovaNuke\Core\Http\Kernel;
 use NovaNuke\Core\Http\Routing\Router;
 use NovaNuke\Core\Mail\LogMailer;
+use NovaNuke\Core\Mail\MailDeliveryAcceptance;
 use NovaNuke\Core\Mail\Mailer;
 use NovaNuke\Core\Mail\SmtpConfiguration;
 use NovaNuke\Core\Mail\MailConfigurationCheck;
@@ -62,10 +63,12 @@ use NovaNuke\Core\Menus\MenuTreeBuilder;
 use NovaNuke\Core\Menus\MenuUrlResolver;
 use NovaNuke\Core\System\SystemInspector;
 use NovaNuke\Core\Backup\DatabaseBackup;
+use NovaNuke\Core\Backup\BackupSetCoordinator;
 use NovaNuke\Core\Backup\FileBackup;
 use NovaNuke\Core\Backup\BackupVerifier;
 use NovaNuke\Core\Backup\FileBackupRestorer;
 use NovaNuke\Core\Backup\BackupRecoveryCheck;
+use NovaNuke\Core\Backup\DatabaseRestoreVerifier;
 use NovaNuke\Core\System\MaintenanceMode;
 use NovaNuke\Core\System\PrivateSiteAccessPolicy;
 use NovaNuke\Core\System\PasswordChangeAccessPolicy;
@@ -181,6 +184,12 @@ final class Application
         $container->bind(MailConfigurationCheck::class, static fn (Container $c) => new MailConfigurationCheck(
             $c->get(ConfigRepository::class),
         ));
+        $container->bind(MailDeliveryAcceptance::class, static fn (Container $c) => new MailDeliveryAcceptance(
+            $c->get(ConfigRepository::class),
+            $rootPath . '/storage/private/mail-acceptance.json',
+            $c->get(SettingsRepository::class)->string('site.url', (string) $config->get('app.url', 'http://localhost')),
+            $c->get(MailConfigurationCheck::class),
+        ));
         $container->bind(PasswordResetService::class, static fn (Container $c) => new PasswordResetService(
             $c->get(PDO::class),
             $c->get(Mailer::class),
@@ -266,6 +275,12 @@ final class Application
             $c->get(EventDispatcher::class),
             $c->get(Translator::class),
         ));
+        $container->bind(\NovaNuke\Core\Modules\ModulesMenuBuilder::class, static fn (Container $c) => new \NovaNuke\Core\Modules\ModulesMenuBuilder(
+            $c->get(ModuleManager::class),
+            $c->get(AuthManager::class),
+            $c->get(AccessAudience::class),
+            $c->get(Translator::class),
+        ));
         $container->bind(MigrationStatus::class, static fn (Container $c) => new MigrationStatus(
             new Migrator($c->get(PDO::class)),
             new ModuleMigrator($c->get(PDO::class)),
@@ -336,17 +351,40 @@ final class Application
             $c->get(PDO::class),
             $rootPath . '/storage/private/backups',
         ));
+        $container->bind(BackupSetCoordinator::class, static fn (Container $c) => new BackupSetCoordinator(
+            $c->get(PDO::class),
+            $rootPath,
+            $rootPath . '/storage/private/backups',
+        ));
         $container->bind(FileBackup::class, static fn () => new FileBackup(
             $rootPath,
             $rootPath . '/storage/private/backups',
         ));
         $container->bind(BackupVerifier::class, static fn () => new BackupVerifier($rootPath . '/storage/private/backups'));
         $container->bind(FileBackupRestorer::class, static fn (Container $c) => new FileBackupRestorer($c->get(BackupVerifier::class)));
-        $container->bind(BackupRecoveryCheck::class, static fn (Container $c) => new BackupRecoveryCheck(
-            $rootPath . '/storage/private/backups',
-            $c->get(BackupVerifier::class),
-            $c->get(FileBackupRestorer::class),
-        ));
+        $container->bind(BackupRecoveryCheck::class, static function (Container $c) use ($rootPath): BackupRecoveryCheck {
+            $restore = null;
+            $dsn = trim((string) env('NOVANUKE_BACKUP_VERIFY_DSN', ''));
+            if ($dsn !== '') {
+                $restoreDatabase = new PDO(
+                    $dsn,
+                    (string) env('NOVANUKE_BACKUP_VERIFY_USERNAME', ''),
+                    (string) env('NOVANUKE_BACKUP_VERIFY_PASSWORD', ''),
+                    [
+                        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                        PDO::ATTR_EMULATE_PREPARES => false,
+                    ],
+                );
+                $restore = new DatabaseRestoreVerifier($restoreDatabase);
+            }
+            return new BackupRecoveryCheck(
+                $rootPath . '/storage/private/backups',
+                $c->get(BackupVerifier::class),
+                $c->get(FileBackupRestorer::class),
+                $restore,
+            );
+        });
         $container->bind(CacheManager::class, static fn () => new CacheManager(
             $rootPath . '/storage/cache',
         ));
@@ -362,6 +400,7 @@ final class Application
             $c->get(MembershipHealthCheck::class),
             $c->get(PaymentHealthCheck::class),
             $c->get(MailConfigurationCheck::class),
+            $c->get(MailDeliveryAcceptance::class),
             $c->get(ThemeDistributionCheck::class),
             $c->get(DeploymentSecretCheck::class),
         ));
@@ -475,8 +514,19 @@ final class Application
         $views->addGlobal('cms_date_format', $dateFormat);
         $views->addGlobal('cms_per_page', $settings->integer('site.per_page', 10, 5, 100));
         $views->addGlobal('current_user', $authenticatedUser);
+        $views->addGlobal('csrf_token', $this->container->get(\NovaNuke\Core\Security\CsrfTokenManager::class)->token());
         $this->container->get(ThemeManager::class)->bootActive();
         $this->container->get(ModuleManager::class)->bootEnabled();
+        $this->container->get(EventDispatcher::class)->listen(
+            \NovaNuke\Core\Events\EventName::BLOCK_RENDERING,
+            function (object $event) use ($views): void {
+                if (! $event instanceof \NovaNuke\Core\Blocks\BlockRendering || ($event->block['type'] ?? '') !== 'modules-menu') return;
+                $event->render($views->render('components/modules-menu.twig', [
+                    'items' => $this->container->get(\NovaNuke\Core\Modules\ModulesMenuBuilder::class)->items(),
+                ]));
+            },
+            100,
+        );
         $this->container->get(AdminNavigationManager::class)->boot();
         $this->container->get(MenuManager::class)->boot();
         $this->container->get(BlockManager::class)->boot();

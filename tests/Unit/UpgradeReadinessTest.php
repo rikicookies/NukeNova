@@ -24,12 +24,13 @@ final class UpgradeReadinessTest extends TestCase
         ], JSON_THROW_ON_ERROR));
         mkdir($this->root . '/source', 0770);
         file_put_contents($this->root . '/source/example.txt', 'backup-data');
+        $setId = 'set-20260912190000-0123456789abcdef01234567';
         $this->databaseBackup = $this->root . '/storage/private/backups/novanuke-db-test.sql';
-        file_put_contents($this->databaseBackup, "-- NovaNuke database backup\n-- Created: 2026-09-09T00:00:00+00:00\n\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\nSET FOREIGN_KEY_CHECKS=1;\n");
+        file_put_contents($this->databaseBackup, "-- NovaNuke database backup\n-- Created: 2026-09-09T00:00:00+00:00\n-- Format: 2\n-- Backup-Set: {$setId}\n-- Snapshot: consistent-inno-db\n\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n\nSET FOREIGN_KEY_CHECKS=1;\n");
         @chmod($this->databaseBackup, 0600);
         $this->fileBackup = (new FileBackup($this->root, $this->root . '/storage/private/backups', [
             'custom' => $this->root . '/source',
-        ]))->create()['path'];
+        ]))->create($setId)['path'];
     }
 
     protected function tearDown(): void

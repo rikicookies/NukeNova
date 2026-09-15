@@ -7,6 +7,7 @@ namespace NovaNuke\Core\Membership;
 use NovaNuke\Core\Events\EventDispatcher;
 use NovaNuke\Core\Events\EventName;
 use PDO;
+use Throwable;
 
 final class MembershipExpirationProcessor
 {
@@ -26,23 +27,40 @@ final class MembershipExpirationProcessor
         $rows=$statement->fetchAll();
         if($dryRun) return count($rows);
 
-        $mark=$this->database->prepare(
-            'UPDATE user_entitlements SET expired_event_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() '
-            . 'WHERE id=:id AND expired_event_at IS NULL'
-        );
-
         $processed=0;
         foreach($rows as $row){
-            $mark->execute(['id'=>(int)$row['id']]);
-            if($mark->rowCount()!==1) continue;
+            $this->database->beginTransaction();
+            try{
+                $locked=$this->database->prepare(
+                    "SELECT id,user_id,COALESCE(plan_key,'vip-custom') plan_key,expires_at "
+                    . "FROM user_entitlements WHERE id=:id AND entitlement='vip' AND revoked_at IS NULL "
+                    . "AND expires_at IS NOT NULL AND expires_at<=UTC_TIMESTAMP() AND expired_event_at IS NULL FOR UPDATE"
+                );
+                $locked->execute(['id'=>(int)$row['id']]);
+                $current=$locked->fetch();
+                if(!is_array($current)){
+                    $this->database->commit();
+                    continue;
+                }
 
-            $this->events->dispatch(EventName::MEMBERSHIP_EXPIRED,new MembershipExpired(
-                (int)$row['id'],
-                (int)$row['user_id'],
-                (string)$row['plan_key'],
-                (string)$row['expires_at'],
-            ));
-            $processed++;
+                $this->events->dispatch(EventName::MEMBERSHIP_EXPIRED,new MembershipExpired(
+                    (int)$current['id'],
+                    (int)$current['user_id'],
+                    (string)$current['plan_key'],
+                    (string)$current['expires_at'],
+                ));
+                $mark=$this->database->prepare(
+                    'UPDATE user_entitlements SET expired_event_at=UTC_TIMESTAMP(),updated_at=UTC_TIMESTAMP() '
+                    . 'WHERE id=:id AND expired_event_at IS NULL'
+                );
+                $mark->execute(['id'=>(int)$current['id']]);
+                if($mark->rowCount()!==1) throw new \RuntimeException('Membership expiration marker could not be recorded.');
+                $this->database->commit();
+                $processed++;
+            }catch(Throwable $error){
+                if($this->database->inTransaction()) $this->database->rollBack();
+                throw $error;
+            }
         }
 
         return $processed;

@@ -9,5 +9,6 @@
     "cms_min_version": "0.2.0-alpha.2",
     "php_min_version": "8.3.0",
     "dependencies": {},
-    "permissions": ["statistics.view-admin", "statistics.manage"]
+    "permissions": ["statistics.view-admin", "statistics.manage"],
+    "navigation": {"label": "Statistics", "url": "/statistics", "icon": "statistics", "order": 70, "audience": "public"}
 }

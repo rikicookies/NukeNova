@@ -1,0 +1,1 @@
+{% if items %}<nav class="modules-menu" aria-label="Modules"><ul>{% for item in items %}<li><a href="{{ item.url }}" data-module="{{ item.slug }}">{{ item.label }}</a></li>{% endfor %}</ul></nav>{% else %}<p class="empty-state">No modules available.</p>{% endif %}

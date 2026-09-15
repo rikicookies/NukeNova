@@ -11,5 +11,6 @@
     "dependencies": {},
     "permissions": [
         "welcome.view"
-    ]
+    ],
+    "navigation": {"label": "Welcome", "url": "/welcome", "icon": "home", "order": 90, "audience": "public"}
 }

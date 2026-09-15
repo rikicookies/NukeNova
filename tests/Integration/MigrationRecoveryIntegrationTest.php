@@ -9,6 +9,7 @@ use NovaNuke\Core\Database\MigrationLock;
 use NovaNuke\Core\Database\Migrator;
 use NovaNuke\Core\Modules\ModuleDetector;
 use NovaNuke\Core\Modules\ModuleMigrator;
+use NovaNuke\Core\Modules\ModuleManifest;
 use NovaNuke\Tests\Integration\Support\MySqlIntegrationTestCase;
 use PDO;
 use RuntimeException;
@@ -20,8 +21,7 @@ final class MigrationRecoveryIntegrationTest extends MySqlIntegrationTestCase
     protected function tearDown(): void
     {
         if ($this->migrationDirectory !== null && is_dir($this->migrationDirectory)) {
-            foreach (glob($this->migrationDirectory . '/*.php') ?: [] as $file) unlink($file);
-            rmdir($this->migrationDirectory);
+            $this->removeTree($this->migrationDirectory);
         }
         $this->migrationDirectory = null;
         parent::tearDown();
@@ -146,6 +146,18 @@ return new class implements RecoverableMigration {
     public function isRolledBack(PDO $database):bool{return !MigrationSchema::tableExists($database,'partial_recovery_probe');}
 };
 PHP);
+        $later='2099_01_01_000003_later_migration_probe';
+        $this->writeMigration($directory.'/'.$later.'.php', <<<'PHP'
+<?php
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES=['later_migration_probe'];
+    public function up(PDO $database):void{$database->exec('CREATE TABLE IF NOT EXISTS later_migration_probe (id INT PRIMARY KEY) ENGINE=InnoDB');}
+    public function down(PDO $database):void{$database->exec('DROP TABLE IF EXISTS later_migration_probe');}
+};
+PHP);
 
         try {
             (new Migrator($this->db()))->run($directory);
@@ -156,9 +168,100 @@ PHP);
         self::assertSame('dirty', $this->operationState('core', $name, 'up'));
         self::assertSame(0, $this->historyCount('migrations', 'migration', $name));
 
+        try {
+            (new Migrator($this->db()))->run($directory);
+            self::fail('Ordinary migrate must require explicit recovery for a dirty operation.');
+        } catch (RuntimeException $error) {
+            self::assertStringContainsString('Run php bin/cms migrate:recover first', $error->getMessage());
+        }
+        self::assertSame(0,$this->tableCount('later_migration_probe'));
+
         self::assertSame([$name], (new Migrator($this->db()))->recover($directory));
         self::assertSame(1, $this->historyCount('migrations', 'migration', $name));
         self::assertSame('completed', $this->operationState('core', $name, 'up'));
+        self::assertSame(0,$this->tableCount('later_migration_probe'),'Recovery must not run unrelated pending migrations.');
+    }
+
+    public function testFailureBeforeFirstDdlIsDurableAndRecoverable(): void
+    {
+        $directory=$this->coreMigrationCopy();
+        $name='2099_01_01_000004_before_ddl_probe';
+        $this->writeMigration($directory.'/'.$name.'.php', <<<'PHP'
+<?php
+use NovaNuke\Core\Database\RecoverableMigration;
+use NovaNuke\Core\Database\VerifiesMigrationState;
+return new class implements RecoverableMigration {
+    use VerifiesMigrationState;
+    private const MIGRATION_TABLES=['before_ddl_probe'];
+    public function up(PDO $database):void{$database->exec('CREATE TABLE IF NOT EXISTS before_ddl_probe (id INT PRIMARY KEY) ENGINE=InnoDB');}
+    public function down(PDO $database):void{$database->exec('DROP TABLE IF EXISTS before_ddl_probe');}
+};
+PHP);
+        $fault=static function(string$phase,string$scope,string$migration)use($name):void{
+            if($phase==='before_up'&&$scope==='core'&&$migration===$name)throw new RuntimeException('Injected failure before first DDL.');
+        };
+        try{(new Migrator($this->db(),$fault))->run($directory);self::fail('The pre-DDL fault must stop the migration.');}
+        catch(RuntimeException$error){self::assertSame('Injected failure before first DDL.',$error->getPrevious()?->getMessage());}
+        self::assertSame(0,$this->tableCount('before_ddl_probe'));
+        self::assertSame('dirty',$this->operationState('core',$name,'up'));
+        self::assertSame([$name],(new Migrator($this->db()))->recover($directory));
+        self::assertSame(1,$this->tableCount('before_ddl_probe'));
+        self::assertSame('completed',$this->operationState('core',$name,'up'));
+    }
+
+    public function testModulePartialDdlRequiresExplicitRecoveryAndResumesMissingStep(): void
+    {
+        $root=$this->moduleMigrationRoot();
+        $name='2099_01_01_000001_module_partial_probe';
+        $this->writeMigration($root.'/database/migrations/'.$name.'.php', <<<'PHP'
+<?php
+use NovaNuke\Core\Database\MigrationSchema;
+use NovaNuke\Core\Database\RecoverableMigration;
+return new class implements RecoverableMigration {
+    public function up(PDO $database):void{
+        $database->exec('CREATE TABLE IF NOT EXISTS module_partial_probe (id INT PRIMARY KEY) ENGINE=InnoDB');
+        if(!MigrationSchema::columnExists($database,'module_partial_probe','payload')){
+            MigrationSchema::addColumn($database,'module_partial_probe','payload','VARCHAR(20) NULL');
+            throw new RuntimeException('Injected module failure between DDL statements.');
+        }
+        MigrationSchema::createIndex($database,'module_partial_probe','module_partial_payload_index','payload');
+    }
+    public function down(PDO $database):void{$database->exec('DROP TABLE IF EXISTS module_partial_probe');}
+    public function isApplied(PDO $database):bool{return MigrationSchema::tableExists($database,'module_partial_probe')&&MigrationSchema::columnExists($database,'module_partial_probe','payload')&&MigrationSchema::indexExists($database,'module_partial_probe','module_partial_payload_index');}
+    public function isRolledBack(PDO $database):bool{return !MigrationSchema::tableExists($database,'module_partial_probe');}
+};
+PHP);
+        $manifest=ModuleManifest::fromArray([
+            'name'=>'Recovery Probe','slug'=>'recovery-probe','version'=>'1.0.0','provider'=>'Modules\\RecoveryProbe\\RecoveryProbeModule',
+            'cms_min_version'=>'0.4.0-rc.3','php_min_version'=>'8.3.0','dependencies'=>[],'permissions'=>[],'events'=>[],
+        ],$root);
+        try{(new ModuleMigrator($this->db()))->run($manifest);self::fail('The module migration must fail between DDL statements.');}
+        catch(RuntimeException$error){self::assertSame('Injected module failure between DDL statements.',$error->getPrevious()?->getMessage());}
+        self::assertSame('dirty',$this->operationState('module:recovery-probe',$name,'up'));
+        try{(new ModuleMigrator($this->db()))->run($manifest);self::fail('Ordinary module update must require explicit recovery.');}
+        catch(RuntimeException$error){self::assertStringContainsString('migrate:recover',$error->getMessage());}
+        self::assertSame([$name],(new ModuleMigrator($this->db()))->recover($manifest));
+        self::assertSame('completed',$this->operationState('module:recovery-probe',$name,'up'));
+        self::assertSame(1,$this->moduleHistoryCount('recovery-probe',$name));
+        self::assertSame(2,$this->operationAttempts('module:recovery-probe',$name,'up'));
+    }
+
+    public function testNonRecoverableDirtyMigrationStopsWithoutBlindRetry(): void
+    {
+        $directory=$this->coreMigrationCopy();$name='2099_01_01_000005_nonrecoverable_probe';
+        $this->writeMigration($directory.'/'.$name.'.php', <<<'PHP'
+<?php
+use NovaNuke\Core\Database\Migration;
+return new class implements Migration {
+    public function up(PDO $database):void{throw new RuntimeException('Legacy migration failure.');}
+    public function down(PDO $database):void{}
+};
+PHP);
+        try{(new Migrator($this->db()))->run($directory);self::fail('The legacy migration must fail.');}catch(RuntimeException){}
+        self::assertSame('dirty',$this->operationState('core',$name,'up'));
+        try{(new Migrator($this->db()))->recover($directory);self::fail('Recovery must reject a non-recoverable migration.');}
+        catch(RuntimeException$error){self::assertStringContainsString('Interrupted legacy migration requires a recoverable implementation',(string)$error->getPrevious()?->getMessage());}
+        self::assertSame(1,$this->operationAttempts('core',$name,'up'));
     }
 
     public function testModuleMigrationUsesTheSameCrashRecoveryProtocol(): void
@@ -240,6 +343,20 @@ PHP);
     private function writeMigration(string $path, string $source): void
     {
         if (file_put_contents($path, $source) === false) self::fail('Unable to create fault-injection migration.');
+    }
+
+    private function moduleMigrationRoot(): string
+    {
+        $base=$this->coreMigrationCopy().'/RecoveryProbe';
+        if(!is_dir($base.'/database/migrations'))mkdir($base.'/database/migrations',0750,true);
+        return $base;
+    }
+
+    private function removeTree(string $root): void
+    {
+        $iterator=new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root,\FilesystemIterator::SKIP_DOTS),\RecursiveIteratorIterator::CHILD_FIRST);
+        foreach($iterator as$item){$item->isDir()?rmdir($item->getPathname()):unlink($item->getPathname());}
+        rmdir($root);
     }
 
     private function operationState(string $scope, string $migration, string $direction): string

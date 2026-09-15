@@ -3,6 +3,8 @@
 .theme-header { border-bottom: 1px solid #273149; }
 .theme-header nav { display: block; }
 .theme-header a, .theme-footer a { color: var(--theme-accent); text-decoration: none; }
+.public-logout-form { margin: 0; }
+.public-logout-form button { padding: .45rem .65rem; border: 1px solid #273149; border-radius: .45rem; background: transparent; color: var(--theme-accent); cursor: pointer; }
 .theme-brand { font-size: 1.2rem; font-weight: 900; letter-spacing: -.04em; }
 .theme-header .menu-level-0 > .menu-item > a { display: block; padding: .5rem .65rem; border-radius: .45rem; }
 .theme-header .menu-level-0 > .is-active > a { background: color-mix(in srgb, var(--theme-accent), transparent 86%); }

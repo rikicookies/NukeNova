@@ -22,9 +22,13 @@ final class CommentsModule implements ModuleInterface
     {
         $context->container->get(ViewRenderer::class)->addNamespace('comments', $context->basePath . '/views');
         $context->container->bind(CommentRepository::class, static fn (Container $c) => new CommentRepository($c->get(\PDO::class)));
+        $context->container->bind(CommentTargetAccessGuard::class, static fn (Container $c) => new CommentTargetAccessGuard(
+            $c->get(\NovaNuke\Core\Events\EventDispatcher::class),
+        ));
         $context->container->bind(CommentService::class, static fn (Container $c) => new CommentService(
             $c->get(CommentRepository::class), new CommentTreeBuilder(), $c->get(\NovaNuke\Auth\AuthManager::class),
             $c->get(\NovaNuke\Core\Settings\SettingsRepository::class), $c->get(\NovaNuke\Core\Events\EventDispatcher::class),
+            $c->get(CommentTargetAccessGuard::class),
             new DatabaseRateLimiter($c->get(\PDO::class), 5, 600, 'comments'),
             (string) $c->get(ConfigRepository::class)->get('app.key', ''),
             $c->get(ContentRendererInterface::class),

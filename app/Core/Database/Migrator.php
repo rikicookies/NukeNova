@@ -70,6 +70,7 @@ final class Migrator
         $lock->acquire();
         try {
             $this->ensureRepository();
+            if (! $onlyRecovering) $this->operations->assertNoneUnresolved('run migrations');
             $status = $this->status($directory);
             if ($status['missing_files'] !== []) {
                 throw new RuntimeException(

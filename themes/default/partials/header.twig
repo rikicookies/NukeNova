@@ -4,5 +4,6 @@
     {% if current_user %}
         {% if notification_unread_count is defined %}<a href="/notifications">{{ trans('notifications::nav') }}{% if notification_unread_count > 0 %} ({{ notification_unread_count }}){% endif %}</a>{% endif %}
         <a href="/account/profile">{{ trans('account.settings') }}</a>
+        <form class="public-logout-form" method="post" action="/logout"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('common.sign_out') }}</button></form>
     {% endif %}
 </header>

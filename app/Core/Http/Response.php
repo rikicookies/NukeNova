@@ -41,8 +41,12 @@ final class Response
 
     public static function redirect(string $location, int $status = 302): self
     {
-        if (! str_starts_with($location, '/')) {
-            throw new \InvalidArgumentException('Redirects must use a local absolute path.');
+        if ($location === ''
+            || ! str_starts_with($location, '/')
+            || str_starts_with($location, '//')
+            || str_contains($location, '\\')
+            || preg_match('/[\x00-\x20\x7F]/', $location) === 1) {
+            throw new \InvalidArgumentException('Redirects must use a safe local absolute path.');
         }
 
         return new self('', $status, ['Location' => $location]);

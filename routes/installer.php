@@ -27,10 +27,15 @@ $controller = static function (Container $container) use ($installerRoot): Insta
     );
 };
 
-$router->get('/', static fn (): Response => Response::redirect('/install'));
+$noStore = static fn (Response $response): Response => $response
+    ->withHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+    ->withHeader('Pragma', 'no-cache')
+    ->withHeader('Expires', '0');
+
+$router->get('/', static fn (): Response => $noStore(Response::redirect('/install')));
 $router->get('/install', static fn (Request $request, Container $container): Response =>
-    $controller($container)->show($request)
+    $noStore($controller($container)->show($request))
 );
 $router->post('/install', static fn (Request $request, Container $container): Response =>
-    $controller($container)->install($request)
+    $noStore($controller($container)->install($request))
 );

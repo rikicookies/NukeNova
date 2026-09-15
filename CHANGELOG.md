@@ -1,10 +1,29 @@
 ## 0.4.0-rc.4 - unreleased
 
+- Extended progressive AJAX actions to notifications, friends, and theme lifecycle/configuration while preserving viewport position.
+
+- Added progressive AJAX enhancement for comment reactions, module lifecycle/audience actions, and poll voting while preserving normal POST/redirect fallbacks.
+
+### Fresh-install defaults and public module navigation
+- Fresh installs provision the recommended bundled modules enabled, activate NovaModern, create the dynamic Modules block, and expose POST/CSRF logout for authenticated users across bundled themes.
+- Added Polls to manifest-driven public module navigation so an enabled Polls module appears automatically in the Modules block and disappears when disabled.
+- Demo Content remains excluded from automatic fresh-install provisioning.
+
 ### Release reliability and recovery
+- Made scheduled-membership activation and expiration events retryable: lifecycle markers are committed only after listeners succeed under a row lock.
 - Added a durable `running` / `dirty` / `completed` operation ledger for Core and module migrations without replacing existing history.
+- Blocked ordinary Core/module migration and module-uninstall runners whenever recovery is required; interrupted work must now be reconciled explicitly before any later schema operation.
 - Added checksum-guarded recovery, verified postconditions, repeat-safe bundled migrations, and a database-scoped MySQL/MariaDB advisory lock.
 - Added `migrate:recover` for interrupted Core, module install/update, and module uninstall operations.
 - Added MySQL fault-injection coverage for DDL committed before migration history, partial DDL, module lifecycle recovery, legacy history, and concurrent runners.
+- Hardened database backups with `REPEATABLE READ` / `START TRANSACTION WITH CONSISTENT SNAPSHOT` for InnoDB tables and explicit snapshot metadata.
+- Added durable backup-set IDs shared by SQL and TAR artifacts; release verification no longer treats nearby mtimes as proof of pairing.
+- Added `backup:create` for coordinated DB + files backup sets while retaining standalone backup commands.
+- Added disposable SQL import verification against an operator-provisioned empty MySQL database; release deployment remains failed/NOT VERIFIED when restore evidence is unavailable.
+- Added corruption/import/recovery regression coverage for NN-BACKUP-01.
+- Separated mail configuration validity from production readiness and delivery verification for NN-MAIL-01.
+- Production readiness now requires structurally valid SMTP; `MAIL_MAILER=log` remains supported only for development/test configuration checks.
+- Added durable per-workflow mail acceptance for registration verification, password reset, and email change; RC deployment remains NOT VERIFIED until all three real delivery workflows are recorded for the current SMTP/site configuration.
 
 ## 0.4.0-beta.15 - 2026-09-10
 
@@ -321,6 +340,23 @@
 - No runtime Membership behavior or database schema change in this checkpoint.
 
 # Changelog
+
+## NN-RC-HARDENING-01
+
+- Hardened the clean-source gate to reject sessions, uploads, private user files, environment variants and root-level SQL/TAR/ZIP/backup artifacts.
+
+## NN-BACKUP-01
+
+- Added manifest-backed, atomically published SQL + files backup sets with durable IDs, sizes, SHA-256 hashes and portable runtime metadata.
+- Verification now treats the external manifest as authoritative and rejects incomplete, mismatched, missing or corrupted components before restore work.
+- Added test-only backup phase fault injection and MySQL integration coverage for completed and interrupted set creation.
+
+## 0.4.0-rc.4 — Batch 4 reliability checkpoint
+
+- Fixed NN-THEME-01: theme asset publication now validates the complete source before touching active assets, copies to a sibling staging tree, verifies SHA-256 content, and swaps by rename with rollback.
+- Added runtime fault-injection coverage for mid-publication copy failure and swap failure; previous active assets remain available and temporary trees are cleaned.
+- No database migration, bundled theme version change, visual redesign, or unrelated refactor is included in this batch.
+
 
 ## 0.4.0-beta.14 - 2026-09-10
 
@@ -2093,3 +2129,6 @@ All notable NovaNuke changes will be documented here.
 - Production deployment, shared-hosting, backup/restore and security-checklist documentation.
 - CSRF-protected maintenance controls with 503 responses, recovery access and Super Administrator preview.
 - Authorization auditing for active super administrators, required core permissions and unsafe public-role grants.
+
+- RC.4: fixed NN-SEC-01 by enforcing parent-content audience checks across Comments list/create/edit/react/report and hiding inaccessible comment IDs behind 404.
+- RC.4: fixed NN-HTTP-01 by restricting `Response::redirect()` to safe local absolute paths and rejecting scheme-relative URLs, backslashes and control characters.

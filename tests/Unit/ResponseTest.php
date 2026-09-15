@@ -23,6 +23,34 @@ final class ResponseTest extends TestCase
         self::assertSame(303, Response::redirect('/admin/themes', 303)->status());
     }
 
+    public function testRedirectRejectsSchemeRelativeBackslashAndControlCharacterPaths(): void
+    {
+        foreach ([
+            '//evil.example',
+            '/\\evil.example',
+            '/safe\\..\\admin',
+            "/safe\nInjected: value",
+            "/safe\rInjected: value",
+            "/safe\tpath",
+            '/safe' . chr(0) . 'path',
+            '/safe' . chr(127) . 'path',
+        ] as $location) {
+            try {
+                Response::redirect($location);
+                self::fail('Unsafe local redirect was accepted: ' . json_encode($location));
+            } catch (InvalidArgumentException) {
+                self::assertTrue(true);
+            }
+        }
+    }
+
+    public function testRedirectAllowsNormalLocalPathsQueriesAndFragments(): void
+    {
+        foreach (['/', '/admin', '/login?private=1', '/news?page=2#latest', '/messages/42'] as $location) {
+            self::assertSame($location, Response::redirect($location)->header('Location'));
+        }
+    }
+
     public function testXmlResponsesDeclareRssAndDisableMimeSniffing(): void
     {
         $response = Response::xml('<?xml version="1.0"?><rss/>', 200, [

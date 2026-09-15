@@ -54,6 +54,9 @@ final class MigrationExecutor
 
         $this->operations->start($scope, $name, $direction, $checksum);
         try {
+            if ($this->faultInjector !== null) {
+                ($this->faultInjector)('before_' . $direction, $scope, $name);
+            }
             $alreadyFinal = $migration instanceof RecoverableMigration
                 && ($direction === 'up' ? $migration->isApplied($this->database) : $migration->isRolledBack($this->database));
             if (! $alreadyFinal) {

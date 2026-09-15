@@ -55,6 +55,8 @@ final class InstallerService
                 throw $error;
             }
 
+            (new FreshInstallProvisioner($this->rootPath, $database))->provision();
+
             $this->envWriter->write($envPath, [
             'APP_NAME' => $data->siteName,
             'APP_ENV' => 'production',

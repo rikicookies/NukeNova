@@ -19,9 +19,9 @@
                 <h3><a href="/users/{{ person.username }}">{{ person.display_name|default(person.username,true) }}</a></h3>
                 <p>@{{ person.username }}</p>
                 <div class="profile-actions">
-                    {% if title == 'Friend requests' %}<form method="post" action="/friends/accept/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Accept</button></form><form method="post" action="/friends/decline/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Decline</button></form>
-                    {% elseif title == 'Friends' %}<a class="module-link-button" href="/messages/compose?recipient={{ person.username|url_encode }}">Message</a><form method="post" action="/friends/remove/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Remove</button></form>
-                    {% elseif title == 'Blocked users' %}<form method="post" action="/friends/unblock/{{ person.id }}"><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Unblock</button></form>{% endif %}
+                    {% if title == 'Friend requests' %}<form method="post" action="/friends/accept/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="Friend request accepted."><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Accept</button></form><form method="post" action="/friends/decline/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="Friend request declined."><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Decline</button></form>
+                    {% elseif title == 'Friends' %}<a class="module-link-button" href="/messages/compose?recipient={{ person.username|url_encode }}">Message</a><form method="post" action="/friends/remove/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="Friend removed."><input type="hidden" name="_token" value="{{ csrf_token }}"><button class="secondary-button">Remove</button></form>
+                    {% elseif title == 'Blocked users' %}<form method="post" action="/friends/unblock/{{ person.id }}" data-ajax-action data-ajax-replace=".friends-page" data-ajax-success="User unblocked."><input type="hidden" name="_token" value="{{ csrf_token }}"><button>Unblock</button></form>{% endif %}
                 </div>
             </article>
             {% endfor %}

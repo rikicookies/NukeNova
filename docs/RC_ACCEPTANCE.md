@@ -22,7 +22,8 @@ Required outcome:
 
 - no `.env`;
 - no `storage/installed.lock`;
-- no runtime log/cache/backup artifacts;
+- no runtime log/cache/session/backup artifacts, public uploads or private user files;
+- no environment variants such as `.env.production` and no old SQL/TAR/ZIP release artifacts at package root;
 - release/version metadata matches the package;
 - `composer.lock` is present so dependency installation is reproducible;
 - distribution smoke/checklist passes;
@@ -50,8 +51,7 @@ Use a disposable copy of a real older installation.
 Required sequence:
 
 ```bash
-php bin/cms backup:database
-php bin/cms backup:files
+php bin/cms backup:create
 php bin/cms backup:verify
 php bin/cms upgrade:check --from=CURRENT_INSTALLED_VERSION
 php bin/cms migrate
@@ -77,14 +77,15 @@ A generated backup is not sufficient proof by itself.
 
 Required outcome:
 
-- `backup:verify` passes;
-- `php bin/cms backup:restore-check` passes, including a disposable extraction of the latest verified file backup;
+- `backup:verify` passes and confirms one explicit matched backup-set ID;
+- `php bin/cms backup:restore-check` passes, including disposable file extraction **and a real SQL import** when a disposable MySQL runner is configured;
+- if automated SQL restore credentials are unavailable, the gate must say `MANUAL REQUIRED / NOT VERIFIED` and acceptance stays open until a manual import is recorded;
 - database backup restores into a disposable database;
 - private file backup restores into a disposable application copy; `backup:restore-files` verifies the archive first and only extracts into an empty destination;
 - restored copy boots with the matching application release;
 - authenticated users/content/private files expected from the backup are present.
 
-NovaNuke intentionally does not provide an in-place/overwrite file restore command. Restore into an empty disposable directory, inspect it, then follow the documented recovery procedure. Database restore remains an operator/database-server operation so the target database can be explicitly selected and reviewed.
+NovaNuke intentionally does not provide an in-place/overwrite file restore command. Restore into an empty disposable directory, inspect it, then follow the documented recovery procedure. NovaNuke never creates the target database; the operator explicitly provisions the empty disposable database. The application may import/clean it only when acceptance credentials are configured.
 
 Do not test restore for the first time on production.
 
@@ -112,9 +113,11 @@ First validate the selected transport without sending mail:
 
 ```bash
 php bin/cms mail:check
+php bin/cms production:check
+php bin/cms mail:acceptance
 ```
 
-`mail:check` validates transport, sender and SMTP configuration structure without opening a delivery connection or exposing the configured password.
+`mail:check` validates transport, sender and SMTP configuration structure without opening a delivery connection or exposing the configured password. `production:check` separately requires SMTP; `MAIL_MAILER=log` is development/test only. `mail:acceptance` remains non-zero and reports `MANUAL REQUIRED / NOT VERIFIED` until the real delivery workflows below have been completed and recorded.
 
 On a disposable production-like environment with SMTP configured:
 
@@ -125,7 +128,16 @@ On a disposable production-like environment with SMTP configured:
 - one-time tokens cannot be reused;
 - mail credentials never appear in rendered pages or sanitized logs.
 
-Log mail is acceptable for local development but does not complete production SMTP acceptance.
+After each successful real workflow, record the operator acceptance:
+
+```bash
+php bin/cms mail:acceptance --record=registration-verification
+php bin/cms mail:acceptance --record=password-reset
+php bin/cms mail:acceptance --record=email-change
+php bin/cms mail:acceptance
+```
+
+The acceptance is invalidated by SMTP identity/credential/transport changes or an effective site-URL change. Log mail can never record production acceptance.
 
 ## 7. Production configuration
 

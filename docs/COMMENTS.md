@@ -42,3 +42,8 @@ Comment bodies store an explicit Markdown or sanitized-HTML format. Comments 1.2
 - Server-side permission checks protect every administrative action.
 
 Rate limits and identity hashes reduce obvious abuse; they do not prove that two guests are different people. Production sites should also apply web-server request limits and review moderation queues.
+
+
+## Parent-content authorization
+
+Comment visibility and mutations are always subordinate to the parent content audience. The Comments module re-dispatches `comments.content.checking` for list/create and resolves `comment_id -> content_type/content_id` before edit/react/report. If the current viewer cannot access the parent target, the public mutation endpoint returns the same `404 Not found.` response used for an unknown comment. This prevents a comment identifier from becoming an audience side channel for member, VIP, or role-restricted content.

@@ -9,5 +9,14 @@
     "cms_min_version": "0.2.0-alpha.2",
     "php_min_version": "8.3.0",
     "dependencies": {},
-    "permissions": ["polls.manage"]
+    "permissions": [
+        "polls.manage"
+    ],
+    "navigation": {
+        "label": "Polls",
+        "url": "/polls",
+        "icon": "polls",
+        "order": 65,
+        "audience": "public"
+    }
 }

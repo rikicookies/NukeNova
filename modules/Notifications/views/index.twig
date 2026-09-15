@@ -7,15 +7,15 @@
     {% include 'components/page-header.twig' with {eyebrow: trans('notifications::account'), title: trans('notifications::title'), description: notification_unread_count ~ ' unread notification' ~ (notification_unread_count == 1 ? '' : 's') ~ '.'} only %}
     {% include "auth/_social-nav.twig" %}
     {% if notification_unread_count > 0 %}
-    <div class="module-action-row"><form id="notification-read-all" method="post" action="/notifications/read-all"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('notifications::mark_all') }}</button></form></div>
+    <div class="module-action-row"><form id="notification-read-all" method="post" action="/notifications/read-all" data-ajax-action data-ajax-replace=".notifications-page" data-ajax-success="Notifications marked as read."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('notifications::mark_all') }}</button></form></div>
     {% endif %}
     {% if marked_count is not null %}<p class="alert alert-success">{{ trans('notifications::marked', {count: marked_count}) }}</p>{% endif %}
     {% if notifications %}
     <div class="notification-list">
         {% for item in notifications %}
-        <article class="notification-item {{ item.read_at ? '' : 'is-unread' }}">
+        <article class="notification-item {{ item.read_at ? '' : 'is-unread' }}" id="notification-{{ item.id }}">
             <div><div class="surface-card-meta"><span>{{ item.read_at ? 'Read' : 'Unread' }}</span><span>{{ item.created_at }}</span></div><h2>{{ item.title }}</h2><p>{{ item.message }}</p></div>
-            <div class="notification-actions">{% if item.url %}<a class="module-link-button" href="{{ item.url }}">{{ trans('notifications::open') }}</a>{% endif %}{% if not item.read_at %}<form method="post" action="/notifications/{{ item.id }}/read"><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('notifications::mark_read') }}</button></form>{% endif %}</div>
+            <div class="notification-actions">{% if item.url %}<a class="module-link-button" href="{{ item.url }}">{{ trans('notifications::open') }}</a>{% endif %}{% if not item.read_at %}<form method="post" action="/notifications/{{ item.id }}/read" data-ajax-action data-ajax-replace=".notifications-page" data-ajax-success="Notification marked as read."><input type="hidden" name="_token" value="{{ csrf_token }}"><button type="submit">{{ trans('notifications::mark_read') }}</button></form>{% endif %}</div>
         </article>
         {% endfor %}
     </div>
